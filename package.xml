@@ -1,0 +1,42 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>genesis_path_follower</name>
+  <version>0.0.1</version>
+  <description>
+      Model Predictive Control-Based Path Follower to Track a GPS Trajectory for the Hyundai Genesis.
+      MPC code is based off the BARC platform developed by MPC Lab, UC Berkeley (https://github.com/MPC-Berkeley/barc).
+  </description>
+  <maintainer email="govvijay@berkeley.edu">Vijay Govindarajan</maintainer>
+  <license>MIT</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>geometry_msgs</build_depend>
+  <build_depend>nav_msgs</build_depend>
+  <build_depend>roscpp</build_depend>
+  <build_depend>rospy</build_depend>
+  <build_depend>std_msgs</build_depend>
+  <build_depend>sensor_msgs</build_depend>
+  <build_depend>genesis_msgs</build_depend>
+
+  <build_export_depend>geometry_msgs</build_export_depend>
+  <build_export_depend>nav_msgs</build_export_depend>
+  <build_export_depend>roscpp</build_export_depend>
+  <build_export_depend>rospy</build_export_depend>
+  <build_export_depend>std_msgs</build_export_depend>
+  <build_export_depend>sensor_msgs</build_export_depend>
+  <build_depend>genesis_msgs</build_depend>
+
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>nav_msgs</exec_depend>
+  <exec_depend>roscpp</exec_depend>
+  <exec_depend>rospy</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+  <build_depend>genesis_msgs</build_depend>
+
+ <!-- For custom msgs -->
+ <build_depend>message_generation</build_depend>
+ <exec_depend>message_runtime</exec_depend>  
+
+</package>
