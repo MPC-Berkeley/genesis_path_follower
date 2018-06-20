@@ -43,7 +43,8 @@ module GPSKinMPCPathFollower
     steer_max = 0.5 		# tire angle (d_f) bound, rad
     steer_dmax = 0.5		# tire angle (d_f) rate bound, rad/s
 
-	a_max = 2.0				# acceleration and deceleration bound, m/s^2
+	a_min = -3.0			# acceleration and deceleration bounds, m/s^2
+	a_max = 2.0				
 	a_dmax = 1.5			# jerk bound, m/s^3
 
 	v_min = 0.0				# vel bounds (m/s)
@@ -56,7 +57,7 @@ module GPSKinMPCPathFollower
     C_v   = 0.0				# target velocity deviation
 
 	C_dacc	 = 0.1			# derivative of acceleration input
-	C_ddf	 = 3e4		# derivative of tire angle input
+	C_ddf	 = 3e4			# derivative of tire angle input
 	C_acc	 = 4.0			# acceleration input
 	C_df	 = 150			# tire angle input
 
@@ -66,11 +67,12 @@ module GPSKinMPCPathFollower
 	#println("Creating kinematic bicycle model ....")
 	@variable( mdl, x[1:(N+1)], start=0.0)
 	@variable( mdl, y[1:(N+1)], start=0.0)
-	@variable( mdl, v_min <= v[1:(N+1)] <= v_max, start=0.0)
+	#@variable( mdl, v_min <= v[1:(N+1)] <= v_max, start=0.0)
+	@variable( mdl, v[1:(N+1)], start=0.0)
 	@variable( mdl, psi[1:(N+1)], start=0.0)
 
 	# Input Constraints
-	@variable( mdl, -a_max <= acc[1:N] <= a_max, start=0.0)
+	@variable( mdl, a_min <= acc[1:N] <= a_max, start=0.0)
 	@variable( mdl, -steer_max <= d_f[1:N] <= steer_max, start=0.0)
 
 	# Input Steering Rate Constraints

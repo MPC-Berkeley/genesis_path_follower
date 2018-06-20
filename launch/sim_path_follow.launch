@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+
+<launch>
+	<param name="vehicle/scripts_dir" type="str" value="$(find genesis_path_follower)/scripts/" />
+  <!-- The trajectory can be generated using recorded time or a target velocity. -->
+  <!-- Set track_using_time to True to allow for time-varying velocity. -->
+  <!-- Set track_using_time to False to use target_vel (m/s) instead. -->
+  <param name="vehicle/track_using_time" type="bool" value="True" />
+  <param name="vehicle/target_vel" type="double" value="1.0" />
+
+  <!-- Waypoints CSV to specify path. -->
+  <!-- Set is_heading_info to true if Heading (N = 0) is used instead of Yaw (E = 0). -->
+	<param name="vehicle/pkl_waypoints" type="str" value="$(find genesis_path_follower)/path_csvs/gps_path_v1.pkl" />
+  <!--param name="vehicle/csv_waypoints" type="str" value="$(find gps_path_follower)/path_csvs/acc_azera_gps_waypoints.csv" /-->
+  <param name="vehicle/is_heading_info" type="bool" value="True"/>
+	<param name="vehicle/time_check_on" type="bool" value="False"/>
+
+  <!-- RFS Coordinate System Definition -->
+  <param name="vehicle/lat0" type="double" value="37.917929"/>
+  <param name="vehicle/lon0" type="double" value="-122.331798"/>
+  <param name="vehicle/yaw0" type="double" value="0.0"/>
+
+  <!-- Vehicle Simulation Initial Conditions -->
+  <param name="vehicle/X0" type="double" value="0.0"/>
+  <param name="vehicle/Y0" type="double" value="3.0"/>
+  <param name="vehicle/Psi0" type="double" value="-1.5"/>
+  <!--...................................................................-->
+
+  <!-- MPC, Simulation, and Plotting Nodes -->
+  <node ns="vehicle" pkg="genesis_path_follower" type="mpc_cmd_pub.jl" name="mpc_node" output="log"/>
+  <node ns="vehicle" pkg="genesis_path_follower" type="vehicle_simulator.py" name="sim_node" output="log"/>
+  <node ns="vehicle" pkg="genesis_path_follower" type="plot_gps_traj.py" name="plot_node" output="log"/>
+
+</launch>

@@ -2,8 +2,8 @@
 import rospy
 import numpy as np
 import math
-from gps_path_follower.msg import MPC_cmd
-from gps_path_follower.msg import state_est
+from std_msgs.msg import Float32 as float_msg
+from genesis_path_follower.msg import state_est
 
 class VehicleSimulator():
 	'''
@@ -12,10 +12,12 @@ class VehicleSimulator():
 	'''
 	def __init__(self):
 		rospy.init_node('vehicle_simulator', anonymous=True)
-		rospy.Subscriber('mpc_cmd', MPC_cmd, self._cmd_callback, queue_size=1)
+		rospy.Subscriber('/control/accel', float_msg, self._acc_cmd_callback, queue_size=1)
+		rospy.Subscriber('/control/steer_angle', float_msg, self._df_cmd_callback, queue_size=1)
 		self.state_pub = rospy.Publisher('state_est', state_est, queue_size=1)
 
-		self.tcmd = None	# rostime (s) of received command
+		self.tcmd_a = None	# rostime (s) of received acc command
+		self.tcmd_d = None	# rostime (s) of received df command
 		self.acc = 0.0		# actual acceleration (m/s^2)
 		self.df = 0.0		# actual steering angle (rad)
 		self.acc_des = 0.0	# desired acceleration	(m/s^2)
@@ -48,12 +50,13 @@ class VehicleSimulator():
 			self.state_pub.publish(curr_state)
 			self.r.sleep()
 
-	def _cmd_callback(self, msg):
-		self.tcmd = msg.header.stamp.secs + 1e-9*msg.header.stamp.nsecs
-		self.acc_des = msg.accel_cmd
-		self.df_des    = msg.steer_angle_cmd
-		#print '%f %f %f' % (self.tcmd, self.ac_des, self.df_des)
-		
+	def _acc_cmd_callback(self, msg):
+		self.tcmd_a = rospy.Time.now()
+		self.acc_des = msg.data
+
+	def _df_cmd_callback(self, msg):
+		self.tcmd_d = rospy.Time.now()
+		self.df_des    = msg.data
 
 	def _update_vehicle_model(self, disc_steps = 10):
 		# Azera Params taken from:
