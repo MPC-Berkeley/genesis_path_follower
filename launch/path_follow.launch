@@ -20,15 +20,21 @@
   <param name="vehicle/lon0" type="double" value="-122.331798"/>
   <param name="vehicle/yaw0" type="double" value="0.0"/>
 
-  <!-- Vehicle Simulation Initial Conditions -->
-  <!--param name="vehicle/X0" type="double" value="-300.0"/>
-  <param name="vehicle/Y0" type="double" value="-450.0"/>
-  <param name="vehicle/Psi0" type="double" value="1.0"/-->
   <!--...................................................................-->
 
-  <!-- MPC, Simulation, and Plotting Nodes -->
+  <!-- MPC, State Publisher, and Plotting Nodes -->
   <node ns="vehicle" pkg="genesis_path_follower" type="mpc_cmd_pub.jl" name="mpc_node" output="log"/>
   <node ns="vehicle" pkg="genesis_path_follower" type="state_publisher.py" name="state_pub_node" output="log"/>
-  <node ns="vehicle" pkg="genesis_path_follower" type="plot_gps_traj.py" name="plot_node" output="log"/>
+  <node ns="vehicle" pkg="genesis_path_follower" type="gps_plotter.py" name="plot_node" output="log"/>
+
+  <!-- Recording Node -->
+  <arg name="can_topics" default="/can_1/can_rx /can_1/can_tx /can_2/can_rx /rosout /rosout_agg"/>
+  <arg name="gps_topics" default="/gps/fix /gps/odom /gps/vel /imu/data/"/>
+  <arg name="vehicle_topics" default="/vehicle/imu /vehicle/state_est /vehicle/steering /vehicle/wheel_speeds"/>
+  <arg name="control_topics" default="/control/enable_spas /control/enable_accel /control/accel /control/steer_angle"/>
+  <arg name="perception_topics" default="/mando_camera/lane_left /mando_camera/lane_right"/>
+
+  <node pkg="rosbag" type="record" name="rosbag_path_recorder" respawn="true" output="screen" 
+        args="-o $(find genesis_path_follower)/bags/path_follow $(arg can_topics) $(arg gps_topics) $(arg vehicle_topics) $(arg control_topics) $(arg perception_topics)" />
 
 </launch>
