@@ -16,12 +16,10 @@ pkl_fname = PyObject(nothing)
 track_with_time = false
 target_vel = 0.0
 
-if has_param("csv_waypoints")
-	csv_fname = get_param("csv_waypoints")
-elseif has_param("pkl_waypoints")
-	pkl_fname = get_param("pkl_waypoints")
+if has_param("mat_waypoints")
+	mat_fname = get_param("mat_waypoints")
 else
-	error("No CSV/PKL waypoints provided!")
+	error("No Matfile of waypoints provided!")
 end
 
 if has_param("track_using_time") && has_param("target_vel")
@@ -43,8 +41,7 @@ using PyCall
 const gps_utils_loc = scripts_dir * "gps_utils"
 unshift!(PyVector(pyimport("sys")["path"]), gps_utils_loc) # append the current directory to Python path
 @pyimport ref_gps_traj as rgt
-@pyimport pdb
-grt = rgt.GPSRefTrajectory(csv_filename=csv_fname, pkl_filename=pkl_fname)	
+grt = rgt.GPSRefTrajectory(mat_filename=mat_fname)
 
 # Access MPC Controller.
 push!(LOAD_PATH, scripts_dir * "mpc_utils")

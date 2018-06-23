@@ -15,13 +15,11 @@ class PlotGPSTrajectory():
 		# Load Global Trajectory
 		csv_name = None
 		pkl_name = None
-		if rospy.has_param('csv_waypoints'):
-			csv_name = rospy.get_param('csv_waypoints')
-		elif rospy.has_param('pkl_waypoints'):
-			pkl_name = rospy.get_param('pkl_waypoints')
+		if rospy.has_param('mat_waypoints'):
+			mat_name = rospy.get_param('mat_waypoints')
 		else:
-			raise ValueError("No CSV/PKL of waypoints were provided!")
-		grt = r.GPSRefTrajectory(csv_filename=csv_name, pkl_filename = pkl_name) # only 1 should be valid.
+			raise ValueError("No Matfile of waypoints were provided!")
+		grt = r.GPSRefTrajectory(mat_filename=mat_name) # only 1 should be valid.
 		
 		# Set up Data
 		self.x_global_traj = grt.get_Xs()

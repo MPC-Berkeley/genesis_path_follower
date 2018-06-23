@@ -6,8 +6,6 @@ from sensor_msgs.msg import Imu
 from genesis_msgs.msg import SteeringReport
 import math as m
 from genesis_path_follower.msg import state_est
-import pdb
-
 from tf.transformations import euler_from_quaternion
 
 ''' Global Variables for Callbacks '''
@@ -17,7 +15,6 @@ tm_imu = None; psi = None
 tm_df  = None;  df = None
 
 def time_valid(ros_tm, tm_arr):
-	#pdb.set_trace()
 	tm_now = ros_tm.secs + 1e-9*ros_tm.nsecs
 	for tm_rcvd in tm_arr:
 		diff = m.fabs(tm_now - tm_rcvd)
@@ -96,7 +93,7 @@ def parse_imu_data(msg):
 	if psi > m.pi:
 		psi = - (2*m.pi - psi)		
 
-	# yaw in the OxTS coord system is wrt N = 0 (longitudinal axis of vehicle).
+	# yaw in the Genesis OxTS coord system is wrt N = 0 (longitudinal axis of vehicle).
 	# in the OxTS driver code, there is a minus sign for heading
 	# (https://github.com/MPC-Car/GenesisAutoware/blob/master/ros/src/sensing/drivers/oxford_gps_eth/src/node.cpp#L10)
 	# so heading is actually ccw radians from N = 0.
@@ -138,7 +135,7 @@ def pub_loop():
 		curr_state = state_est()
 		curr_state.header.stamp = rospy.Time.now()
 		
-		# TODO: time validity check.
+		# TODO: time validity check, only publish if data is fresh
 		#if time_check_on and not time_valid(curr_state.header.stamp,[tm_vel, tm_df, tm_imu, tm_gps]):
 		#	r.sleep()
 		#	continue

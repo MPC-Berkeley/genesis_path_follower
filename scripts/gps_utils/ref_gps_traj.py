@@ -1,12 +1,11 @@
 #!/usr/bin/env python
 import numpy as np
-import csv
 import matplotlib.pyplot as plt
 import math
 import rosbag
 import time
 import rospy
-import pickle as pkl
+import scipy.io as sio
 
 '''
 RFS GLOBAL COORDINATE SYSTEM:
@@ -57,32 +56,22 @@ class GPSRefTrajectory():
 	Class to encapsulate a GPS trajectory and provide functions to obtain a
 	local trajectory from the full trajectory for MPC and to animate results.
 	'''
-	def __init__(self, csv_filename = None, pkl_filename = None, traj_horizon=8, traj_dt = 0.2):
-		if csv_filename is None and pkl_filename is None:
-			raise ValueError('A CSV or PKL file of poses should be provided!')
-		elif csv_filename is not None and pkl_filename is not None:
-			raise ValueError('Either a CSV or PKL file should be given, not both!')
-		
+	
+	def __init__(self, mat_filename=None, traj_horizon=8, traj_dt=0.2):
 		if not (rospy.has_param('lat0') and rospy.has_param('lon0') and rospy.has_param('yaw0')):
 			raise ValueError('Invalid rosparam global origin provided!')
 
 		if not rospy.has_param('is_heading_info'):
 			raise ValueError('Invalid rosparam for if heading or yaw info provided!')
 
+		if mat_filename is None:
+			raise ValueError('Invalid matfile specified.')
+
 		LAT0 = rospy.get_param('lat0')
 		LON0 = rospy.get_param('lon0')
 		YAW0 = rospy.get_param('yaw0')
 		use_heading = rospy.get_param('is_heading_info')
 		
-		# Expect CSV to contain lines with following 4 fields:
-		# tm lat lon <theta/yaw>
-		# (1) tm = time in seconds
-		# (2) lat = latitude in decimal degrees
-		# (3) lon = longitude in decimal degrees
-		# (4a) theta = heading angle (N = 0, E = 90, etc.) -> if provided, this is converted to yaw
-		#  OR
-		# (4b) yaw (E = 0, N = 90, etc.)
-
 		self.traj_horizon = traj_horizon	# horizon (# time steps ahead) for trajectory reference
 		self.traj_dt = traj_dt				# time discretization (s) for trajectory reference
 
@@ -94,52 +83,24 @@ class GPSRefTrajectory():
 		Ys   = []
 		cdists = []
 
-		if csv_filename is not None:
-			with open(csv_filename, 'r') as f:
-				# Parse the CSV File to extract global trajectory.
-				reader = csv.reader(f, delimiter=' ')
-				for row in reader:
-					tms.append( float(row[0]) )
-					
-					lat = float(row[1])
-					lon = float(row[2])
-					X,Y = latlon_to_XY(LAT0, LON0, lat, lon)
 
-					lats.append( lat )
-					lons.append( lon )
+		data_dict = sio.loadmat(mat_filename)
+			
+		tms  = np.ravel(data_dict['t'])
+		lats = np.ravel(data_dict['lat'])
+		lons = np.ravel(data_dict['lon'])
+		yaws = np.ravel(data_dict['psi'])
 
-					if len(Xs) == 0: 		# i.e. the first point on the trajectory
-						cdists.append(0.0)	# s = 0
-					else:					# later points on the trajectory
-						d = math.sqrt( (X - Xs[-1])**2 + (Y - Ys[-1])**2 ) + cdists[-1]
-						cdists.append(d) 	# s = s_prev + dist(z[i], z[i-1])
-
-					Xs.append(X)
-					Ys.append(Y)
-
-					if use_heading:
-						yaws.append( heading_to_yaw(float(row[3])) )
-					else:
-						yaws.append( float(row[3]) )
-
-		elif pkl_filename is not None:
-			data_dict = pkl.load(open(pkl_filename, 'rb'))
-			data_arr = data_dict['data']
-			tms = data_arr[:,0]
-			lats = data_arr[:,1]
-			lons = data_arr[:,2]
-			yaws = data_arr[:,5]
-
-			for i in range(len(lats)):
-				lat = lats[i]; lon = lons[i]
-				X,Y = latlon_to_XY(LAT0, LON0, lat, lon)
-				if len(Xs) == 0: 		# i.e. the first point on the trajectory
-					cdists.append(0.0)	# s = 0
-				else:					# later points on the trajectory
-					d = math.sqrt( (X - Xs[-1])**2 + (Y - Ys[-1])**2 ) + cdists[-1]
-					cdists.append(d) 	# s = s_prev + dist(z[i], z[i-1])
-				Xs.append(X)
-				Ys.append(Y)
+		for i in range(len(lats)):
+			lat = lats[i]; lon = lons[i]
+			X,Y = latlon_to_XY(LAT0, LON0, lat, lon)
+			if len(Xs) == 0: 		# i.e. the first point on the trajectory
+				cdists.append(0.0)	# s = 0
+			else:					# later points on the trajectory
+				d = math.sqrt( (X - Xs[-1])**2 + (Y - Ys[-1])**2 ) + cdists[-1]
+				cdists.append(d) 	# s = s_prev + dist(z[i], z[i-1])
+			Xs.append(X)
+			Ys.append(Y)
 
 		# global trajectory matrix
 		self.trajectory =  np.column_stack((tms, lats, lons, yaws, Xs, Ys, cdists)) 
@@ -240,21 +201,3 @@ class GPSRefTrajectory():
 
 	def __waypoints_to_stop(self, closest_traj_ind):
 		pass
-
-'''
-if __name__ == '__main__':
-	# Testing of the GPSRefTrajectory Class.
-	grt = GPSRefTrajectory(_filename='/home/govvijay/catkin_ws/src/genesis_path_follower/path_csvs/acc_azera_gps_waypoints.csv')	
-
-	# For each point on the actual trajectory, add some Gaussian noise so initial tracking error > 0 and compute the local trajectory.
-	# get_waypoints() finds the local/interpolated trajectory with respect to the current vehicle pose (x_fit, y_fit, yaw_fit)
-	# plot_interpolation then plots the fitted results.
-	for i in range(0, grt.trajectory.shape[0], 100):
-		e_tm = grt.trajectory[i,0] - grt.trajectory[0,0]
-		x_fit = grt.trajectory[i,4] + np.random.normal(loc=0.0, scale=1.0)
-		y_fit = grt.trajectory[i,5] + np.random.normal(loc=0.0, scale=1.0)
-		yaw_fit = grt.trajectory[i,3] 
-
-		grt.get_waypoints(x_fit, y_fit, yaw_fit,v_target=100.0)		
-		grt.plot_interpolation(x_fit,y_fit)
-'''
