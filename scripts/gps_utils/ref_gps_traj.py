@@ -137,9 +137,9 @@ class GPSRefTrajectory():
 		closest_traj_ind = np.argmin(diff_dists) 
 
 		if v_target is not None:
-			return self.__waypoints_using_vtarget(closest_traj_ind, v_target) #v_ref given, use distance information for interpolation
+			return self.__waypoints_using_vtarget(closest_traj_ind, v_target, yaw_init) #v_ref given, use distance information for interpolation
 		else:
-			return self.__waypoints_using_time(closest_traj_ind)			  #no v_ref, use time information for interpolation
+			return self.__waypoints_using_time(closest_traj_ind, yaw_init)			  #no v_ref, use time information for interpolation
 
 	# Visualization Function to plot the vehicle's current position, the full global trajectory, and the local trajectory for MPC.
 	def plot_interpolation(self, x,y):
@@ -169,14 +169,15 @@ class GPSRefTrajectory():
 		plt.pause(0.05)	
 
 	''' Helper functions: you shouldn't need to call these! '''
-	def __waypoints_using_vtarget(self, closest_traj_ind, v_target):
+	def __waypoints_using_vtarget(self, closest_traj_ind, v_target, yaw_init):
 		start_dist = self.trajectory[closest_traj_ind,6] # cumulative dist corresponding to look ahead point
 
 		dists_to_fit = [x*self.traj_dt*v_target + start_dist for x in range(1,self.traj_horizon+2)] # edit bounds
 		# NOTE: np.interp returns the first value x[0] if t < t[0] and the last value x[-1] if t > t[-1].
 		self.x_interp = np.interp(dists_to_fit, self.trajectory[:,6], self.trajectory[:,4]) 	 # x_des = f_interp(d_des, d_actual, x_actual)
 		self.y_interp = np.interp(dists_to_fit, self.trajectory[:,6], self.trajectory[:,5]) 	 # y_des = f_interp(d_des, d_actual, y_actual)
-		self.psi_interp = np.interp(dists_to_fit, self.trajectory[:,6], self.trajectory[:,3])    # psi_des = f_interp(d_des, d_actual, psi_actual)
+		psi_ref = np.interp(dists_to_fit, self.trajectory[:,6], self.trajectory[:,3])    # psi_des = f_interp(d_des, d_actual, psi_actual)
+		self.psi_interp = self.__fix_heading_wraparound(psi_ref, yaw_init)
 
 		stop_cmd = False
 		if self.x_interp[-1] == self.trajectory[-1,4] and self.y_interp[-1] == self.trajectory[-1,5]:
@@ -184,20 +185,37 @@ class GPSRefTrajectory():
 
 		return self.x_interp, self.y_interp, self.psi_interp, stop_cmd
 
-	def __waypoints_using_time(self, closest_traj_ind):
+	def __waypoints_using_time(self, closest_traj_ind, yaw_init):
 		start_tm = self.trajectory[closest_traj_ind,0] # tm corresponding to look ahead point
 		
 		times_to_fit = [h*self.traj_dt + start_tm for h in range(0,self.traj_horizon+1)]
 		# NOTE: np.interp returns the first value x[0] if t < t[0] and the last value x[-1] if t > t[-1].
 		self.x_interp = np.interp(times_to_fit, self.trajectory[:,0], self.trajectory[:,4]) 	 # x_des = f_interp(t_des, t_actual, x_actual)
 		self.y_interp = np.interp(times_to_fit, self.trajectory[:,0], self.trajectory[:,5]) 	 # y_des = f_interp(t_des, t_actual, y_actual)
-		self.psi_interp = np.interp(times_to_fit, self.trajectory[:,0], self.trajectory[:,3])    # psi_des = f_interp(t_des, t_actual, psi_actual)
+		psi_ref = np.interp(times_to_fit, self.trajectory[:,0], self.trajectory[:,3])    # psi_des = f_interp(t_des, t_actual, psi_actual)
+		self.psi_interp = self.__fix_heading_wraparound(psi_ref, yaw_init)
 
 		stop_cmd = False
 		if self.x_interp[-1] == self.trajectory[-1,4] and self.y_interp[-1] == self.trajectory[-1,5]:
 			stop_cmd = True
 
 		return self.x_interp, self.y_interp, self.psi_interp, stop_cmd
+
+	def __fix_heading_wraparound(self, psi_ref, psi_current):
+		check_1 = np.max(np.fabs(np.diff(psi_ref))) < np.pi
+		check_2 = np.max(np.fabs(psi_ref - psi_current)) < np.pi
+
+		if check_1 and check_2:
+			return psi_ref
+
+		for i in range(len(psi_ref)):
+			p = psi_ref[i]
+			psi_cands_arr = np.array([p, p + 2*np.pi, p - 2*np.pi])
+			best_cand = np.argmin(np.fabs(psi_cands_arr - psi_current))
+
+			psi_ref[i] = psi_cands_arr[best_cand]
+
+		return psi_ref
 
 	def __waypoints_to_stop(self, closest_traj_ind):
 		pass
