@@ -38,7 +38,8 @@ The launch files use the following scripts:
     * Subscribes to GPS/IMU topics and provides a synchronized version of the vehicle state for convenience.
 ---
 Mat Format for Reference Path (used by ref_gps_traj.py):
-  * Keys: 't', 'x', 'y', 'v', 'psi', 'a', 'df' (i.e. the state information and ROS time)
+  * Keys: 't', 'x', 'y', 'v', 'psi', 'a', 'df', 'lat', 'lon' (i.e. the state information and ROS time)
   * Values: each key is associated with a N-long array, where N is the number of state samples recorded
+  * There is also a 'mode' entry (Real, Sim, or Follow) to aid with plotting/analysis and keeping track of data.
 ---
 Contact Vijay Govindarajan (govvijay@berkeley.edu) with any questions or comments.
