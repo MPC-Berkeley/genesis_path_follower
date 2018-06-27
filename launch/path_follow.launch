@@ -30,7 +30,7 @@
   <!-- Recording Node -->
   <arg name="can_topics" default="/can_1/can_rx /can_1/can_tx /can_2/can_rx /rosout /rosout_agg"/>
   <arg name="gps_topics" default="/gps/fix /gps/odom /gps/vel /imu/data/"/>
-  <arg name="vehicle_topics" default="/vehicle/imu /vehicle/state_est /vehicle/steering /vehicle/wheel_speeds"/>
+  <arg name="vehicle_topics" default="/vehicle/imu /vehicle/state_est /vehicle/steering /vehicle/wheel_speeds /vehicle/target_path /vehicle/mpc_path"/>
   <arg name="control_topics" default="/control/enable_spas /control/enable_accel /control/accel /control/steer_angle"/>
   <arg name="perception_topics" default="/mando_camera/lane_left /mando_camera/lane_right"/>
 

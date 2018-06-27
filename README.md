@@ -1,24 +1,44 @@
 # gps_path_follower
 Code to track a GPS-specified set of waypoints using a kinematic model of MPC.
-
-There are three major components referenced in the launch file (for simulation, at present):
+---
+There are three major launch files to use:
+  * path_record.launch
+    * This is used to record the vehicle state in a demonstrated trajectory.
+    * The launch file asks for a matfile of waypoints: this is just to aid in the visualization and isn't used for control.
+  * sim_path_follow.launch
+    * This uses a dynamic bicycle vehicle model to simulate following the demonstrated trajectory (matfile of waypoints).
+    * Initial vehicle pose is required.
+  * path_follow.launch
+    * This is used to publish commands to the actual vehicle.  
+  * Common settings:
+    * Track path using time (i.e. varying velocity) or with a fixed speed.
+    * Reference system is defined based on (lat0, lon0) as the global origin.
+    * Use heading (cw from North) or psi (ccw from East).  For the Genesis, we can use the latter one.
+---
+The launch files use the following scripts:
   * mpc_cmd_pub.jl
     * Subscribes to the state from the vehicle (or vehicle simulator).
-    * Queries a reference generator (ref_gps_traj.py) to get the desired open-loop trajectory.  A full global trajectory is provided ahead of time in csv format.
+    * Queries a reference generator (ref_gps_traj.py) to get the desired open-loop trajectory.  A full global trajectory is provided ahead of time in mat format from the launch file.
     * Uses a nonlinear kinematic MPC model with IPOPT to generate the optimal acceleration and steering angle (tire) commands
     * Publishes the commands to the vehicle's low level controller, along with the desired open-loop trajectory (target_path)
-      and the predicted open-loop trajectory MPC solution.
+      and the predicted open-loop trajectory MPC solution (mpc_path).
+
   * vehicle_simulator.py
     * This is for sake of tuning algorithms.  It uses a dynamic bicycle model that captures vehicle motion better under higher lateral acceleration.
     * Low-level P controller used to simulate the fact that acceleration/steering angle control inputs are tracked with some delay.
-    * The hope is that this can be simply replaced by the vehicle's actual command interface once algorithms are fully tested.
+    * The topics used for control match the Genesis Interface exactly.  Thus this module can be swapped with the real vehicle interface with no issues.
+
   * plot_gps_traj.py
     * This is a simple visualizer of the path following behavior.
     * The global trajectory is plotted in black and kept fixed.
-    * The vehicle's current state, target path (open-loop reference), and predicted MPC path are updated via subscriber callbacks.
+    * The vehicle's current state (blue), target path (open-loop reference, in red), and predicted MPC path (green) are updated via subscriber callbacks.
+
+  * state_publisher.py
+    * Used for the real vehicle, in place of vehicle_simulator.py.
+    * Subscribes to GPS/IMU topics and provides a synchronized version of the vehicle state for convenience.
 ---
-CSV Format for Reference Path (used by ref_gps_traj.py):
-  * Each row is formatted as [time, latitude, longitude, heading]
-  * heading is the angle, in degrees) clockwise from North (i.e. N = 0, E = 90)
-  * **TODO:** allow user to switch between heading and yaw cleanly.
-  
+Mat Format for Reference Path (used by ref_gps_traj.py):
+  * Keys: 't', 'x', 'y', 'v', 'psi', 'a', 'df' (i.e. the state information and ROS time)
+  * Values: each key is associated with a N-long array, where N is the number of state samples recorded
+---
+Contact Vijay Govindarajan (govvijay@berkeley.edu) with any questions or comments.

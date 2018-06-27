@@ -1,6 +1,7 @@
 import argparse
 import scipy.io as sio
 import rosbag
+import pdb
 
 ''' Code to convert rosbag into a matfile for further plotting/analysis '''
 def parse_rosbag(mode, in_rosbag, out_mat):
@@ -8,6 +9,7 @@ def parse_rosbag(mode, in_rosbag, out_mat):
 	lat = []; lon = []; a = []; df = []
 
 	b = rosbag.Bag(in_rosbag)
+	
 	for topic, msg, _ in b.read_messages(topics='/vehicle/state_est'):
 		t.append(msg.header.stamp.secs + 1e-9 * msg.header.stamp.nsecs)
 		x.append(msg.x)
@@ -35,7 +37,7 @@ def parse_rosbag(mode, in_rosbag, out_mat):
 
 if __name__=='__main__':
 	parser = argparse.ArgumentParser('Plot processed matfile containing state/input history from a path following experiment.')
-	parser.add_argument('-m', '--mode', choices=['Real', 'Sim'], type=str, required=True, help='Type of Rosbag: Real Data or Simulated.')
+	parser.add_argument('-m', '--mode', choices=['Real', 'Sim', 'Follow'], type=str, required=True, help='Type of Rosbag: Real Data or Simulated.')
 	parser.add_argument('-i', '--infile',  type=str, required=True, help='Input: Bag File.')
 	parser.add_argument('-o', '--outfile', type=str, required=True, help='Output: Mat File.')
 	args = parser.parse_args()

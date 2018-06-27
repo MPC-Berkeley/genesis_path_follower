@@ -15,6 +15,16 @@ A_MIN  = -3.0
 A_MAX  = 2.0
 D_A    = 1.5
 
+''' Low Pass Filter Implementation '''
+def lpf(signal, sig_coeff = 0.01):
+	filt_signal = []
+	filt_signal.append(signal[0])
+
+	for i in range(1, len(signal)):
+		filt_signal.append( sig_coeff* signal[i] + (1.0-sig_coeff) * filt_signal[-1])
+
+	return filt_signal
+
 def plot(matfile):
 	data = sio.loadmat(matfile)
 	ts   = np.ravel(data['t'])
@@ -29,7 +39,7 @@ def plot(matfile):
 	
 	# Latitude/Longitude or XY Plot	
 	plt.subplot(711)	
-	if data['mode'] == 'Real':
+	if data['mode'] == 'Real' or data['mode']== 'Follow':
 		lats = np.ravel(data['lat'])
 		lons = np.ravel(data['lon'])
 		plt.plot(lons, lats, 'k')
@@ -78,7 +88,7 @@ def plot(matfile):
 
 	# Steering Angle Derivative Plot
 	plt.subplot(716)	
-	plt.plot(ts[:-1], np.divide(np.diff(dfs), np.diff(ts)), 'k')
+	plt.plot(ts[:-1], lpf(np.divide(np.diff(dfs), np.diff(ts))), 'k')
 	plt.axhline(y=-D_DF, c='r')
 	plt.axhline(y=D_DF, c='r')
 	plt.xlabel('Time (s)')	
@@ -86,7 +96,7 @@ def plot(matfile):
 
 	# Jerk Plot		
 	plt.subplot(717)	
-	plt.plot(ts[:-1], np.divide(np.diff(accs), np.diff(ts)), 'k')
+	plt.plot(ts[:-1], lpf(np.divide(np.diff(accs), np.diff(ts))), 'k')
 	plt.axhline(y=-D_A, c='r')
 	plt.axhline(y=D_A, c='r')
 	plt.xlabel('Time (s)')	

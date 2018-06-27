@@ -1,3 +1,11 @@
 *.pyc
 *.bag
 paths/sim
+paths/pf_6_23
+paths/pf_6_24
+paths/pr_6_20
+paths/ps_6_20
+scripts/analysis/old_code
+
+*.html
+*.png
