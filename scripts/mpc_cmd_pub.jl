@@ -48,6 +48,8 @@ push!(LOAD_PATH, scripts_dir * "mpc_utils")
 import GPSKinMPCPathFollower
 const kmpc = GPSKinMPCPathFollower
 
+kmpc.update_cost(9.0, 9.0, 10.0, 0.0, 100.0, 1000.0, 0.0, 0.0) # x,y,psi,v,da,ddf,a,df
+
 const t_ref = collect(0:kmpc.dt:kmpc.N*kmpc.dt)
 x_ref = zeros(length(t_ref))
 y_ref = zeros(length(t_ref))

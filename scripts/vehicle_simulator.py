@@ -113,8 +113,8 @@ class VehicleSimulator():
 	def _update_low_level_control(self, dt_control):
 		# e_<n> = self.<n> - self.<n>_des
 		# d/dt e_<n> = - kp * e_<n>
-		self.acc = 2.0 * (self.acc_des - self.acc) * dt_control + self.acc
-		self.df  = 2.0  * (self.df_des  - self.df) * dt_control + self.df
+		self.acc = 5.0 * (self.acc_des - self.acc) * dt_control + self.acc
+		self.df  = 5.0  * (self.df_des  - self.df) * dt_control + self.df
 
 if __name__=='__main__':
 	print 'Starting Simulator.'

@@ -22,6 +22,23 @@ def parse_rosbag(mode, in_rosbag, out_mat):
 
 		a.append(msg.a)
 		df.append(msg.df)
+
+	# Temporary Script to Plot Lateral Acceleration measurements from the rosbag.
+	'''
+	temp_tm = []
+	temp_lat_accel = []
+
+	for topic, msg, _ in b.read_messages(topics='/vehicle/imu'):
+		temp_tm.append(msg.header.stamp.secs + 1e-9 * msg.header.stamp.nsecs)
+		temp_lat_accel.append(msg.lat_accel)
+
+	import matplotlib.pyplot as plt 
+	plt.plot(temp_tm, temp_lat_accel)
+	plt.xlabel('Time (s)')
+	plt.ylabel('Lateral Acceleration (m/s^2)')
+	plt.show()
+	'''
+
 	rdict = {}
 	rdict['mode'] = mode
 	rdict['t']   = t
