@@ -217,5 +217,4 @@ class GPSRefTrajectory():
 
 		return psi_ref
 
-	def __waypoints_to_stop(self, closest_traj_ind):
-		pass
+	# TODO: this works fine if near the path.  Need to handle case where far away from the trajectory to ensure velocity bounded correctly.

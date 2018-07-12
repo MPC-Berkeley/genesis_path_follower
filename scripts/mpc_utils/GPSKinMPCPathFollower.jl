@@ -51,15 +51,15 @@ module GPSKinMPCPathFollower
 	v_max = 20.0			
 	
     # Cost function gains.
-    C_x = 9.0				# longitudinal deviation
-    C_y = 9.0				# lateral deviation
-    C_psi = 10.0			# heading deviation
-    C_v   = 0.0				# target velocity deviation
+	@NLparameter(mdl, C_x    == 9.0) # longitudinal deviation
+	@NLparameter(mdl, C_y    == 9.0) # lateral deviation
+	@NLparameter(mdl, C_psi  == 10.0) # heading deviation
+	@NLparameter(mdl, C_v    == 0.0) # target velocity deviation
 
-	C_dacc	 = 0.1			# derivative of acceleration input
-	C_ddf	 = 3e4			# derivative of tire angle input
-	C_acc	 = 4.0			# acceleration input
-	C_df	 = 150			# tire angle input
+	@NLparameter(mdl, C_dacc == 100.0) # jerk
+	@NLparameter(mdl, C_ddf  == 1000.0) # slew rate
+	@NLparameter(mdl, C_acc  == 0.0)   # acceleration
+	@NLparameter(mdl, C_df   == 0.0)   # tire angle
 
 	#### (2) Define State/Input Variables and Constraints ####
 	# states: position (x,y), velocity (v), heading (psi)
@@ -127,7 +127,7 @@ module GPSKinMPCPathFollower
 	end
 
     #### (5) Initialize Solver ####
-    #println("MPC: Initial solve ...")    
+	#println("MPC: Initial solve ...")
 	status = solve(mdl)
 	#println("MPC: Finished initial solve: ", status)
 	
@@ -155,6 +155,21 @@ module GPSKinMPCPathFollower
 	function update_current_input(c_swa::Float64, c_acc::Float64)
 		setvalue(d_f_current, c_swa)
 		setvalue(acc_current, c_acc)
+	end
+
+	#########################################
+	##### Cost Update Function #####
+	function update_cost(cx::Float64, cy::Float64, cp::Float64, cv::Float64,
+						 cda::Float64, cdd::Float64, ca::Float64, cd::Float64)
+		setvalue(C_x,   cx)
+		setvalue(C_y,   cy) 
+		setvalue(C_psi, cp)
+		setvalue(C_v,   cv)
+
+		setvalue(C_dacc, cda)
+		setvalue(C_ddf,  cdd)
+		setvalue(C_acc,  ca)
+		setvalue(C_df,   cd)
 	end
 
 	#################################
