@@ -1,5 +1,5 @@
-# gps_path_follower
-Code to track a GPS-specified set of waypoints using a kinematic model of MPC.
+# genesis_path_follower
+Code to track a GPS-specified set of waypoints using MPC.  In this branch, the nonlinear kinematic module is used.
 ---
 There are three major launch files to use:
   * path_record.launch
@@ -9,7 +9,7 @@ There are three major launch files to use:
     * This uses a dynamic bicycle vehicle model to simulate following the demonstrated trajectory (matfile of waypoints).
     * Initial vehicle pose is required.
   * path_follow.launch
-    * This is used to publish commands to the actual vehicle.  
+    * This is used to publish commands to the actual vehicle.
   * Common settings:
     * Track path using time (i.e. varying velocity) or with a fixed speed.
     * Reference system is defined based on (lat0, lon0) as the global origin.
@@ -24,8 +24,8 @@ The launch files use the following scripts:
       and the predicted open-loop trajectory MPC solution (mpc_path).
 
   * vehicle_simulator.py
-    * This is for sake of tuning algorithms.  It uses a dynamic bicycle model that captures vehicle motion better under higher lateral acceleration.
-    * Low-level P controller used to simulate the fact that acceleration/steering angle control inputs are tracked with some delay.
+    * This is for sake of tuning algorithms.  It uses a dynamic bicycle model for high model fidelity.
+    * Low-level P controller used to simulate the fact that acceleration/steering angle control inputs are tracked with some delay.  This P gains can be tuned to simulate timing delays on the real vehicle.
     * The topics used for control match the Genesis Interface exactly.  Thus this module can be swapped with the real vehicle interface with no issues.
 
   * plot_gps_traj.py
