@@ -44,12 +44,16 @@ def fix_heading(psi_arr):
 		return psi_arr
 
 
-def get_errors(pr_matfile, pf_matfile, st_ind=None, end_ind=None):
+def get_errors(pr_matfile, pf_matfile, bagfile, st_ind=None, end_ind=None):
 	mat_pr = sio.loadmat(pr_matfile)
 	mat_pf = sio.loadmat(pf_matfile)
 
 	if st_ind == None:
-		st_ind = 0
+		if 't_en' in mat_pf.keys():
+			diff_t = np.ravel(mat_pf['t'] - mat_pf['t_en'])
+			st_ind = np.argmin(np.square(diff_t))
+		else:
+			st_ind = 0
 
 	if end_ind == None:
 		end_ind = len(np.ravel(mat_pf['t']))
@@ -66,7 +70,7 @@ def get_errors(pr_matfile, pf_matfile, st_ind=None, end_ind=None):
 	error_xy, closest_ind_xy = compute_path_errors(xy_pr, xy_pf)
 	closest_ind_xy = closest_ind_xy.astype(int)
 	#################################################
-	plt.figure()
+	fig = plt.figure()
 	plt.subplot(711)		
 	plt.plot(xy_pr[:,0], xy_pr[:,1], 'k')
 	plt.plot(xy_pf[:,0], xy_pf[:,1], 'r')
@@ -77,8 +81,8 @@ def get_errors(pr_matfile, pf_matfile, st_ind=None, end_ind=None):
 	plt.axis('equal')	
 
 	plt.subplot(712)		
-	plt.plot(s_pr, xy_pr[:,0], 'k')
-	plt.plot(s_pr[closest_ind_xy], xy_pf[:,0], 'r')
+	plt.plot(s_pr, xy_pr[:,0], 'k', label='Recorded')
+	plt.plot(s_pr[closest_ind_xy], xy_pf[:,0], 'r', label='Followed')
 	plt.xlabel('S (m)')
 	plt.ylabel('X (m)')
 
@@ -100,50 +104,103 @@ def get_errors(pr_matfile, pf_matfile, st_ind=None, end_ind=None):
 	plt.xlabel('S (m)')
 	plt.ylabel('v (m/s)')
 	
+	## LOAD MPC Cmds if Available.
+	
+	a_pf_mpc = np.array([])
+	df_pf_mpc = np.array([])
+
+	if bagfile != "":
+		b = rosbag.Bag(bagfile)	
+		t_a_mpc = []; a_mpc = [];  # /control/accel:	   Acceleration Command
+		t_df_mpc = []; df_mpc = [] # /control/steer_angle: Steering Command
+		
+		for topic, msg, t in b.read_messages(topics='/control/accel'):
+			t_a_mpc.append(t.secs + 1e-9 * t.nsecs)
+			a_mpc.append(msg.data)
+		for topic, msg, t in b.read_messages(topics='/control/steer_angle'):
+			t_df_mpc.append(t.secs + 1e-9 * t.nsecs)
+			df_mpc.append(msg.data)
+
+		t_pf = np.ravel(mat_pf['t'])[st_ind:end_ind]
+
+		a_pf_mpc = np.interp(t_pf, t_a_mpc, a_mpc)
+		df_pf_mpc = np.interp(t_pf, t_df_mpc, df_mpc)
+
+	l1 = None; l2 = None; l3 = None
 	plt.subplot(716)		
-	plt.plot(s_pr, a_pr, 'k')
-	plt.plot(s_pr[closest_ind_xy], a_pf, 'r')
+	l1, = plt.plot(s_pr, a_pr, 'k')
+	l2, =plt.plot(s_pr[closest_ind_xy], a_pf, 'r')
+	if a_pf_mpc.size > 0:
+		l3, = plt.plot(s_pr[closest_ind_xy], a_pf_mpc, 'b')
+
 	plt.xlabel('S (m)')
 	plt.ylabel('a (m/s)')
+
+	if l3 != None:
+		fig.legend((l1,l2,l3), ('Recorded', 'Followed', 'MPC Cmd'), 'right')
+	else:
+		fig.legend((l1,l2), ('Recorded', 'Followed'), 'upper right')
+	
 		
 	plt.subplot(717)		
 	plt.plot(s_pr, df_pr, 'k')
 	plt.plot(s_pr[closest_ind_xy], df_pf, 'r')
+	if df_pf_mpc.size > 0:
+		plt.plot(s_pr[closest_ind_xy], df_pf_mpc, 'b')
 	plt.xlabel('S (m)')
 	plt.ylabel('df (rad)')
 	#################################################
-	plt.figure()
-	plt.subplot(311)
-	plt.plot(s_pr[closest_ind_xy], error_xy, 'b')
+	fig = plt.figure()
+	plt.subplot(511)
+	plt.plot(s_pr[closest_ind_xy], error_xy, 'r')
 	plt.xlabel('S (m)')
 	plt.ylabel('Path (m)')
 
-	plt.subplot(312)
+	plt.subplot(512)
 	ev = v_pr[closest_ind_xy] - v_pf
-	plt.plot(s_pr[closest_ind_xy], ev, 'b')
+	plt.plot(s_pr[closest_ind_xy], ev, 'r')
 	plt.xlabel('S (m)')
 	plt.ylabel('Velocity (m/s)')
 
-	plt.subplot(313)
+	plt.subplot(513)
 	ep = fix_heading(p_pr[closest_ind_xy] - p_pf)
-	plt.plot(s_pr[closest_ind_xy], ep, 'b')
+	plt.plot(s_pr[closest_ind_xy], ep, 'r')
 	plt.xlabel('S (m)')
 	plt.ylabel('Yaw (rad)')
+
+	l1 = None; l2 = None; l3 = None
+	plt.subplot(514)		
+	l1, = plt.plot(s_pr, a_pr, 'k')
+	l2, =plt.plot(s_pr[closest_ind_xy], a_pf, 'r')
+	if a_pf_mpc.size > 0:
+		l3, = plt.plot(s_pr[closest_ind_xy], a_pf_mpc, 'b')
+
+	plt.xlabel('S (m)')
+	plt.ylabel('a (m/s)')
+
+	if l3 != None:
+		fig.legend((l1,l2,l3), ('Recorded', 'Followed', 'MPC Cmd'), 'right')
+	else:
+		fig.legend((l1,l2), ('Recorded', 'Followed'), 'upper right')
+			
+	plt.subplot(515)		
+	plt.plot(s_pr, df_pr, 'k')
+	plt.plot(s_pr[closest_ind_xy], df_pf, 'r')
+	if df_pf_mpc.size > 0:
+		plt.plot(s_pr[closest_ind_xy], df_pf_mpc, 'b')
+	plt.xlabel('S (m)')
+	plt.ylabel('df (rad)')
+	
 
 	plt.suptitle('Tracking Error Over Reference Path')
 	#################################################
 	plt.show()
 
-
-
-
-
-
-
 if __name__=='__main__':
 	parser = argparse.ArgumentParser('Get path tracking performance of MPC controller trajectory..')
 	parser.add_argument('--pr',  type=str, required=True, help='Recorded Trajectory Reference Matfile.')
 	parser.add_argument('--pf', type=str, required=True, help='MPC Followed Trajectory Matfile.')	
+	parser.add_argument('--bf',  type=str, required=False, default="", help='Bag file to plot MPC commands.')
 	args = parser.parse_args()
-	get_errors(args.pr, args.pf)
+	get_errors(args.pr, args.pf, args.bf)
 	# path 3 st and end: 1274, 7727
