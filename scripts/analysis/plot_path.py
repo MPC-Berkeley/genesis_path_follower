@@ -27,7 +27,10 @@ def lpf(signal, sig_coeff = 0.01):
 
 def plot(matfile):
 	data = sio.loadmat(matfile)
-	ts   = np.ravel(data['t'])
+	if 't_en' in data.keys():
+		ts = np.ravel(data['t'] - data['t_en'])
+	else:
+		ts = np.ravel(data['t'])
 
 	ps   = np.ravel(data['psi'])
 	vs   = np.ravel(data['v'])
