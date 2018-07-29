@@ -7,7 +7,7 @@ from genesis_path_follower.msg import state_est
 
 class VehicleSimulator():
 	'''
-	A vehicle dynamics simulator using a linear tire model.
+	A vehicle dynamics simulator using a linear tire model.  This uses the Genesis control/estimation ROS topics.
 	Modified from Ugo Rosolia's Code: https://github.com/urosolia/RacingLMPC/blob/master/src/fnc/SysModel.py
 	'''
 	def __init__(self):
@@ -23,16 +23,17 @@ class VehicleSimulator():
 		self.acc_des = 0.0	# desired acceleration	(m/s^2)
 		self.df_des = 0.0	# desired steering_angle (rad)
 
-		self.dt_model = 0.01				# vehicle model update period (s)
+		self.dt_model = 0.01				# vehicle model update period (s) and frequency (Hz)
 		self.hz = int(1.0/self.dt_model)
 		self.r = rospy.Rate(self.hz)
 		
-		self.X   = rospy.get_param('X0', -300.0)
-		self.Y   = rospy.get_param('Y0', -450.0)
-		self.psi = rospy.get_param('Psi0', 1.0)
-		self.vx  = 0.0
-		self.vy  = 0.0
-		self.wz  = 0.0
+		# Simulated Vehicle State.
+		self.X   = rospy.get_param('X0', -300.0) 	# X position (m)
+		self.Y   = rospy.get_param('Y0', -450.0) 	# Y position (m)
+		self.psi = rospy.get_param('Psi0', 1.0) 	# yaw angle (rad)
+		self.vx  = 0.0								# longitudinal velocity (m/s)
+		self.vy  = 0.0								# lateral velocity (m/s)
+		self.wz  = 0.0								# yaw rate (rad/s)
 
 		self.pub_loop()
 
@@ -85,7 +86,8 @@ class VehicleSimulator():
 			Fyf = C_alpha_f * alpha_f
 			Fyr = C_alpha_r * alpha_r
 
-			# Propagate the vehicle dynamics deltaT seconds ahead.			
+			# Propagate the vehicle dynamics deltaT seconds ahead.
+			# Max with 0 is to prevent moving backwards.
 			vx_n  = max(0.0, self.vx  + deltaT * ( self.acc - 1/m*Fyf*np.sin(self.df) + self.wz*self.vy ) )
 			
 			# Ensure only forward driving.
@@ -113,6 +115,7 @@ class VehicleSimulator():
 	def _update_low_level_control(self, dt_control):
 		# e_<n> = self.<n> - self.<n>_des
 		# d/dt e_<n> = - kp * e_<n>
+		# This is just to simulate some first order control delay in acceleration/steering.
 		self.acc = 5.0 * (self.acc_des - self.acc) * dt_control + self.acc
 		self.df  = 5.0  * (self.df_des  - self.df) * dt_control + self.df
 

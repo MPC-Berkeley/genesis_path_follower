@@ -1,6 +1,8 @@
 #!/usr/bin/env julia
 
 #=
+ Note: This version is provided for reference, but has not been tested with the Genesis.
+
  This is a modified version of controller_MPC_traj.jl from the barc project ROS codebase.
  Modified by Vijay Govindarajan.
 
@@ -184,5 +186,4 @@ module GPSKinMPCPathFollowerFrenet
         # path_ref set in update_reference function.
 		return s_mpc, ey_mpc, v_mpc, epsi_mpc, K, path_ref, d_f_opt, acc_opt	
 	end
-
 end
