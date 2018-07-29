@@ -1,4 +1,13 @@
 Header header
+string solv_status
+float64 solv_time
 float64[] xs
 float64[] ys
+float64[] vs
 float64[] psis
+float64[] xr
+float64[] yr
+float64[] vr
+float64[] psir
+float64[] df
+float64[] acc

@@ -7,29 +7,9 @@ import time
 import rospy
 import scipy.io as sio
 
-'''
-RFS GLOBAL COORDINATE SYSTEM:
-X axis pointing east, Y axis point north.
-Centered right before stop sign near California Path Parking Lot.
-'''
-def heading_to_yaw(heading):
-		'''
-		Convert heading angle in deg (0 = N, 90 = E, 180 = S, 270 = W) into
-		yaw angle in rad (0 = E, pi/2 = N, +/- pi = W, -pi/2 = S)
-		'''
-		yaw = 90.0 - heading
-
-		while yaw >= 180.0:
-			yaw -= 360.0
-
-		while yaw <= -180.0:
-			yaw += 360.0
-		
-		yaw = math.radians(yaw)
-		assert(-math.pi <= yaw <= math.pi)
-		
-		return yaw
-
+################################################
+# HELPER FUNCTIONS
+################################################
 def latlon_to_XY(lat0, lon0, lat1, lon1):
 	''' 
 	Convert latitude and longitude to global X, Y coordinates,
@@ -51,38 +31,31 @@ def latlon_to_XY(lat0, lon0, lat1, lon1):
 
 	return X,Y
 
+################################################
+# GPSRefTrajectory Class
+################################################
 class GPSRefTrajectory():
 	'''
-	Class to encapsulate a GPS trajectory and provide functions to obtain a
-	local trajectory from the full trajectory for MPC and to animate results.
-	'''
-	
-	def __init__(self, mat_filename=None, traj_horizon=8, traj_dt=0.2):
-		if not (rospy.has_param('lat0') and rospy.has_param('lon0') and rospy.has_param('yaw0')):
-			raise ValueError('Invalid rosparam global origin provided!')
-
-		if not rospy.has_param('is_heading_info'):
-			raise ValueError('Invalid rosparam for if heading or yaw info provided!')
+	Class to load a matfile GPS trajectory and provide functions to obtain a
+	local trajectory from the full trajectory for MPC using the current vehicle state.
+	'''	
+	def __init__(self, mat_filename=None, LAT0=None, LON0=None, YAW0=None, traj_horizon=8, traj_dt=0.2):
+		if type(LAT0) != float or type(LON0) != float or type(YAW0) != float:
+			raise ValueError('Did not provide proper origin info.')
 
 		if mat_filename is None:
 			raise ValueError('Invalid matfile specified.')
-
-		LAT0 = rospy.get_param('lat0')
-		LON0 = rospy.get_param('lon0')
-		YAW0 = rospy.get_param('yaw0')
-		use_heading = rospy.get_param('is_heading_info')
 		
 		self.traj_horizon = traj_horizon	# horizon (# time steps ahead) for trajectory reference
-		self.traj_dt = traj_dt				# time discretization (s) for trajectory reference
+		self.traj_dt = traj_dt				# time discretization (s) for each time step in horizon
 
-		tms  = []
-		lats = []
-		lons = []
-		yaws = []
-		Xs   = []
-		Ys   = []
-		cdists = []
-
+		tms  = []		# ROS Timestamps (s)
+		lats = []		# Latitude (decimal degrees)
+		lons = []		# Longitude (decimal degrees)
+		yaws = []		# heading (radians ccw wrt East, i.e.global X-axis, aka psi)
+		Xs   = []		# global X position (m, wrt to origin at LON0, LAT0)
+		Ys   = []		# global Y position (m, wrt to origin at LON0, LAT0)
+		cdists = []		# cumulative distance along path (m, aka "s" in Frenet formulation)
 
 		data_dict = sio.loadmat(mat_filename)
 			
@@ -104,9 +77,8 @@ class GPSRefTrajectory():
 
 		# global trajectory matrix
 		self.trajectory =  np.column_stack((tms, lats, lons, yaws, Xs, Ys, cdists)) 
-
 		
-		# interpolated path or what I call "local trajectory"
+		# interpolated path or what I call "local trajectory" -> reference to MPC
 		self.x_interp	= None
 		self.y_interp	= None
 		self.psi_interp	= None
@@ -124,17 +96,21 @@ class GPSRefTrajectory():
 	def get_Ys(self):
 		return self.trajectory[:,5]
 
-	def get_psis(self):
+	def get_yaws(self):
 		return self.trajectory[:,3]
 		
 	# Main callback function to get the waypoints from the vehicle's initial pose and the prerecorded global trajectory.
 	def get_waypoints(self, X_init, Y_init, yaw_init, v_target=None):
+
 		XY_traj = self.trajectory[:,4:6]		# full XY global trajectory
 		xy_query = np.array([[X_init,Y_init]])	# the vehicle's current position (XY)
 
 		# find the index of the closest point on the trajectory to the initial vehicle pose
 		diff_dists = np.sum( (XY_traj-xy_query)**2, axis=1)
 		closest_traj_ind = np.argmin(diff_dists) 
+
+		# TODO: this function does not handle well the case where the car is far from the recorded path!  Ill-defined behavior/speed.
+		# May use np.min(diff_dists) and add appropriate logic to handle this edge case.
 
 		if v_target is not None:
 			return self.__waypoints_using_vtarget(closest_traj_ind, v_target, yaw_init) #v_ref given, use distance information for interpolation
@@ -170,15 +146,17 @@ class GPSRefTrajectory():
 
 	''' Helper functions: you shouldn't need to call these! '''
 	def __waypoints_using_vtarget(self, closest_traj_ind, v_target, yaw_init):
-		start_dist = self.trajectory[closest_traj_ind,6] # cumulative dist corresponding to look ahead point
+		start_dist = self.trajectory[closest_traj_ind,6] # s0, cumulative dist corresponding to closest point
 
-		dists_to_fit = [x*self.traj_dt*v_target + start_dist for x in range(1,self.traj_horizon+2)] # edit bounds
+		dists_to_fit = [x*self.traj_dt*v_target + start_dist for x in range(0,self.traj_horizon+1)] # edit bounds
 		# NOTE: np.interp returns the first value x[0] if t < t[0] and the last value x[-1] if t > t[-1].
 		self.x_interp = np.interp(dists_to_fit, self.trajectory[:,6], self.trajectory[:,4]) 	 # x_des = f_interp(d_des, d_actual, x_actual)
 		self.y_interp = np.interp(dists_to_fit, self.trajectory[:,6], self.trajectory[:,5]) 	 # y_des = f_interp(d_des, d_actual, y_actual)
 		psi_ref = np.interp(dists_to_fit, self.trajectory[:,6], self.trajectory[:,3])    # psi_des = f_interp(d_des, d_actual, psi_actual)
 		self.psi_interp = self.__fix_heading_wraparound(psi_ref, yaw_init)
 
+		# Send a stop command if the end of the trajectory is within the horizon of the waypoints.
+		# Alternatively, could use start_dist as well: if start_dist + some delta_s > end_dist, then stop.
 		stop_cmd = False
 		if self.x_interp[-1] == self.trajectory[-1,4] and self.y_interp[-1] == self.trajectory[-1,5]:
 			stop_cmd = True
@@ -186,7 +164,7 @@ class GPSRefTrajectory():
 		return self.x_interp, self.y_interp, self.psi_interp, stop_cmd
 
 	def __waypoints_using_time(self, closest_traj_ind, yaw_init):
-		start_tm = self.trajectory[closest_traj_ind,0] # tm corresponding to look ahead point
+		start_tm = self.trajectory[closest_traj_ind,0] # t0, time of recorded trajectory corresponding to closest point
 		
 		times_to_fit = [h*self.traj_dt + start_tm for h in range(0,self.traj_horizon+1)]
 		# NOTE: np.interp returns the first value x[0] if t < t[0] and the last value x[-1] if t > t[-1].
@@ -195,6 +173,8 @@ class GPSRefTrajectory():
 		psi_ref = np.interp(times_to_fit, self.trajectory[:,0], self.trajectory[:,3])    # psi_des = f_interp(t_des, t_actual, psi_actual)
 		self.psi_interp = self.__fix_heading_wraparound(psi_ref, yaw_init)
 
+		# Send a stop command if the end of the trajectory is within the horizon of the waypoints.
+		# Alternatively, could use start_dist as well: if start_dist + some delta_s > end_dist, then stop.
 		stop_cmd = False
 		if self.x_interp[-1] == self.trajectory[-1,4] and self.y_interp[-1] == self.trajectory[-1,5]:
 			stop_cmd = True
@@ -202,6 +182,8 @@ class GPSRefTrajectory():
 		return self.x_interp, self.y_interp, self.psi_interp, stop_cmd
 
 	def __fix_heading_wraparound(self, psi_ref, psi_current):
+		# This code ensures that the psi_reference agrees with psi_current, that there are no jumps by +/- 2*pi.
+		# This logic is based on the fact for a given angle on the unit circle, every other angle is within +/- pi away.
 		check_1 = np.max(np.fabs(np.diff(psi_ref))) < np.pi
 		check_2 = np.max(np.fabs(psi_ref - psi_current)) < np.pi
 
@@ -209,6 +191,7 @@ class GPSRefTrajectory():
 			return psi_ref
 
 		for i in range(len(psi_ref)):
+			# pick the reference by adding +/- 2*pi s.t. psi_ref is close to psi_current = no jumps.
 			p = psi_ref[i]
 			psi_cands_arr = np.array([p, p + 2*np.pi, p - 2*np.pi])
 			best_cand = np.argmin(np.fabs(psi_cands_arr - psi_current))
@@ -216,5 +199,3 @@ class GPSRefTrajectory():
 			psi_ref[i] = psi_cands_arr[best_cand]
 
 		return psi_ref
-
-	# TODO: this works fine if near the path.  Need to handle case where far away from the trajectory to ensure velocity bounded correctly.

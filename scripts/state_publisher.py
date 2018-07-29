@@ -8,13 +8,17 @@ import math as m
 from genesis_path_follower.msg import state_est
 from tf.transformations import euler_from_quaternion
 
+# Vehicle State Publisher for the Hyundai Genesis.  Uses OxTS and vehicle CAN messages to localize.
+
 ''' Global Variables for Callbacks '''
-tm_gps = None; lat = None; lon = None
-tm_vel = None; vel = None; acc_filt = None
-tm_imu = None; psi = None
-tm_df  = None;  df = None
+tm_gps = None; lat = None; lon = None			# GPS
+tm_vel = None; vel = None; acc_filt = None		# Velocity/Acceleration
+tm_imu = None; psi = None						# Heading
+tm_df  = None;  df = None						# Steering Angle (delta_f)
 
 def time_valid(ros_tm, tm_arr):
+	# This function is meant to ensure that data is fresh relative to current time (tm_now)
+	# Unused as of now.
 	tm_now = ros_tm.secs + 1e-9*ros_tm.nsecs
 	for tm_rcvd in tm_arr:
 		diff = m.fabs(tm_now - tm_rcvd)
@@ -53,7 +57,8 @@ def parse_gps_fix(msg):
 
 def parse_gps_vel(msg):
 	global tm_vel, vel, acc_filt
-	
+
+	# TODO: can get v_longitudinal and v_lateral by rotating v_east and v_north by psi.
 	v_east = msg.twist.twist.linear.x
 	v_north = msg.twist.twist.linear.y
 	v_gps = m.sqrt(v_east**2 + v_north**2)
@@ -66,7 +71,7 @@ def parse_gps_vel(msg):
 		dtm_vel = msg.header.stamp.secs + 1e-9 * msg.header.stamp.nsecs - tm_vel
 		tm_vel = msg.header.stamp.secs + 1e-9 * msg.header.stamp.nsecs
 		acc_raw = (v_gps - vel)/dtm_vel
-		acc_filt = 0.01 * acc_raw + 0.99 * acc_filt
+		acc_filt = 0.01 * acc_raw + 0.99 * acc_filt # Low Pass Filter for Acceleration
 
 	vel = v_gps
 
@@ -79,6 +84,7 @@ def parse_wheel_speeds(msg):
 '''
 
 def parse_imu_data(msg):
+	# Get yaw angle.
 	global tm_imu, psi
 
 	tm_imu = msg.header.stamp.secs + 1e-9 * msg.header.stamp.nsecs
@@ -99,6 +105,7 @@ def parse_imu_data(msg):
 	# so heading is actually ccw radians from N = 0.
 
 def parse_steering_angle(msg):
+	# Get steering angle (wheel angle/steering ratio).
 	global tm_df, df
 	tm_df= msg.header.stamp.secs + 1e-9 * msg.header.stamp.nsecs
 	df = m.radians(msg.steering_wheel_angle) / 15.87
@@ -113,9 +120,6 @@ def pub_loop():
 	if not (rospy.has_param('lat0') and rospy.has_param('lon0') and rospy.has_param('yaw0')):
 		raise ValueError('Invalid rosparam global origin provided!')
 
-	if not rospy.has_param('is_heading_info'):
-		raise ValueError('Invalid rosparam for if heading or yaw info provided!')
-
 	if not rospy.has_param('time_check_on'):
 		raise ValueError('Did not specify if time validity should be checked!')
 
@@ -129,9 +133,10 @@ def pub_loop():
 	r = rospy.Rate(100)
 	while not rospy.is_shutdown():		
 		
-		if None in (lat, lon, psi, vel, acc_filt, df):			
-			r.sleep()
+		if None in (lat, lon, psi, vel, acc_filt, df): 
+			r.sleep() # If the vehicle state info has not been received.
 			continue
+
 		curr_state = state_est()
 		curr_state.header.stamp = rospy.Time.now()
 		

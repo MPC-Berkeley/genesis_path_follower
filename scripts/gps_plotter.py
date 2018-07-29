@@ -13,14 +13,20 @@ class PlotGPSTrajectory():
 	def __init__(self):		
 
 		# Load Global Trajectory
-		csv_name = None
-		pkl_name = None
 		if rospy.has_param('mat_waypoints'):
 			mat_name = rospy.get_param('mat_waypoints')
 		else:
 			raise ValueError("No Matfile of waypoints were provided!")
-		grt = r.GPSRefTrajectory(mat_filename=mat_name) # only 1 should be valid.
-		
+
+		if not (rospy.has_param('lat0') and rospy.has_param('lon0') and rospy.has_param('yaw0')):
+			raise ValueError('Invalid rosparam global origin provided!')
+
+		lat0 = rospy.get_param('lat0')
+		lon0 = rospy.get_param('lon0')
+		yaw0 = rospy.get_param('yaw0')
+
+		grt = r.GPSRefTrajectory(mat_filename=mat_name, LAT0=lat0, LON0=lon0, YAW0=yaw0) # only 1 should be valid.
+
 		# Set up Data
 		self.x_global_traj = grt.get_Xs()
 		self.y_global_traj = grt.get_Ys()
@@ -42,12 +48,11 @@ class PlotGPSTrajectory():
 
 		rospy.init_node('vehicle_plotter', anonymous=True)
 		rospy.Subscriber('state_est', state_est, self.update_state, queue_size=1)
-		rospy.Subscriber('target_path', mpc_path, self.update_ref_trajectory, queue_size=1)
 		rospy.Subscriber('mpc_path', mpc_path, self.update_mpc_trajectory, queue_size=1)
-
 		self.loop()
 
 	def loop(self):
+		# Main Plotting Loop.  Updates plot with info from subscriber callbacks.
 		r  = rospy.Rate(10)
 		while not rospy.is_shutdown():
 			# Update Plot with fresh data.
@@ -58,17 +63,19 @@ class PlotGPSTrajectory():
 			plt.pause(0.001)
 			r.sleep()
 
-	def update_ref_trajectory(self, msg):
-		self.x_ref_traj = msg.xs
-		self.y_ref_traj = msg.ys
-
 	def update_state(self, msg):
+		# Update vehicle's position.
 		self.x_vehicle = msg.x
 		self.y_vehicle = msg.y
 
 	def update_mpc_trajectory(self, msg):
+		# Update the MPC planned (open-loop) trajectory.
 		self.x_mpc_traj = msg.xs
 		self.y_mpc_traj = msg.ys
+		
+		# Update the reference for the MPC module.
+		self.x_ref_traj = msg.xr
+		self.y_ref_traj = msg.yr
 
 if __name__=='__main__':
 	p = PlotGPSTrajectory()
