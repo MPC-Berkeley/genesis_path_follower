@@ -144,9 +144,10 @@ module GPSKinMPCPathFollower
 	#####################################
 	##### Reference Update Function #####
     function update_reference(x_ref::Array{Float64,1}, y_ref::Array{Float64,1}, psi_ref::Array{Float64,1}, v_ref::Float64)
-    	setvalue(x_r[i=1:(N+1)], x_ref) # Reference trajectory can be updated.
-    	setvalue(y_r[i=1:(N+1)], y_ref) # Reference trajectory can be updated.
-    	setvalue(psi_r[i=1:(N+1)], psi_ref) # Reference trajectory can be updated.
+    	# update the reference trajectory for MPC.
+    	setvalue(x_r[i=1:(N+1)], x_ref) 
+    	setvalue(y_r[i=1:(N+1)], y_ref) 
+    	setvalue(psi_r[i=1:(N+1)], psi_ref)
     	setvalue(v_target, v_ref)
     end
 
@@ -176,13 +177,14 @@ module GPSKinMPCPathFollower
 	##### Model Solve Function #####
     function solve_model()
         # Solve the model, assuming relevant update functions have been called by the user.
-
+        tic()
         status = solve(mdl)
+        solv_time = toq()
 
         # get optimal solutions
         d_f_opt = getvalue(d_f[1:N])
         acc_opt = getvalue(acc[1:N])
-        return acc_opt[1], d_f_opt[1], status
+        return acc_opt[1], d_f_opt[1], status, solv_time
     end
 
 	#################################
@@ -200,11 +202,12 @@ module GPSKinMPCPathFollower
 		x_ref   = getvalue(x_r[1:(N+1)])
 		y_ref   = getvalue(y_r[1:(N+1)])
 		psi_ref = getvalue(psi_r[1:(N+1)])
+		v_ref   = getvalue(v_target)
 
 		# Optimal Solution
         d_f_opt = getvalue(d_f[1:N])
         acc_opt = getvalue(acc[1:N])
 
-		return x_mpc, y_mpc, v_mpc, psi_mpc, x_ref, y_ref, psi_ref, d_f_opt, acc_opt	
+		return x_mpc, y_mpc, v_mpc, psi_mpc, x_ref, y_ref, v_ref, psi_ref, d_f_opt, acc_opt	
 	end
 end
