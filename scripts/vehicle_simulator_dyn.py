@@ -3,7 +3,7 @@ import rospy
 import numpy as np
 import math
 from std_msgs.msg import Float32 as float_msg
-from genesis_path_follower.msg import state_est
+from genesis_path_follower.msg import state_est_dyn
 
 class VehicleSimulator():
 	'''
@@ -14,7 +14,7 @@ class VehicleSimulator():
 		rospy.init_node('vehicle_simulator', anonymous=True)
 		rospy.Subscriber('/control/accel', float_msg, self._acc_cmd_callback, queue_size=1)
 		rospy.Subscriber('/control/steer_angle', float_msg, self._df_cmd_callback, queue_size=1)
-		self.state_pub = rospy.Publisher('state_est', state_est, queue_size=1)
+		self.state_pub = rospy.Publisher('state_est_dyn', state_est_dyn, queue_size=1)
 
 		self.tcmd_a = None	# rostime (s) of received acc command
 		self.tcmd_d = None	# rostime (s) of received df command
@@ -31,24 +31,31 @@ class VehicleSimulator():
 		self.X   = rospy.get_param('X0', -300.0) 	# X position (m)
 		self.Y   = rospy.get_param('Y0', -450.0) 	# Y position (m)
 		self.psi = rospy.get_param('Psi0', 1.0) 	# yaw angle (rad)
-		self.vx  = 0.0								# longitudinal velocity (m/s)
+		self.vx  = rospy.get_param('V0', 0.0)		# longitudinal velocity (m/s)
 		self.vy  = 0.0								# lateral velocity (m/s)
 		self.wz  = 0.0								# yaw rate (rad/s)
-
+		self.acc_lat = 0.0							# lateral acceleration (vy_dot, m/s^2)
+		self.acc_lon = 0.0							# longitudinal acceleration (vx_dot, m/s^2)
 		self.pub_loop()
 
 	def pub_loop(self):
 		while not rospy.is_shutdown():
 			self._update_vehicle_model()
 			
-			curr_state = state_est()
+			curr_state = state_est_dyn()
 			curr_state.header.stamp = rospy.Time.now()
 			curr_state.x   = self.X
 			curr_state.y   = self.Y
 			curr_state.psi = self.psi
-			curr_state.v   = self.vx
+			curr_state.v   = math.sqrt(self.vx**2 + self.vy**2)
+			curr_state.vx = self.vx
+			curr_state.vy = self.vy
+			curr_state.wz = self.wz
+
 			curr_state.a   = self.acc
 			curr_state.df  = self.df
+			curr_state.a_lat = self.acc_lat
+			curr_state.a_lon = self.acc_lon
 
 			self.state_pub.publish(curr_state)
 			self.r.sleep()
@@ -72,6 +79,10 @@ class VehicleSimulator():
 		C_alpha_f = 4.0703e4    # N 	(front tire cornering stiffness)
 		C_alpha_r = 6.4495e4	# N 	(rear tire cornering stiffness)
 
+		# storing longitudinal and lateral velocities before to allow for computatation of accelerations.
+		vy_prev = self.vy
+		vx_prev = self.vx
+
 		deltaT = self.dt_model/disc_steps
 		for i in range(disc_steps):			
 
@@ -80,7 +91,7 @@ class VehicleSimulator():
 			alpha_r = 0.0
 			if math.fabs(self.vx) > 1e-6:
 				alpha_f = self.df - np.arctan2( self.vy+lf*self.wz, self.vx )
-				alpha_r = - np.arctan2( self.vy-lf*self.wz , self.vx)        		
+				alpha_r = - np.arctan2( self.vy-lr*self.wz , self.vx)        		
 			
 			# Compute lateral force at front and rear tire (linear model)
 			Fyf = C_alpha_f * alpha_f
@@ -109,8 +120,10 @@ class VehicleSimulator():
 			self.vx  = vx_n
 			self.vy  = vy_n
 			self.wz  = wz_n
-
 			self._update_low_level_control(deltaT)
+
+		self.acc_lat = (self.vy - vy_prev)/self.dt_model
+		self.acc_lon = (self.vx - vx_prev)/self.dt_model
 
 	def _update_low_level_control(self, dt_control):
 		# e_<n> = self.<n> - self.<n>_des

@@ -2,9 +2,9 @@
 import rospy
 import numpy as np
 import matplotlib.pyplot as plt
-from gps_utils import ref_gps_traj as r
-from genesis_path_follower.msg import state_est
-from genesis_path_follower.msg import mpc_path
+from gps_utils import ref_gps_traj_dyn as r
+from genesis_path_follower.msg import state_est_dyn
+from genesis_path_follower.msg import mpc_path_dyn
 
 class PlotGPSTrajectory():
 	'''
@@ -47,8 +47,8 @@ class PlotGPSTrajectory():
 		plt.axis('equal')
 
 		rospy.init_node('vehicle_plotter', anonymous=True)
-		rospy.Subscriber('state_est', state_est, self.update_state, queue_size=1)
-		rospy.Subscriber('mpc_path', mpc_path, self.update_mpc_trajectory, queue_size=1)
+		rospy.Subscriber('state_est_dyn', state_est_dyn, self.update_state, queue_size=1)
+		rospy.Subscriber('mpc_path_dyn', mpc_path_dyn, self.update_mpc_trajectory, queue_size=1)
 		self.loop()
 
 	def loop(self):

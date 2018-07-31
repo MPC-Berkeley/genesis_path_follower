@@ -23,27 +23,25 @@
   <param name="vehicle/X0" type="double" value="0.0"/>
   <param name="vehicle/Y0" type="double" value="3.0"/>
   <param name="vehicle/Psi0" type="double" value="-1.5"/>
+  <param name="vehicle/V0" type="double" value="1.0"/>
 
   <!-- Vehicle Simulation Initial Conditions: Good for Path 2, RFS Gate -->
   <!--param name="vehicle/X0" type="double" value="142.0"/>
   <param name="vehicle/Y0" type="double" value="-82.0"/>
-  <param name="vehicle/Psi0" type="double" value="2.0"/-->
-
+  <param name="vehicle/Psi0" type="double" value="2.0"/>
+  <param name="vehicle/V0" type="double" value="1.0"/-->
   <!--...................................................................-->
 
   <!-- MPC, Simulation, and Plotting Nodes -->
-  <node ns="vehicle" pkg="genesis_path_follower" type="mpc_cmd_pub.jl" name="mpc_node" output="log"/>
-  <node ns="vehicle" pkg="genesis_path_follower" type="vehicle_simulator.py" name="sim_node" output="log"/>
-  <node ns="vehicle" pkg="genesis_path_follower" type="gps_plotter.py" name="plot_node" output="log"/>
+  <node ns="vehicle" pkg="genesis_path_follower" type="mpc_cmd_pub_dyn.jl" name="mpc_node" output="screen"/>
+  <node ns="vehicle" pkg="genesis_path_follower" type="vehicle_simulator_dyn.py" name="sim_node" output="log"/>
+  <node ns="vehicle" pkg="genesis_path_follower" type="gps_plotter_dyn.py" name="plot_node" output="log"/>
 
   <!-- Recording Node -->
-  <arg name="can_topics" default="/can_1/can_rx /can_1/can_tx /can_2/can_rx /rosout /rosout_agg"/>
-  <arg name="gps_topics" default="/gps/fix /gps/odom /gps/vel /imu/data/"/>
-  <arg name="vehicle_topics" default="/vehicle/imu /vehicle/state_est /vehicle/steering /vehicle/wheel_speeds /vehicle/target_path /vehicle/mpc_path"/>
-  <arg name="control_topics" default="/control/enable_spas /control/enable_accel /control/accel /control/steer_angle"/>
-  <arg name="perception_topics" default="/mando_camera/lane_left /mando_camera/lane_right"/>
+  <arg name="exclude_topics" default="(.*)image_raw(.*)"/>
 
   <node pkg="rosbag" type="record" name="rosbag_path_recorder" respawn="true" output="screen" 
-        args="-o $(find genesis_path_follower)/bags/path_sim $(arg can_topics) $(arg gps_topics) $(arg vehicle_topics) $(arg control_topics) $(arg perception_topics)" />
+        args="-a -x $(arg exclude_topics) -o $(find genesis_path_follower)/bags/path_sim" />
+
 
 </launch>

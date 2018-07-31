@@ -55,6 +55,9 @@ class GPSRefTrajectory():
 		yaws = []		# heading (radians ccw wrt East, i.e.global X-axis, aka psi)
 		Xs   = []		# global X position (m, wrt to origin at LON0, LAT0)
 		Ys   = []		# global Y position (m, wrt to origin at LON0, LAT0)
+		vxs   = []		# longitudinal velocity (m/s)
+		vys   = []		# lateral velocity (m/s)
+		wzs   = []		# yaw rate (rad/s)
 		cdists = []		# cumulative distance along path (m, aka "s" in Frenet formulation)
 
 		data_dict = sio.loadmat(mat_filename)
@@ -63,6 +66,9 @@ class GPSRefTrajectory():
 		lats = np.ravel(data_dict['lat'])
 		lons = np.ravel(data_dict['lon'])
 		yaws = np.ravel(data_dict['psi'])
+		vxs  = np.ravel(data_dict['vx'])
+		vys  = np.ravel(data_dict['vy'])
+		wzs  = np.ravel(data_dict['wz'])
 
 		for i in range(len(lats)):
 			lat = lats[i]; lon = lons[i]
@@ -76,12 +82,15 @@ class GPSRefTrajectory():
 			Ys.append(Y)
 
 		# global trajectory matrix
-		self.trajectory =  np.column_stack((tms, lats, lons, yaws, Xs, Ys, cdists)) 
+		self.trajectory =  np.column_stack((tms, lats, lons, yaws, Xs, Ys, cdists, vxs, vys, wzs)) 
 		
 		# interpolated path or what I call "local trajectory" -> reference to MPC
 		self.x_interp	= None
 		self.y_interp	= None
 		self.psi_interp	= None
+		self.vx_interp	= None
+		self.vy_interp	= None
+		self.wz_interp	= None
 		
 		# some handles for plotting (see plot_interpolation)
 		self.f = None
@@ -154,6 +163,9 @@ class GPSRefTrajectory():
 		self.y_interp = np.interp(dists_to_fit, self.trajectory[:,6], self.trajectory[:,5]) 	 # y_des = f_interp(d_des, d_actual, y_actual)
 		psi_ref = np.interp(dists_to_fit, self.trajectory[:,6], self.trajectory[:,3])    # psi_des = f_interp(d_des, d_actual, psi_actual)
 		self.psi_interp = self.__fix_heading_wraparound(psi_ref, yaw_init)
+		self.vx_interp = np.interp(dists_to_fit, self.trajectory[:,6], self.trajectory[:,7]) 	 # vx_des = f_interp(d_des, d_actual, vx_actual)
+		self.vy_interp = np.interp(dists_to_fit, self.trajectory[:,6], self.trajectory[:,8]) 	 # vy_des = f_interp(d_des, d_actual, vy_actual)
+		self.wz_interp = np.interp(dists_to_fit, self.trajectory[:,6], self.trajectory[:,9]) 	 # wz_des = f_interp(d_des, d_actual, wz_actual)
 
 		# Send a stop command if the end of the trajectory is within the horizon of the waypoints.
 		# Alternatively, could use start_dist as well: if start_dist + some delta_s > end_dist, then stop.
@@ -161,7 +173,7 @@ class GPSRefTrajectory():
 		if self.x_interp[-1] == self.trajectory[-1,4] and self.y_interp[-1] == self.trajectory[-1,5]:
 			stop_cmd = True
 
-		return self.x_interp, self.y_interp, self.psi_interp, stop_cmd
+		return self.x_interp, self.y_interp, self.psi_interp, self.vx_interp, self.vy_interp, self.wz_interp, stop_cmd
 
 	def __waypoints_using_time(self, closest_traj_ind, yaw_init):
 		start_tm = self.trajectory[closest_traj_ind,0] # t0, time of recorded trajectory corresponding to closest point
@@ -172,6 +184,9 @@ class GPSRefTrajectory():
 		self.y_interp = np.interp(times_to_fit, self.trajectory[:,0], self.trajectory[:,5]) 	 # y_des = f_interp(t_des, t_actual, y_actual)
 		psi_ref = np.interp(times_to_fit, self.trajectory[:,0], self.trajectory[:,3])    # psi_des = f_interp(t_des, t_actual, psi_actual)
 		self.psi_interp = self.__fix_heading_wraparound(psi_ref, yaw_init)
+		self.vx_interp = np.interp(times_to_fit, self.trajectory[:,0], self.trajectory[:,7]) 	 # vx_des = f_interp(d_des, t_actual, vx_actual)
+		self.vy_interp = np.interp(times_to_fit, self.trajectory[:,0], self.trajectory[:,8]) 	 # vy_des = f_interp(d_des, t_actual, vy_actual)
+		self.wz_interp = np.interp(times_to_fit, self.trajectory[:,0], self.trajectory[:,9]) 	 # wz_des = f_interp(d_des, t_actual, wz_actual)
 
 		# Send a stop command if the end of the trajectory is within the horizon of the waypoints.
 		# Alternatively, could use start_dist as well: if start_dist + some delta_s > end_dist, then stop.
@@ -179,7 +194,7 @@ class GPSRefTrajectory():
 		if self.x_interp[-1] == self.trajectory[-1,4] and self.y_interp[-1] == self.trajectory[-1,5]:
 			stop_cmd = True
 
-		return self.x_interp, self.y_interp, self.psi_interp, stop_cmd
+		return self.x_interp, self.y_interp, self.psi_interp, self.vx_interp, self.vy_interp, self.wz_interp, stop_cmd
 
 	def __fix_heading_wraparound(self, psi_ref, psi_current):
 		# This code ensures that the psi_reference agrees with psi_current, that there are no jumps by +/- 2*pi.

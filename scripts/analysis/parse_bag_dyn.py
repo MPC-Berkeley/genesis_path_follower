@@ -9,10 +9,12 @@ import math
 def parse_rosbag(mode, in_rosbag, out_mat):
 	t = []; x = []; y = []; psi = []; v = []
 	lat = []; lon = []; a = []; df = []
+	se_v_x = []; se_v_y = []; se_yaw_rate = [];
+	se_long_accel = []; se_lat_accel = [];
 
 	b = rosbag.Bag(in_rosbag)
 	
-	for topic, msg, _ in b.read_messages(topics='/vehicle/state_est'):
+	for topic, msg, _ in b.read_messages(topics='/vehicle/state_est_dyn'):
 		t.append(msg.header.stamp.secs + 1e-9 * msg.header.stamp.nsecs)
 		x.append(msg.x)
 		y.append(msg.y)
@@ -24,40 +26,13 @@ def parse_rosbag(mode, in_rosbag, out_mat):
 
 		a.append(msg.a)
 		df.append(msg.df)
-z
-	tm = []
-	lat_accel = []
-	long_accel = []
-	yaw_rate = []
-	for topic, msg, _ in b.read_messages(topics='/vehicle/imu'):
-		tm.append(msg.header.stamp.secs + 1e-9 * msg.header.stamp.nsecs)
-		lat_accel.append(msg.lat_accel)
-		long_accel.append(msg.long_accel)
-		yaw_rate.append(math.radians(msg.yaw_rate))
 
-	se_lat_accel = np.interp(t, tm, lat_accel)
-	se_long_accel = np.interp(t, tm, long_accel)
-	se_yaw_rate = np.interp(t, tm, yaw_rate)
+		se_v_x.append(msg.vx)
+		se_v_y.append(msg.vy)
+		se_yaw_rate.append(msg.wz)
 
-	tm = []
-	v_east = []
-	v_north = []
-	for topic, msg, _ in b.read_messages(topics='/gps/vel'):
-		tm.append(msg.header.stamp.secs + 1e-9 * msg.header.stamp.nsecs)
-		v_east.append(msg.twist.twist.linear.x)
-		v_north.append(msg.twist.twist.linear.y)
-
-	se_v_east  = np.interp(t, tm, v_east)
-	se_v_north = np.interp(t, tm, v_north)
-
-	# Rotate axes by psi to go from EN frame to XY frame
-	se_v_x = []
-	se_v_y = []	
-	for i in range(len(t)):
-		v_x = np.cos(psi[i]) * se_v_east[i] + np.sin(psi[i]) * se_v_north[i]
-		v_y = -np.sin(psi[i]) * se_v_east[i] + np.cos(psi[i]) * se_v_north[i]
-		se_v_x.append(v_x)
-		se_v_y.append(v_y)
+		se_long_accel.append(msg.a_lon)
+		se_lat_accel.append(msg.a_lat)
 
 	# Find t_enable.  Assume first two commands are not solved to optimality, ignore those.
 	count = 0

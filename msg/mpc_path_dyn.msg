@@ -1,0 +1,17 @@
+Header header
+string solv_status
+float64 solv_time
+float64[] xs
+float64[] ys
+float64[] psis
+float64[] vxs
+float64[] vys
+float64[] wzs
+float64[] xr
+float64[] yr
+float64[] psir
+float64[] vxr
+float64[] vyr
+float64[] wzr
+float64[] df
+float64[] acc
