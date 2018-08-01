@@ -4,134 +4,126 @@ from genesis_path_follower.msg import state_est
 from std_msgs.msg import Float32
 from std_msgs.msg import UInt8
 import math
-import argparse
-import controllers
-import path_lib
-import vehicle_lib
-import velocityprofile_lib
-import sim_lib
+
 
 
 #################################################################################################
 ### Path following code using lanekeeping controller from VSD 2015 paper ########################
 #################################################################################################
 
-def parseStateEstMessage(msg):
-	X = msg.X
-	Y = msg.Y
-	psi = msg.psi
-	Ux = msg.vel
-	Ax = msg.acc_filt
-	delta =  msg.df
+class LanekeepingPublisher():
 
-	return X, Y, psi, Ux, Ax, delta
+	'''
+	Publishes acceleration and steering commands based on Nitin Kapania's thesis. 
+	@Nitin Kapania Aug 2018
+	'''
 
+	def __init__(self):
 
-def pub_loop():
+		#Initialize nodes, publishers, and subscribers
+		rospy.init_node('lk_cmd_pub', anonymous=True)
+		rospy.Subscriber('state_est', state_est, self.parseStateEstMessage, queue_size=2)
 
-	##ToDo: check if these are the right messages - how does it know these are the messages?
-	#Define steering and acc enable publishers
-	enable_steer_pub = rospy.Publisher("control/enable_spas", UInt8, queue_size = 1, latch=True)
-	enable_acc_pub   = rospy.Publisher("control/enable_accel", UInt8, queue_size =10, latch=True)  ##Why queue_size = 10?
+		self.accel_pub = rospy.Publisher("control/accel", Float32, queue_size =2)
+		self.steer_pub = rospy.Publisher("control/steer_angle", Float32, queue_size = 2)
 
-	#Define steering and accel value publishers
-	steer_pub = rospy.Publisher("control/steer_angle", Float32, queue_size = 1) 	
-	accel_pub = rospy.Publisher("control/accel", 	   Float32, queue_size =10)
+		self.enable_acc_pub   = rospy.Publisher("control/enable_accel", UInt8, queue_size =2, latch=True)  ##Why queue_size = 10?
+		self.enable_steer_pub = rospy.Publisher("control/enable_spas",  UInt8, queue_size =2, latch=True)
 
-
-	#define subscribers
-	rospy.Subscriber('state_est', state_est, parseStateEstMessage, queue_size=1)
+		self.r = rospy.Rate(50.0)  ##TODO: Can we run this fast?
 
 
+		#vehicle information needed - initialize to none
+		self.X = None 
+		self.Y = None
+		self.psi = None
+		self.Ux = None
+		self.Ax = None
+		self.delta = None
 
-	#Is this ok?
-	rospy.init_node('lk_cmd_pub', anonymous=True)
-	r = rospy.Rate(50.0)  ##TODO: Can we run this fast?
+		#Initialize vehicle
+		self.genesis = Vehicle('genesis')
 
-	while(enable_steer_pub.get_num_connections == 0):
-		print('Waiting to enable steering!')
-		r.sleep()
+		#Initialize Path object
+		self.path = Path()
+		self.path.loadFromMAT("paths/rightTurnRFSdownshifted.mat")
+		self.path.setFriction(0.3)
 
-	while(enable_acc_pub.get_num_connections == 0):
-		print('Waiting to enable acceleration!')
-		r.sleep()
+		#Create speed profile
+		self.speedProfile = velocityprofile_lib.VelocityProfile("racing")
+		self.speedProfile.generate(genesis, path)
 
+		#Create controller object - use lanekeeping
+		self.controller = LaneKeepingController(path, genesis, speedProfile)
 
-	enable_steer_pub.publish(1) # enable steering control.
-	enable_acc_pub.publish(2) # enable acceleration control.
+		#Create local and global states and control input object
+		self.localState   = LocalState()
+		self.globalState  = GlobalState()
+		self.controlInput = ControlInput()
 
+		#Initialize map matching object - use closest style
+		mapMatch = MapMatch(path, "closest")
 
-	t_start = rospy.Time.now()
-	print('Path Tracking Test: %s, Started at %f' % (mode, t_start.secs + t_start.nsecs*1e-9))
+		#Enable steering
+		self.enable_steer_pub.publish(1) # enable steering control.
+		self.enable_acc_pub.publish(2) # enable acceleration control.
 
-
-	#Initialize vehicle
-	genesis = vehicle_lib.Vehicle('genesis')
-
-	#Initialize Path object
-	path = path_lib.Path()
-	path.loadFromMAT("paths/rightTurnRFSdownshifted.mat")
-	path.setFriction(0.5)
-
-	#Create speed profile
-	speedProfile = velocityprofile_lib.VelocityProfile("racing")
-	speedProfile.generate(genesis, path)
-
-	#Create controller object - use lanekeeping
-	controller = controllers.LaneKeepingController(path, genesis, speedProfile)
-
-	#Create local and global states and control input object
-	localState = sim_lib.LocalState()
-	globalState = sim_lib.GlobalState()
-	controlInput = controllers.ControlInput()
-
-	#Initialize map matching object - use closest style
-	mapMatch = MapMatch(path, "closest")
+		#Start testing!
+		t_start = rospy.Time.now()
+		print('Path Tracking Test: %s, Started at %f' % (mode, t_start.secs + t_start.nsecs*1e-9))
+		self.pub_loop()
 
 
+	def parseStateEstMessage(self, msg):
+		self.X = msg.X
+		self.Y = msg.Y
+		self.psi = msg.psi
+		self.Ux = msg.vel
+		self.Ax = msg.acc_filt
+		self.delta =  msg.df
 
 
-##########Main loop ############################################################################
-	while not rospy.is_shutdown():
-		t_now = rospy.Time.now()
+	def pub_loop(self):
+		while not rospy.is_shutdown():
+			t_now = rospy.Time.now()
 
-		dt = t_now - t_start
-		dt_secs = dt.secs + 1e-9 * dt.nsecs
-
-
-		#Update local and global state - WE MAY NEED GLOBAL VARIABLES HERE
-		#Yaw rate and Uy currently not returned by state publisher!
-		localState.Update(Ux = Ux)
-		globalState.Update(posE = X, posN = Y, psi = psi)
-
-		#Localize Vehicle
-		mapMatch.localize(localState, globalState)
-
-		#Calculate control inputs
-		controller.updateInput(localState, controlInput)
-		delta = controlInput.delta
-		Fx = controlInput.Fx
-
-		# use F = m*a to get desired acceleration
-		accel = Fx / genesis.m
-
-		print('Steer Command: %f deg \t Accel Command: %f ms2 \t Time: %f seconds' % (controlInput.delta, accel, dt_secs))
-
-		#Publish control inputs
-
-		steer_pub.publish(delta)
-		accel_pub.publish(accel)
-
-		r.sleep()
-
-	#Disable inputs after test is ended
-	enable_steer_pub.publish(0) # disable steering control.
-	enabl_acc_pub.publish(0) # disable acceleration control.
+			dt = t_now - t_start
+			dt_secs = dt.secs + 1e-9 * dt.nsecs
 
 
-##TODO: Ask Vijay if we need this
+			#Yaw rate and Uy currently not returned by state publisher!
+			self.localState.Update(Ux = self.Ux)
+			self.globalState.Update(posE = self.X, posN = self.Y, psi = self.psi)
+
+			#Localize Vehicle
+			self.mapMatch.localize(self.localState, self.globalState)
+
+			#Calculate control inputs
+			self.controller.updateInput(self.localState, self.controlInput)
+			delta = self.controlInput.delta
+			Fx = self.controlInput.Fx
+
+			# use F = m*a to get desired acceleration
+			accel = Fx / genesis.m
+
+			print('Steer Command: %f deg \t Accel Command: %f ms2 \t Time: %f seconds' % (controlInput.delta, accel, dt_secs))
+
+			#Publish control inputs
+
+			self.steer_pub.publish(delta)
+			self.accel_pub.publish(accel)
+
+			r.sleep()
+
+		#Disable inputs after test is ended
+		enable_steer_pub.publish(0) # disable steering control.
+		enabl_acc_pub.publish(0) # disable acceleration control.
+
+
+
 if __name__=="__main__":
+	print 'Starting Controller.'
 	try:
-		pub_loop()
+		lk = LanekeepingPublisher()
 	except rospy.ROSInterruptException:
 		pass # to handle node shutdown cleanly
