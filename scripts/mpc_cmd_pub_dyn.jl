@@ -89,8 +89,8 @@ v_curr  = 0.0
 vx_curr  = 0.0
 vy_curr  = 0.0
 wz_curr  = 0.0
-prev_a = 0.0
-prev_df = 0.0
+prev_a = 0.01
+prev_df = 0.001
 command_stop = false
 
 ###########################################

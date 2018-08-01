@@ -8,6 +8,7 @@ import math as m
 from genesis_path_follower.msg import state_est_dyn
 from genesis_msgs.msg import VehicleImuReport
 from tf.transformations import euler_from_quaternion
+import numpy as np
 
 # Vehicle State Publisher for the Hyundai Genesis.  Uses OxTS and vehicle CAN messages to localize.
 
@@ -69,6 +70,9 @@ def parse_gps_vel(msg):
 	v_north = msg.twist.twist.linear.y
 	v_gps = m.sqrt(v_east**2 + v_north**2)
 
+	if psi == None:
+		return
+
 	v_x = np.cos(psi)  * v_east + np.sin(psi) * v_north
 	v_y = -np.sin(psi) * v_east + np.cos(psi) * v_north
 		
@@ -126,7 +130,7 @@ def parse_veh_imu_data(msg):
 	tm_v_imu= msg.header.stamp.secs + 1e-9 * msg.header.stamp.nsecs
 	a_lat = msg.lat_accel
 	a_lon = msg.long_accel
-	yaw_rate = msg.yaw_rate
+	yaw_rate = m.radians(msg.yaw_rate)
 
 def pub_loop():
 	rospy.init_node('state_publisher', anonymous=True)	
@@ -153,6 +157,7 @@ def pub_loop():
 	while not rospy.is_shutdown():		
 		
 		if None in (lat, lon, psi, vel, acc_filt, df, v_x, v_y, yaw_rate, a_lat, a_lon): 
+			rospy.logfatal("Waiting for topics in state_publisher_dyn.py!")
 			r.sleep() # If the vehicle state info has not been received.
 			continue
 

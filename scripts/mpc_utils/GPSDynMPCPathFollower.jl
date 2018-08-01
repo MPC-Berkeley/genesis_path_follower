@@ -76,6 +76,7 @@ module GPSDynMPCPathFollower
 		for j = 1:6
 			@NLconstraint(mdl, z[i, j] == z_nom[i,j] + dz[i,j])
 		end
+		@NLconstraint(mdl, v_min <= z[i,4] <= v_max)
 	end
 	for j in 1:6
 		@constraint(mdl, 0.0 <= dz[1,j] <= 0.0)
@@ -102,13 +103,13 @@ module GPSDynMPCPathFollower
 	# Input Acceleration Rate Constraints
 	@NLconstraint(mdl, -a_dmax*dt_control <= du[1,1] <= a_dmax*dt_control)
     for i in 1:(N-1)
-        @constraint(mdl, -a_dmax*dt <= u[i+1,1] - u[i,1] <= a_dmax*dt)
+        @constraint(mdl, -a_dmax*dt <= du[i,1] <= a_dmax*dt)
     end	
 
 	# Input Steering Rate Constraints
 	@NLconstraint(mdl, -steer_dmax*dt_control <= du[1,2] <= steer_dmax*dt_control)
     for i in 1:(N-1)
-        @constraint(mdl, -steer_dmax*dt <= u[i+1,2] - u[i,2] <= steer_dmax*dt)
+        @constraint(mdl, -steer_dmax*dt <= du[i,2] <= steer_dmax*dt)
     end
 
 	#### (3) Define Objective ####

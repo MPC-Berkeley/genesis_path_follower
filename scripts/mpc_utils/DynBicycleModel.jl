@@ -28,7 +28,7 @@ module DynBicycleModel
 		# Compute tire slip angle
 		alpha_f = 0.0
 		alpha_r = 0.0
-		if abs(vx) > 1e-6
+		if abs(vx) > 2.0
 			alpha_f = df - atan2( vy+lf*wz, vx )
 			alpha_r = -atan2(vy-lr*wz , vx)        		
 		end
@@ -38,9 +38,13 @@ module DynBicycleModel
 		Fyr = C_alpha_r * alpha_r
 
 		# Propagate the vehicle dynamics deltaT seconds ahead.			
-		vx_dot  = acc - 1/m*Fyf*sin(df) + wz*vy
-		vy_dot  = 1.0/m*(Fyf*cos(df) + Fyr) - wz*vx 
-		wz_dot  = 1.0/Iz*(lf*Fyf*cos(df) - lr*Fyr) 
+		#vx_dot  = acc - 1/m*Fyf*sin(df) + wz*vy
+		#vy_dot  = 1.0/m*(Fyf*cos(df) + Fyr) - wz*vx 
+		#wz_dot  = 1.0/Iz*(lf*Fyf*cos(df) - lr*Fyr)
+
+		vx_dot  = acc - 1/m*Fyf*df + wz*vy
+		vy_dot  = 1.0/m*(Fyf + Fyr) - wz*vx 
+		wz_dot  = 1.0/Iz*(lf*Fyf - lr*Fyr)  
 		
 		psi_dot = wz
 		X_dot   = vx*cos(psi) - vy*sin(psi)
