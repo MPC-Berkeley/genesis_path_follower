@@ -62,12 +62,12 @@ class GPSRefTrajectory():
 			#create new data_dict to handle Nitin's dictionary format
 			data_dict2 = sio.loadmat(mat_filename, squeeze_me = True)
 			cdists = data_dict2['world']['s'].sum()
-			Xs = data_dict2['world']['posE'].sum()
-			Ys = data_dict2['world']['posN'].sum()
+			Xs = data_dict2['world']['roadE'].sum()
+			Ys = data_dict2['world']['roadN'].sum()
 			yaws = data_dict2['world']['roadPsi'].sum()
-			tms  = np.zeros(yaws.shape)
-			lats = np.zeros(lats.shape)
-			lons = np.zeros(lons.shape)
+			tms  = np.zeros(len(yaws))
+			lats = np.zeros(len(yaws))
+			lons = np.zeros(len(yaws))
 
 		else:		
 			tms  = np.ravel(data_dict['t'])

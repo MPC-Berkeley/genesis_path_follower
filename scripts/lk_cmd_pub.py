@@ -30,11 +30,11 @@ class LanekeepingPublisher():
 		rospy.init_node('lk_cmd_pub', anonymous=True)
 		rospy.Subscriber('state_est', state_est, self.parseStateEstMessage, queue_size=2)
 
-		self.accel_pub = rospy.Publisher("control/accel", Float32, queue_size =2)
-		self.steer_pub = rospy.Publisher("control/steer_angle", Float32, queue_size = 2)
+		self.accel_pub = rospy.Publisher("/control/accel", Float32, queue_size =2)
+		self.steer_pub = rospy.Publisher("/control/steer_angle", Float32, queue_size = 2)
 
-		self.enable_acc_pub   = rospy.Publisher("control/enable_accel", UInt8, queue_size =2, latch=True)  ##Why queue_size = 10?
-		self.enable_steer_pub = rospy.Publisher("control/enable_spas",  UInt8, queue_size =2, latch=True)
+		self.enable_acc_pub   = rospy.Publisher("/control/enable_accel", UInt8, queue_size =2, latch=True)  ##Why queue_size = 10?
+		self.enable_steer_pub = rospy.Publisher("/control/enable_spas",  UInt8, queue_size =2, latch=True)
 
 		self.r = rospy.Rate(50.0)  ##TODO: Can we run this fast?
 
@@ -45,7 +45,7 @@ class LanekeepingPublisher():
 
 		pathLocation = rospy.get_param('mat_waypoints')	
 		self.path.loadFromMAT(pathLocation)
-		self.path.setFriction(0.3)
+		self.path.setFriction(0.5)
 
 		#vehicle information needed - initialize to none
 		self.X = self.path.posE[0] 
@@ -81,13 +81,12 @@ class LanekeepingPublisher():
 
 
 	def parseStateEstMessage(self, msg):
-		self.X = msg.X
-		self.Y = msg.Y
+		self.X = msg.x
+		self.Y = msg.y
 		self.psi = msg.psi
-		self.Ux = msg.vel
-		self.Ax = msg.acc_filt
+		self.Ux = msg.v
+		self.Ax = msg.a
 		self.delta =  msg.df
-
 
 	def pub_loop(self):
 		#Start testing!
@@ -105,16 +104,15 @@ class LanekeepingPublisher():
 
 			#Localize Vehicle
 			self.mapMatch.localize(self.localState, self.globalState)
+			
 
 			#Calculate control inputs
 			self.controller.updateInput(self.localState, self.controlInput)
 			delta = self.controlInput.delta
 			Fx = self.controlInput.Fx
 
-			# use F = m*a to get desired acceleration
-			accel = Fx / self.genesis.m
-
-			#print('Steer Command: %f deg \t Accel Command: %f ms2 \t Time: %f seconds' % (self.controlInput.delta, accel, dt_secs))
+			# use F = m*a to get desired acceleration. Limit acceleration command to 2 m/s
+			accel = min( Fx / self.genesis.m , 2.0)
 
 			#Publish control inputs
 
