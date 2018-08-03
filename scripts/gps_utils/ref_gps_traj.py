@@ -58,22 +58,33 @@ class GPSRefTrajectory():
 		cdists = []		# cumulative distance along path (m, aka "s" in Frenet formulation)
 
 		data_dict = sio.loadmat(mat_filename)
-			
-		tms  = np.ravel(data_dict['t'])
-		lats = np.ravel(data_dict['lat'])
-		lons = np.ravel(data_dict['lon'])
-		yaws = np.ravel(data_dict['psi'])
+		if 'world' in data_dict.keys():
+			#create new data_dict to handle Nitin's dictionary format
+			data_dict2 = sio.loadmat(mat_filename, squeeze_me = True)
+			cdists = data_dict2['world']['s'].sum()
+			Xs = data_dict2['world']['posE'].sum()
+			Ys = data_dict2['world']['posN'].sum()
+			yaws = data_dict2['world']['roadPsi'].sum()
+			tms  = np.zeros(yaws.shape)
+			lats = np.zeros(lats.shape)
+			lons = np.zeros(lons.shape)
 
-		for i in range(len(lats)):
-			lat = lats[i]; lon = lons[i]
-			X,Y = latlon_to_XY(LAT0, LON0, lat, lon)
-			if len(Xs) == 0: 		# i.e. the first point on the trajectory
-				cdists.append(0.0)	# s = 0
-			else:					# later points on the trajectory
-				d = math.sqrt( (X - Xs[-1])**2 + (Y - Ys[-1])**2 ) + cdists[-1]
-				cdists.append(d) 	# s = s_prev + dist(z[i], z[i-1])
-			Xs.append(X)
-			Ys.append(Y)
+		else:		
+			tms  = np.ravel(data_dict['t'])
+			lats = np.ravel(data_dict['lat'])
+			lons = np.ravel(data_dict['lon'])
+			yaws = np.ravel(data_dict['psi'])
+
+			for i in range(len(lats)):
+				lat = lats[i]; lon = lons[i]
+				X,Y = latlon_to_XY(LAT0, LON0, lat, lon)
+				if len(Xs) == 0: 		# i.e. the first point on the trajectory
+					cdists.append(0.0)	# s = 0
+				else:					# later points on the trajectory
+					d = math.sqrt( (X - Xs[-1])**2 + (Y - Ys[-1])**2 ) + cdists[-1]
+					cdists.append(d) 	# s = s_prev + dist(z[i], z[i-1])
+				Xs.append(X)
+				Ys.append(Y)
 
 		# global trajectory matrix
 		self.trajectory =  np.column_stack((tms, lats, lons, yaws, Xs, Ys, cdists)) 

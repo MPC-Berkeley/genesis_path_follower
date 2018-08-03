@@ -3,6 +3,12 @@ import rospy  ##TODO: Cannot find rospy
 from genesis_path_follower.msg import state_est
 from std_msgs.msg import Float32
 from std_msgs.msg import UInt8
+from lk_utils.controllers import *
+from lk_utils.path_lib import *
+from lk_utils.vehicle_lib import *
+from lk_utils.velocityprofile_lib import *
+from lk_utils.sim_lib import *
+
 import math
 
 
@@ -32,45 +38,45 @@ class LanekeepingPublisher():
 
 		self.r = rospy.Rate(50.0)  ##TODO: Can we run this fast?
 
+		#Initialize Path object
+		self.path = Path()
+		if not rospy.has_param('mat_waypoints'):
+			raise ValueError('Invalid rosparam global origin provided!')	
+
+		pathLocation = rospy.get_param('mat_waypoints')	
+		self.path.loadFromMAT(pathLocation)
+		self.path.setFriction(0.3)
 
 		#vehicle information needed - initialize to none
-		self.X = None 
-		self.Y = None
-		self.psi = None
-		self.Ux = None
-		self.Ax = None
-		self.delta = None
+		self.X = self.path.posE[0] 
+		self.Y = self.path.posN[0]
+		self.psi = self.path.roadPsi[0]
+		self.Ux = 0.
+		self.Ax = 0.
+		self.delta = 0.
 
 		#Initialize vehicle
 		self.genesis = Vehicle('genesis')
 
-		#Initialize Path object
-		self.path = Path()
-		self.path.loadFromMAT("paths/rightTurnRFSdownshifted.mat")
-		self.path.setFriction(0.3)
-
 		#Create speed profile
-		self.speedProfile = velocityprofile_lib.VelocityProfile("racing")
-		self.speedProfile.generate(genesis, path)
+		self.speedProfile = VelocityProfile("racing")
+		self.speedProfile.generate(self.genesis, self.path)
 
 		#Create controller object - use lanekeeping
-		self.controller = LaneKeepingController(path, genesis, speedProfile)
+		self.controller = LaneKeepingController(self.path, self.genesis, self.speedProfile)
 
 		#Create local and global states and control input object
 		self.localState   = LocalState()
-		self.globalState  = GlobalState()
+		self.globalState  = GlobalState(self.path)
 		self.controlInput = ControlInput()
 
 		#Initialize map matching object - use closest style
-		mapMatch = MapMatch(path, "closest")
+		self.mapMatch = MapMatch(self.path, "closest")
 
 		#Enable steering
 		self.enable_steer_pub.publish(1) # enable steering control.
 		self.enable_acc_pub.publish(2) # enable acceleration control.
 
-		#Start testing!
-		t_start = rospy.Time.now()
-		print('Path Tracking Test: %s, Started at %f' % (mode, t_start.secs + t_start.nsecs*1e-9))
 		self.pub_loop()
 
 
@@ -84,16 +90,18 @@ class LanekeepingPublisher():
 
 
 	def pub_loop(self):
+		#Start testing!
+		t_start = rospy.Time.now()
+		print('Path Tracking Test: Started at %f' % (t_start.secs + t_start.nsecs*1e-9))
+
 		while not rospy.is_shutdown():
 			t_now = rospy.Time.now()
-
 			dt = t_now - t_start
 			dt_secs = dt.secs + 1e-9 * dt.nsecs
 
-
 			#Yaw rate and Uy currently not returned by state publisher!
-			self.localState.Update(Ux = self.Ux)
-			self.globalState.Update(posE = self.X, posN = self.Y, psi = self.psi)
+			self.localState.update(Ux = self.Ux)
+			self.globalState.update(posE = self.X, posN = self.Y, psi = self.psi)
 
 			#Localize Vehicle
 			self.mapMatch.localize(self.localState, self.globalState)
@@ -104,20 +112,20 @@ class LanekeepingPublisher():
 			Fx = self.controlInput.Fx
 
 			# use F = m*a to get desired acceleration
-			accel = Fx / genesis.m
+			accel = Fx / self.genesis.m
 
-			print('Steer Command: %f deg \t Accel Command: %f ms2 \t Time: %f seconds' % (controlInput.delta, accel, dt_secs))
+			#print('Steer Command: %f deg \t Accel Command: %f ms2 \t Time: %f seconds' % (self.controlInput.delta, accel, dt_secs))
 
 			#Publish control inputs
 
 			self.steer_pub.publish(delta)
 			self.accel_pub.publish(accel)
 
-			r.sleep()
+			self.r.sleep()
 
 		#Disable inputs after test is ended
-		enable_steer_pub.publish(0) # disable steering control.
-		enabl_acc_pub.publish(0) # disable acceleration control.
+		self.enable_steer_pub.publish(0) # disable steering control.
+		self.enabl_acc_pub.publish(0) # disable acceleration control.
 
 
 
