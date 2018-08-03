@@ -34,7 +34,7 @@ class Path:
 		self.curvature = path['world']['K'].sum()
 		self.posE = path['world']['roadE'].sum()
 		self.posN = path['world']['roadN'].sum()
-		self.roadPsi = path['world']['roadPsi'].sum()
+		self.roadPsi = path['world']['roadPsi'].sum() 
 		self.roadIC = path['world']['road_IC'].sum()
 
 

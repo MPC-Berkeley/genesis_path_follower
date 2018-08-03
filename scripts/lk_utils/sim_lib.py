@@ -66,9 +66,11 @@ class Simulation:
             log.append('Ux',localState.Ux)
             log.append('s', localState.s)
             log.append('e', localState.e)
+            log.append('dPsi',localState.dPsi)
             log.append('UxDes', UxDes) 
             log.append('posE', globalState.posE)
             log.append('posN', globalState.posN)
+            log.append('psi', globalState.psi)
             log.append('r', localState.r)
             log.append('Uy', localState.Uy)
             log.append('deltaCmd', controlInput.delta)
@@ -162,7 +164,7 @@ class LocalState:
 
         
 class GlobalState:
-    def __init__(self, path):
+    def __init__(self, path, offset = [0, 0, 0]):
 
         #Start at 0 IC's if path is None
         if path is None: 
@@ -171,9 +173,9 @@ class GlobalState:
             self.psi = 0
 
         else:
-            self.posE = path.posE[1] #start at second element of array to avoid mapMatch issues
-            self.posN = path.posN[1]
-            self.psi  = path.roadPsi[1]
+            self.posE = path.posE[1] + offset[0] #start at second element of array to avoid mapMatch issues
+            self.posN = path.posN[1] + offset[1]
+            self.psi  = path.roadPsi[1] + offset[2]
 
     def update(self, posE = 0, posN = 0, psi = 0):
         self.posE = posE
@@ -246,7 +248,13 @@ class MapMatch:
 
         e = pSE[1]
         psiDes = np.interp(s, np.squeeze(self.path.s), np.squeeze(self.path.roadPsi))
-        dPsi = psi - psiDes
+        dPsi = psi - psiDes - np.pi/2 #need pi/2 correction to account for 0 being due east, not due north
+
+        while dPsi > np.pi:
+            dPsi = dPsi - 2*np.pi
+
+        while dPsi < -np.pi:
+            dPsi = dPsi + 2*np.pi
 
         return e, s, dPsi
 
