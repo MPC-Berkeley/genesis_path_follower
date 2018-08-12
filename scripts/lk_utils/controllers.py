@@ -122,7 +122,7 @@ def _speedTracking(sim, localState):
 
     AxDes = np.interp(s, sTable, AxTable) #run interp every time - this is slow, but we may be able to get away with
     UxDes = np.interp(s, sTable, UxTable) #run interp every time - this is slow, but we may be able to get away with
-
+    
 
     FxFFW = m*AxDes + np.sign(Ux)*fdrag*Ux ** 2 + frr*np.sign(Ux) # Feedforward
     FxFB = -sim.kSpeed*(Ux - UxDes) # Feedback
