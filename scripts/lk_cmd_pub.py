@@ -45,7 +45,7 @@ class LanekeepingPublisher():
 
 		pathLocation = rospy.get_param('mat_waypoints')	
 		self.path.loadFromMAT(pathLocation)
-		self.path.setFriction(0.8)
+		self.path.setFriction(0.3)
 
 		#vehicle information needed - initialize to none
 		self.X = self.path.posE[0] 
@@ -74,8 +74,8 @@ class LanekeepingPublisher():
 		self.mapMatch = MapMatch(self.path, "closest")
 
 		#Enable steering
-		self.enable_steer_pub.publish(1) # enable steering control.
-		self.enable_acc_pub.publish(2) # enable acceleration control.
+		self.enable_steer_pub.publish(0) # enable steering control.
+		self.enable_acc_pub.publish(0) # enable acceleration control.
 
 		self.pub_loop()
 
@@ -104,7 +104,7 @@ class LanekeepingPublisher():
 
 			#Localize Vehicle
 			self.mapMatch.localize(self.localState, self.globalState)
-			print("e is" + str(self.localState.e))
+			
 
 			#Calculate control inputs
 			self.controller.updateInput(self.localState, self.controlInput)
@@ -113,6 +113,9 @@ class LanekeepingPublisher():
 
 			# use F = m*a to get desired acceleration. Limit acceleration command to 2 m/s
 			accel = min( Fx / self.genesis.m , 2.0)
+			 
+
+
 
 			#Publish control inputs
 
