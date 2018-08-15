@@ -62,15 +62,14 @@ class VehicleSimulator():
 		self.df_des    = msg.data
 
 	def _update_vehicle_model(self, disc_steps = 10):
-		# Azera Params taken from:
-		# https://github.com/MPC-Car/Controller/blob/master/LearningController/RaceCar_ILMPC_4_NewFormulation/src/init/genHeader_data_vehicle.m
-		lf = 1.152  			# m  	(CoG to front axle)
-		lr = 1.693  			# m  	(CoG to rear axle)
-		d  = 0.8125 			# m  	(half-width, currently unused)
-		m  = 1840   			# kg 	(vehicle mass)
-		Iz  = 3477				# kg*m2 (vehicle inertia)
-		C_alpha_f = 4.0703e4    # N 	(front tire cornering stiffness)
-		C_alpha_r = 6.4495e4	# N 	(rear tire cornering stiffness)
+		# Genesis Parameters from HCE:
+		lf = 1.5213  			# m  	(CoG to front axle)
+		lr = 1.4987  			# m  	(CoG to rear axle)
+		d  = 0.945	 			# m  	(half-width, currently unused)
+		m  = 2303.1   			# kg 	(vehicle mass)
+		Iz  = 5520.1			# kg*m2 (vehicle inertia)
+		C_alpha_f = 7.6419e4    # N/rad	(front tire cornering stiffness)
+		C_alpha_r = 13.4851e4	# N/rad	(rear tire cornering stiffness)
 
 		deltaT = self.dt_model/disc_steps
 		for i in range(disc_steps):			
@@ -78,7 +77,7 @@ class VehicleSimulator():
 			# Compute tire slip angle
 			alpha_f = 0.0
 			alpha_r = 0.0
-			if math.fabs(self.vx) > 1e-6:
+			if math.fabs(self.vx) > 1.0:
 				alpha_f = self.df - np.arctan2( self.vy+lf*self.wz, self.vx )
 				alpha_r = - np.arctan2( self.vy-lf*self.wz , self.vx)        		
 			
