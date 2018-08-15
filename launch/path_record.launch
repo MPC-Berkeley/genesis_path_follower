@@ -29,11 +29,9 @@
   <node ns="vehicle" pkg="genesis_path_follower" type="gps_plotter.py" name="plot_node" output="log"/>
 
   <!-- Recording Node -->
-  <arg name="can_topics" default="/can_1/can_rx /can_1/can_tx /can_2/can_rx /rosout /rosout_agg"/>
-  <arg name="gps_topics" default="/gps/fix /gps/odom /gps/vel /imu/data/"/>
-  <arg name="vehicle_topics" default="/vehicle/imu /vehicle/state_est /vehicle/steering /vehicle/wheel_speeds"/>
-  <arg name="perception_topics" default="/mando_camera/lane_left /mando_camera/lane_right"/>
+  <arg name="exclude_topics" default="/image_raw"/>
 
   <node pkg="rosbag" type="record" name="rosbag_path_recorder" respawn="true" output="screen" 
-        args="-o $(find genesis_path_follower)/bags/path_record $(arg can_topics) $(arg gps_topics) $(arg vehicle_topics) $(arg perception_topics)" />
+        args="-a -o $(find genesis_path_follower)/bags/path_record -x $(arg exclude_topics)" />
+
 </launch>

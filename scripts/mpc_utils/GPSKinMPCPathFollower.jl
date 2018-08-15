@@ -27,11 +27,11 @@ module GPSKinMPCPathFollower
     using Ipopt
 
     #### (1) Initialize model and model parameters and MPC gains ####
-	dt_control = 0.10		# control period, ts (s)
+	dt_control = 0.05		# control period, ts (s)
     mdl = Model(solver = IpoptSolver(print_level=0, max_cpu_time = dt_control))
 
-	L_a     = 1.108 		# dist from CoG to front axle (m)
-	L_b     = 1.742 		# dist from CoG to rear axle (m)
+	L_a     = 1.5213 		# dist from CoG to front axle (m)
+	L_b     = 1.4987 		# dist from CoG to rear axle (m)
 	dt      = 0.20			# model discretization time, td (s)
 	N       = 8				# horizon
    
