@@ -34,6 +34,9 @@ class VehicleSimulator():
 		self.vx  = 0.0								# longitudinal velocity (m/s)
 		self.vy  = 0.0								# lateral velocity (m/s)
 		self.wz  = 0.0								# yaw rate (rad/s)
+		
+		self.acc_time_constant = 0.4 # s
+		self.df_time_constant  = 0.1 # s
 
 		self.pub_loop()
 
@@ -72,6 +75,7 @@ class VehicleSimulator():
 		C_alpha_r = 13.4851e4	# N/rad	(rear tire cornering stiffness)
 
 		deltaT = self.dt_model/disc_steps
+		self._update_low_level_control(self.dt_model)
 		for i in range(disc_steps):			
 
 			# Compute tire slip angle
@@ -109,14 +113,14 @@ class VehicleSimulator():
 			self.vy  = vy_n
 			self.wz  = wz_n
 
-			self._update_low_level_control(deltaT)
-
 	def _update_low_level_control(self, dt_control):
 		# e_<n> = self.<n> - self.<n>_des
 		# d/dt e_<n> = - kp * e_<n>
+		# or kp = alpha, low pass filter gain
+		# kp = alpha = discretization time/(time constant + discretization time)
 		# This is just to simulate some first order control delay in acceleration/steering.
-		self.acc = 5.0 * (self.acc_des - self.acc) * dt_control + self.acc
-		self.df  = 5.0  * (self.df_des  - self.df) * dt_control + self.df
+		self.acc = dt_control/(dt_control + self.acc_time_constant) * (self.acc_des - self.acc) + self.acc
+		self.df  = dt_control/(dt_control + self.df_time_constant)  * (self.df_des  - self.df) + self.df
 
 if __name__=='__main__':
 	print 'Starting Simulator.'
