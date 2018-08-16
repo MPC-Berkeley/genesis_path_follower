@@ -83,7 +83,7 @@ class VehicleSimulator():
 			alpha_r = 0.0
 			if math.fabs(self.vx) > 1.0:
 				alpha_f = self.df - np.arctan2( self.vy+lf*self.wz, self.vx )
-				alpha_r = - np.arctan2( self.vy-lf*self.wz , self.vx)        		
+				alpha_r = - np.arctan2( self.vy-lr*self.wz , self.vx)        		
 			
 			# Compute lateral force at front and rear tire (linear model)
 			Fyf = C_alpha_f * alpha_f
