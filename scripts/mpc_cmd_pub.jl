@@ -1,6 +1,7 @@
 #!/usr/bin/env julia
 
 # MPC Command Publisher/Controller Module Interface to the Genesis.
+# This version using the Nonlinear Kinematic Bicycle Model.
 
 ###########################################
 #### ROBOTOS
@@ -185,7 +186,12 @@ function start_mpc_node()
     steer_enable_pub = Publisher("/control/enable_spas",  UInt8Msg, queue_size=2, latch=true)
 
     mpc_path_pub = Publisher("mpc_path", mpc_path, queue_size=2)
-	sub_state  = Subscriber("state_est", state_est, state_est_callback, queue_size=2)    
+	sub_state  = Subscriber("state_est", state_est, state_est_callback, queue_size=2)
+
+	# Start up Ipopt/Solver.
+	for i=1:3
+		kmpc.solve_model()
+	end    
 
 	publish(acc_enable_pub, UInt8Msg(2))
 	publish(steer_enable_pub, UInt8Msg(1))
