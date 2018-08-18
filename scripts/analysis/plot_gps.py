@@ -9,7 +9,7 @@ import pdb
 def plot(matfile, save_name):
 
 	data = sio.loadmat(matfile)
-	assert(data['mode'] == 'Real')
+	assert(data['mode'] != 'Sim')
 	lats = np.ravel(data['lat']).tolist()
 	lons = np.ravel(data['lon']).tolist()
 
@@ -21,9 +21,9 @@ def plot(matfile, save_name):
 		st_ind = 0
 
 	gmap = gmplot.GoogleMapPlotter(lats[0], lons[0], 18) # lat, lon, zoom_level
-	gmap.scatter([lats[st_ind]], [lons[st_ind]], color="b", size=10, symbol='x') # starting point in red
+	gmap.scatter([lats[st_ind]], [lons[st_ind]], color="b", size=10, symbol='x') # starting point in blue
 	gmap.scatter([lats[-1]],[lons[-1]], color="g", size=10, symbol='x') # ending point in green	
-	gmap.plot(lats, lons, color="r", size=10, symbol='x', ls=None) # other points in blue line
+	gmap.plot(lats, lons, color="r", size=10, symbol='x', ls=None) # other points in red line
 	gmap.draw(save_name)
 
 if __name__=='__main__':
