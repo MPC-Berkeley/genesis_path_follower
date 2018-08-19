@@ -59,7 +59,7 @@ def compute_path_errors(xy_ref, xy_actual):
 	for i in np.arange(0, xy_actual.shape[0]):
 		# TODO: could try vectorizing this.  
 		# This loop is reasonably fast for the paths we have though.
-		if closest_pt_ind[i] == penultimate_pr_ind:
+		if closest_pt_ind[i] >= penultimate_pr_ind:
 			continue
 			
 		lat_errors[i] = compute_lateral_error(xy_actual[i], xy_ref[closest_pt_ind[i]], xy_ref[closest_pt_ind[i]+1])
@@ -103,7 +103,7 @@ def get_errors(pr_matfile, pf_matfile, bagfile, st_ind=None, end_ind=None):
 
 	# START INTERPOLATION
 	# Discretize the path finely to help with analysis.
-	path_disc = 0.01 # m
+	path_disc = 0.1 # m
 	s_interp = np.arange(0.0, s_pr[-1], path_disc)
 	x_pr = np.interp(s_interp, s_pr, xy_pr[:,0])
 	y_pr = np.interp(s_interp, s_pr, xy_pr[:,1])
