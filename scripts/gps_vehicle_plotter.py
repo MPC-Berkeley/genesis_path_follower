@@ -73,7 +73,7 @@ class PlotGPSTrajectory():
 		plt.axis('equal')
 		
 		# Zoomed Inset Plot: Based off tutorial/code here: http://akuederle.com/matplotlib-zoomed-up-inset
-		self.ax_zoom = zoomed_inset_axes(self.ax, 2.5, loc=2) # zoom factor: 2.5, location = upper left
+		self.ax_zoom = zoomed_inset_axes(self.ax, 5, loc=2) # axis, zoom_factor, location (2 = upper left)
 		self.window = 25 # m
 		self.zl1, = self.ax_zoom.plot(self.x_global_traj, self.y_global_traj, 'k') 			
 		self.zl2, = self.ax_zoom.plot(self.x_ref_traj,    self.y_ref_traj, 'rx')	

@@ -1,7 +1,14 @@
 <?xml version="1.0"?>
 
 <launch>
-	<param name="vehicle/scripts_dir" type="str" value="$(find genesis_path_follower)/scripts/" />
+	<!-- This launch file is intended to simulate a path following experiment with GPS.  Vehicle simulation, GPS plotting, and vehicle control are enabled. -->
+	
+	<!-- Pick between CPG + RFS coordinate systems here. -->
+	<!--rosparam command="load" file="$(find genesis_path_follower)/launch/rfs.yaml" ns="vehicle"/-->
+	<rosparam command="load" file="$(find genesis_path_follower)/launch/cpg.yaml" ns="vehicle"/>
+
+  <param name="vehicle/scripts_dir" type="str" value="$(find genesis_path_follower)/scripts/" />
+  
   <!-- The trajectory can be generated using recorded time or a target velocity. -->
   <!-- Set track_using_time to True to allow for time-varying velocity. -->
   <!-- Set track_using_time to False to use target_vel (m/s) instead. -->
@@ -10,24 +17,9 @@
 
   <!-- Waypoints CSV to specify path. -->
   <!-- Set is_heading_info to true if Heading (N = 0) is used instead of Yaw (E = 0). -->
-  <param name="vehicle/mat_waypoints" type="str" value="$(find genesis_path_follower)/paths/path3_6_20.mat" />
+  <param name="vehicle/mat_waypoints" type="str" value="$(find genesis_path_follower)/paths/cpg_clean.mat" />
   <param name="vehicle/is_heading_info" type="bool" value="True"/>
   <param name="vehicle/time_check_on" type="bool" value="False"/>
-
-  <!-- RFS Coordinate System Definition -->
-  <param name="vehicle/lat0" type="double" value="37.917929"/>
-  <param name="vehicle/lon0" type="double" value="-122.331798"/>
-  <param name="vehicle/yaw0" type="double" value="0.0"/>
-
-  <!-- Vehicle Simulation Initial Conditions: Good for Path 1/3, Path Lot Stop Sign -->
-  <param name="vehicle/X0" type="double" value="0.0"/>
-  <param name="vehicle/Y0" type="double" value="3.0"/>
-  <param name="vehicle/Psi0" type="double" value="-1.5"/>
-
-  <!-- Vehicle Simulation Initial Conditions: Good for Path 2, RFS Gate -->
-  <!--param name="vehicle/X0" type="double" value="142.0"/>
-  <param name="vehicle/Y0" type="double" value="-82.0"/>
-  <param name="vehicle/Psi0" type="double" value="2.0"/-->
 
   <!--...................................................................-->
 
