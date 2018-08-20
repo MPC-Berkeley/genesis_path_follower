@@ -90,8 +90,8 @@ v_curr  = 0.0
 vx_curr  = 0.0
 vy_curr  = 0.0
 wz_curr  = 0.0
-prev_a = 0.5
-prev_df = 0.001
+prev_a = ones(dmpc.N) * 0.5				# ***CHANGE 1***
+prev_df = ones(dmpc.N) * 0.001			# ***CHANGE 2***
 command_stop = false
 
 ###########################################
@@ -148,9 +148,9 @@ function pub_loop(acc_pub_obj, steer_pub_obj, mpc_path_pub_obj)
 
 		z_ref = [x_ref y_ref psi_ref vx_ref vy_ref wz_ref]
 		z_curr = vec([x_curr; y_curr; psi_curr; vx_curr; vy_curr; wz_curr])
-		u_curr = vec([prev_a; prev_df])
+		u_prev = hcat(prev_a, prev_df)						# ***CHANGE 3***
 		dmpc.update_reference(z_ref)
-		dmpc.update_model(z_curr, u_curr)
+		dmpc.update_model(z_curr, u_prev)					# ***CHANGE 4***
 
 	    ref_lock = false
 		
@@ -165,11 +165,7 @@ function pub_loop(acc_pub_obj, steer_pub_obj, mpc_path_pub_obj)
 
 			publish( acc_pub_obj,   Float32Msg(a_opt) )
 			publish( steer_pub_obj, Float32Msg(df_opt) )
-
-			global prev_a, prev_df
-			prev_a = a_opt
-			prev_df = df_opt
-			
+						
 			res = dmpc.get_solver_results()
 
 			mpc_path_msg = mpc_path_dyn()
@@ -196,6 +192,10 @@ function pub_loop(acc_pub_obj, steer_pub_obj, mpc_path_pub_obj)
 			mpc_path_msg.df   = res[3]	# d_f
 			mpc_path_msg.acc  = res[4]	# acc
 			publish(mpc_path_pub_obj, mpc_path_msg)
+			
+			global prev_a, prev_df						# ***CHANGE 5***
+			prev_a = res[3]
+			prev_df = res[4]			
 		else
 			publish( acc_pub_obj,   Float32Msg(-1.0) )
 			publish( steer_pub_obj, Float32Msg(0.0) )		
@@ -214,12 +214,12 @@ function start_mpc_node()
 
     mpc_path_pub = Publisher("mpc_path_dyn", mpc_path_dyn, queue_size=2)
 	sub_state  = Subscriber("state_est_dyn", state_est_dyn, state_est_callback, queue_size=2)    
-
+	
 	# Start up Ipopt/Solver.
 	for i = 1:3
 		dmpc.solve_model()
 	end
-
+	
 	publish(acc_enable_pub, UInt8Msg(2))
 	publish(steer_enable_pub, UInt8Msg(1))
 

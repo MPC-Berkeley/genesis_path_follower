@@ -18,12 +18,12 @@
 __precompile__()
 
 module GPSDynMPCPathFollower
-	import DynBicycleModel # may want to add a push!(LOAD_PATH, ...) here
+	import DynBicycleModel
 	const dyn_fncn = DynBicycleModel.f_dyn_bicycle_model
 	const jac_dyn_fncn = DynBicycleModel.jacobian_f_dyn_bicycle_model
 
     using JuMP
-    using Ipopt # maybe ECOS...
+    using Ipopt
 
     #### (1) Initialize model and model parameters and MPC gains ####
 	dt_control = 0.04		# control period, ts (s)
@@ -103,13 +103,13 @@ module GPSDynMPCPathFollower
 	# Input Acceleration Rate Constraints
 	@NLconstraint(mdl, -a_dmax*dt_control <= du[1,1] <= a_dmax*dt_control)
     for i in 1:(N-1)
-        @constraint(mdl, -a_dmax*dt <= du[i,1] <= a_dmax*dt)
+        @constraint(mdl, -a_dmax*dt <= u[i+1,1]-u[i,1] <= a_dmax*dt)
     end	
 
 	# Input Steering Rate Constraints
 	@NLconstraint(mdl, -steer_dmax*dt_control <= du[1,2] <= steer_dmax*dt_control)
     for i in 1:(N-1)
-        @constraint(mdl, -steer_dmax*dt <= du[i,2] <= steer_dmax*dt)
+        @constraint(mdl, -steer_dmax*dt <= u[i+1,2] - u[i,2] <= steer_dmax*dt)
     end
 
 	#### (3) Define Objective ####
@@ -124,8 +124,8 @@ module GPSDynMPCPathFollower
                            C_v    * sum{ (z[i,4]-z_r[i,4])^2, i=2:(N+1)}    + 
                            C_acc  * sum{ (u[i,1])^2, i=1:N}                +
                            C_df   * sum{ (u[i,2])^2, i=1:N}                +
-						   C_dacc * sum{ (du[i,1])^2, i=1:N} +
-                           C_ddf  * sum{ (du[i,2])^2,  i=1:N}
+						   C_dacc * sum{ (u[i+1,1] - u[i,1])^2,  i=1:(N-1)} +
+                           C_ddf  * sum{ (u[i+1,2] - u[i,2])^2,  i=1:(N-1)}
 				)
 
 	#### (4) Define System Dynamics Constraints ####
@@ -160,7 +160,7 @@ module GPSDynMPCPathFollower
 	#############################################
 	##### Model Update Function ###
 
-	function update_model(z_curr::Array{Float64,1}, u_curr::Array{Float64,1})
+	function update_model(z_curr::Array{Float64,1}, u_curr::Array{Float64,1}) # SINGLE INPUT CASE
 		# Compute nominal trajectory
 		for j = 1:6
 			setvalue(z_nom[1,j], z_curr[j])
@@ -187,6 +187,44 @@ module GPSDynMPCPathFollower
 
 			for j = 1:2
 				setvalue(u_nom[i,j], u_curr[j])
+			end
+		end
+
+	end
+
+	function update_model(z_curr::Array{Float64,1}, u_curr::Array{Float64,2}) # INPUT TRAJECTORY CASE
+		# Compute nominal trajectory
+		for j = 1:6
+			setvalue(z_nom[1,j], z_curr[j])
+		end
+
+		for i = 1:N
+			if i < N
+				u = vec(u_curr[i+1,:])
+			else
+				u = vec(u_curr[end,:])
+			end
+				
+			lin_point = vec([ z_curr;u])
+			f = dyn_fncn( lin_point  )
+			J = jac_dyn_fncn( lin_point )
+			Al = J[:,1:6]
+			Bl = J[:,7:8]
+
+			z_curr = convert(Array{Float64,1}, z_curr + f * dt )
+
+			for j = 1:6
+				setvalue(z_nom[i+1,j], z_curr[j])
+				for k = 1:6
+					setvalue(A[i,j,k],Al[j,k])
+				end
+				for k = 1:2
+					setvalue(B[i,j,k],Bl[j,k])
+				end
+			end
+
+			for j = 1:2
+				setvalue(u_nom[i,j], u[j])
 			end
 		end
 

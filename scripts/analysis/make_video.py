@@ -10,6 +10,8 @@ import matplotlib.animation as manim
 FFMpegWriter = manim.writers['ffmpeg']
 import pdb
 
+#TODO: Update this with final bag data and interface.
+
 class MessageByTimestamp():
 	def __init__(self, bag_object, topic_name, use_header_stamp=True):
 		if use_header_stamp:

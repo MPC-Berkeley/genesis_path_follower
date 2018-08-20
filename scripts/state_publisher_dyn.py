@@ -65,7 +65,6 @@ def parse_gps_fix(msg):
 def parse_gps_vel(msg):
 	global tm_vel, vel, acc_filt, psi, v_x, v_y
 
-	# TODO: can get v_longitudinal and v_lateral by rotating v_east and v_north by psi.
 	v_east = msg.twist.twist.linear.x
 	v_north = msg.twist.twist.linear.y
 	v_gps = m.sqrt(v_east**2 + v_north**2)
@@ -88,14 +87,6 @@ def parse_gps_vel(msg):
 		acc_filt = 0.01 * acc_raw + 0.99 * acc_filt # Low Pass Filter for Acceleration
 
 	vel = v_gps
-
-'''
-def parse_wheel_speeds(msg):
-	# just use two rear wheels to get speed for now
-	tm = msg.header.stamp.secs + 1e-9 * msg.header.stamp.nsecs
-	avg_speed = 0.5 * (msg.wheel_speed_rl + msg.wheel_speed_rr) * KPH_TO_MPS
-	return tm, avg_speed
-'''
 
 def parse_imu_data(msg):
 	# Get yaw angle.

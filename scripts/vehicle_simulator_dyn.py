@@ -36,6 +36,10 @@ class VehicleSimulator():
 		self.wz  = 0.0								# yaw rate (rad/s)
 		self.acc_lat = 0.0							# lateral acceleration (vy_dot, m/s^2)
 		self.acc_lon = 0.0							# longitudinal acceleration (vx_dot, m/s^2)
+		
+		self.acc_time_constant = 0.4 # s
+		self.df_time_constant = 0.1 # s
+		
 		self.pub_loop()
 
 	def pub_loop(self):
@@ -69,27 +73,27 @@ class VehicleSimulator():
 		self.df_des    = msg.data
 
 	def _update_vehicle_model(self, disc_steps = 10):
-		# Azera Params taken from:
-		# https://github.com/MPC-Car/Controller/blob/master/LearningController/RaceCar_ILMPC_4_NewFormulation/src/init/genHeader_data_vehicle.m
-		lf = 1.152  			# m  	(CoG to front axle)
-		lr = 1.693  			# m  	(CoG to rear axle)
-		d  = 0.8125 			# m  	(half-width, currently unused)
-		m  = 1840   			# kg 	(vehicle mass)
-		Iz  = 3477				# kg*m2 (vehicle inertia)
-		C_alpha_f = 4.0703e4    # N 	(front tire cornering stiffness)
-		C_alpha_r = 6.4495e4	# N 	(rear tire cornering stiffness)
+		# Genesis Parameters from HCE:
+		lf = 1.5213  			# m  	(CoG to front axle)
+		lr = 1.4987  			# m  	(CoG to rear axle)
+		d  = 0.945	 			# m  	(half-width, currently unused)
+		m  = 2303.1   			# kg 	(vehicle mass)
+		Iz  = 5520.1			# kg*m2 (vehicle inertia)
+		C_alpha_f = 7.6419e4    # N/rad	(front tire cornering stiffness)
+		C_alpha_r = 13.4851e4	# N/rad	(rear tire cornering stiffness)
 
 		# storing longitudinal and lateral velocities before to allow for computatation of accelerations.
 		vy_prev = self.vy
 		vx_prev = self.vx
 
 		deltaT = self.dt_model/disc_steps
+		self._update_low_level_control(self.dt_model)
 		for i in range(disc_steps):			
 
 			# Compute tire slip angle
 			alpha_f = 0.0
 			alpha_r = 0.0
-			if math.fabs(self.vx) > 1e-6:
+			if math.fabs(self.vx) > 1.0:
 				alpha_f = self.df - np.arctan2( self.vy+lf*self.wz, self.vx )
 				alpha_r = - np.arctan2( self.vy-lr*self.wz , self.vx)        		
 			
@@ -119,8 +123,7 @@ class VehicleSimulator():
 			self.psi = (psi_n + np.pi) % (2.0 * np.pi) - np.pi # https://stackoverflow.com/questions/15927755/opposite-of-numpy-unwrap
 			self.vx  = vx_n
 			self.vy  = vy_n
-			self.wz  = wz_n
-			self._update_low_level_control(deltaT)
+			self.wz  = wz_n			
 
 		self.acc_lat = (self.vy - vy_prev)/self.dt_model
 		self.acc_lon = (self.vx - vx_prev)/self.dt_model
@@ -128,9 +131,11 @@ class VehicleSimulator():
 	def _update_low_level_control(self, dt_control):
 		# e_<n> = self.<n> - self.<n>_des
 		# d/dt e_<n> = - kp * e_<n>
+		# or kp = alpha, low pass filter gain
+		# kp = alpha = discretization time/(time constant + discretization time)
 		# This is just to simulate some first order control delay in acceleration/steering.
-		self.acc = 5.0 * (self.acc_des - self.acc) * dt_control + self.acc
-		self.df  = 5.0  * (self.df_des  - self.df) * dt_control + self.df
+		self.acc = dt_control/(dt_control + self.acc_time_constant) * (self.acc_des - self.acc) + self.acc
+		self.df = dt_control/(dt_control + self.df_time_constant) * (self.df_des - self.df) + self.df
 
 if __name__=='__main__':
 	print 'Starting Simulator.'
