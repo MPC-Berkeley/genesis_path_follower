@@ -2,7 +2,7 @@
 import rospy
 import numpy as np
 import matplotlib.pyplot as plt
-from gps_utils import ref_gps_traj as r
+from gps_utils import ref_gps_traj_dyn as r
 from genesis_path_follower.msg import state_est_dyn
 from genesis_path_follower.msg import mpc_path_dyn
 from plot_utils.getVehicleFrame import plotVehicle

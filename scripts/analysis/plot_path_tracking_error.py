@@ -103,7 +103,7 @@ def get_errors(pr_matfile, pf_matfile, bagfile, st_ind=None, end_ind=None):
 
 	# START INTERPOLATION
 	# Discretize the path finely to help with analysis.
-	path_disc = 0.1 # m
+	path_disc = 0.05 # m
 	s_interp = np.arange(0.0, s_pr[-1], path_disc)
 	x_pr = np.interp(s_interp, s_pr, xy_pr[:,0])
 	y_pr = np.interp(s_interp, s_pr, xy_pr[:,1])
