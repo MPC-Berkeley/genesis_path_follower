@@ -9,7 +9,7 @@ import pdb
 def plot(r_matfile, f_matfile, save_name):
 
 	data = sio.loadmat(f_matfile)
-	assert(data['mode'] == 'Real')
+	assert(data['mode'] != 'Sim')
 	lats = np.ravel(data['lat']).tolist()
 	lons = np.ravel(data['lon']).tolist()
 
@@ -21,6 +21,7 @@ def plot(r_matfile, f_matfile, save_name):
 		st_ind = 0
 
 	data_record = sio.loadmat(r_matfile)
+	assert(data_record['mode'] != 'Sim')	
 	
 	lats_r = np.ravel(data_record['lat']).tolist()
 	lons_r = np.ravel(data_record['lon']).tolist()
@@ -33,8 +34,8 @@ def plot(r_matfile, f_matfile, save_name):
 	gmap.draw(save_name)
 
 if __name__=='__main__':
-	parser = argparse.ArgumentParser('Plot GPS map from a processed matfile containing lat/lon history from a path recording and following experiment.')
-	parser.add_argument('--pr', type=str, required=True, help='Matfile of recorded path..')
+	parser = argparse.ArgumentParser('Plot GPS map from 2 processed matfiles containing lat/lon history from a path recording and following experiment.')
+	parser.add_argument('--pr', type=str, required=True, help='Matfile of recorded path.')
 	parser.add_argument('--pf', type=str, required=True, help='Matfile of followed path.')
 	parser.add_argument('-o', '--out', type=str, required=True, help='Map HTML save location.')
 	args = parser.parse_args()

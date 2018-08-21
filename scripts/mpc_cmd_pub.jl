@@ -1,6 +1,7 @@
 #!/usr/bin/env julia
 
 # MPC Command Publisher/Controller Module Interface to the Genesis.
+# This version using the Nonlinear Kinematic Bicycle Model.
 
 ###########################################
 #### ROBOTOS
@@ -56,7 +57,7 @@ unshift!(PyVector(pyimport("sys")["path"]), gps_utils_loc) # append the current 
 grt = rgt.GPSRefTrajectory(mat_filename=mat_fname, LAT0=lat0, LON0=lon0, YAW0=yaw0)
 
 ###########################################
-#### MPC Controller Module
+#### MPC Controller Module with Cost Function Weights.
 #### Global Variables for Callbacks/Control Loop.
 ###########################################
 push!(LOAD_PATH, scripts_dir * "mpc_utils")
@@ -102,7 +103,7 @@ function state_est_callback(msg::state_est)
 end
 
 function pub_loop(acc_pub_obj, steer_pub_obj, mpc_path_pub_obj)
-    loop_rate = Rate(10.0)
+    loop_rate = Rate(20.0)
     while ! is_shutdown()
 	    if ! received_reference		# Reference not received so don't use MPC yet.
 	        rossleep(loop_rate)
@@ -171,6 +172,7 @@ function pub_loop(acc_pub_obj, steer_pub_obj, mpc_path_pub_obj)
 			publish( acc_pub_obj,   Float32Msg(-1.0) )
 			publish( steer_pub_obj, Float32Msg(0.0) )		
 		end
+		
 	    rossleep(loop_rate)
 	end
 end	
@@ -184,7 +186,12 @@ function start_mpc_node()
     steer_enable_pub = Publisher("/control/enable_spas",  UInt8Msg, queue_size=2, latch=true)
 
     mpc_path_pub = Publisher("mpc_path", mpc_path, queue_size=2)
-	sub_state  = Subscriber("state_est", state_est, state_est_callback, queue_size=2)    
+	sub_state  = Subscriber("state_est", state_est, state_est_callback, queue_size=2)
+
+	# Start up Ipopt/Solver.
+	for i=1:3
+		kmpc.solve_model()
+	end    
 
 	publish(acc_enable_pub, UInt8Msg(2))
 	publish(steer_enable_pub, UInt8Msg(1))
