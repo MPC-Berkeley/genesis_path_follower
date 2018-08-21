@@ -11,7 +11,7 @@
 
   <!-- Waypoints CSV to specify path. -->
   <!-- Set is_heading_info to true if Heading (N = 0) is used instead of Yaw (E = 0). -->
-  <param name="vehicle/mat_waypoints" type="str" value="$(find genesis_path_follower)/paths/path1_6_20.mat" />
+  <param name="vehicle/mat_waypoints" type="str" value="$(find genesis_path_follower)/paths/rightTurnRFSnitin.mat" />
   <param name="vehicle/is_heading_info" type="bool" value="False"/>
   <param name="vehicle/time_check_on" type="bool" value="False"/>
 
@@ -23,7 +23,7 @@
   <!--...................................................................-->
 
   <!-- MPC, State Publisher, and Plotting Nodes -->
-  <node ns="vehicle" pkg="genesis_path_follower" type="lk_cmd_pub.py" name="mpc_node" output="log"/>
+  <node ns="vehicle" pkg="genesis_path_follower" type="lk_cmd_pub.py" name="mpc_node" output="screen"/>
   <node ns="vehicle" pkg="genesis_path_follower" type="state_publisher.py" name="state_pub_node" output="log"/>
   <node ns="vehicle" pkg="genesis_path_follower" type="gps_plotter.py" name="plot_node" output="log"/>
 
@@ -35,6 +35,6 @@
   <arg name="perception_topics" default="/mando_camera/lane_left /mando_camera/lane_right"/>
 
   <node pkg="rosbag" type="record" name="rosbag_path_recorder" respawn="true" output="screen" 
-        args="-o $(find genesis_path_follower)/bags/path_follow $(arg can_topics) $(arg gps_topics) $(arg vehicle_topics) $(arg control_topics) $(arg perception_topics)" />
+        args="-a -o $(find genesis_path_follower)/bags/path_follow" />
 
 </launch>
