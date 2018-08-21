@@ -101,7 +101,7 @@ def parse_rosbag(mode, in_rosbag, out_mat):
 	# if the controller is enabled or not.
 	t_enable = None
 	for topic, msg, _ in b.read_messages(topics=mpc_path_topic_name):
-		if msg.solv_status == 'Optimal':
+		if msg.solv_status_long == 'Optimal':
 			t_enable = msg.header.stamp.secs + 1e-9 * msg.header.stamp.nsecs
 			break				
 	

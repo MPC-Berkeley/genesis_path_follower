@@ -4,7 +4,7 @@
 	<!-- This launch file is intended to simulate a path following experiment with GPS.  Vehicle simulation, GPS plotting, and vehicle control are enabled. -->
 	
 	<!-- Pick between CPG + RFS coordinate systems here. -->
-	<!--rosparam command="load" file="$(find genesis_path_follower)/launch/rfs.yaml" ns="vehicle"/-->
+	<!-- <rosparam command="load" file="$(find genesis_path_follower)/launch/rfs.yaml" ns="vehicle" /> -->
 	<rosparam command="load" file="$(find genesis_path_follower)/launch/cpg.yaml" ns="vehicle"/>
 
   <param name="vehicle/scripts_dir" type="str" value="$(find genesis_path_follower)/scripts/" />
@@ -17,14 +17,15 @@
 
   <!-- Waypoints CSV to specify path. -->
   <!-- Set is_heading_info to true if Heading (N = 0) is used instead of Yaw (E = 0). -->
-  <param name="vehicle/mat_waypoints" type="str" value="$(find genesis_path_follower)/paths/cpg_clean.mat" />
+  <param name="vehicle/mat_waypoints" type="str" value="$(find genesis_path_follower)/paths/cpg_clean_curv.mat" />
+  <!-- <param name="vehicle/mat_waypoints" type="str" value="$(find genesis_path_follower)/paths/path1_6_20_curv.mat" /> -->
   <param name="vehicle/is_heading_info" type="bool" value="True"/>
   <param name="vehicle/time_check_on" type="bool" value="False"/>
 
   <!--...................................................................-->
 
   <!-- MPC, Simulation, and Plotting Nodes -->
-  <node ns="vehicle" pkg="genesis_path_follower" type="mpc_cmd_pub.jl" name="mpc_node" output="log"/>
+  <node ns="vehicle" pkg="genesis_path_follower" type="mpc_cmd_pub_Frenet_Lin.jl" name="mpc_node" output="screen"/>
   <node ns="vehicle" pkg="genesis_path_follower" type="vehicle_simulator.py" name="sim_node" output="log"/>
   <node ns="vehicle" pkg="genesis_path_follower" type="gps_vehicle_plotter.py" name="plot_node" output="log"/>
 

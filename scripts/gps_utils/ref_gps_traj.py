@@ -63,25 +63,35 @@ class GPSRefTrajectory():
 		lats = np.ravel(data_dict['lat'])
 		lons = np.ravel(data_dict['lon'])
 		yaws = np.ravel(data_dict['psi'])
+		cdists = np.ravel(data_dict['cdists'])
+		curv = data_dict['curv']	# this is already a good matrix; size 6626 x 4 (polyDeg+1), no need to ravel
+		vels = np.ravel(data_dict['v'])
 
 		for i in range(len(lats)):
 			lat = lats[i]; lon = lons[i]
-			X,Y = latlon_to_XY(LAT0, LON0, lat, lon)
-			if len(Xs) == 0: 		# i.e. the first point on the trajectory
-				cdists.append(0.0)	# s = 0
-			else:					# later points on the trajectory
-				d = math.sqrt( (X - Xs[-1])**2 + (Y - Ys[-1])**2 ) + cdists[-1]
-				cdists.append(d) 	# s = s_prev + dist(z[i], z[i-1])
+			X,Y = latlon_to_XY(LAT0, LON0, lat, lon) # Greg's magic function
+			# yaw already provided
+
+			# cdists already provided by path-file; cdists = "s" ; unit of "s" is m
+			# if len(Xs) == 0: 		# i.e. the first point on the trajectory
+				# cdists.append(0.0)	# s = 0
+			# else:					# later points on the trajectory
+				# d = math.sqrt( (X - Xs[-1])**2 + (Y - Ys[-1])**2 ) + cdists[-1]
+				# cdists.append(d) 	# s = s_prev + dist(z[i], z[i-1])
 			Xs.append(X)
 			Ys.append(Y)
 
 		# global trajectory matrix
-		self.trajectory =  np.column_stack((tms, lats, lons, yaws, Xs, Ys, cdists)) 
+		self.trajectory =  np.column_stack((tms, lats, lons, yaws, Xs, Ys, cdists, vels, curv)) 
 		
+
 		# interpolated path or what I call "local trajectory" -> reference to MPC
 		self.x_interp	= None
 		self.y_interp	= None
 		self.psi_interp	= None
+		self.curv_interp = None	# added curvature for FRENET
+		self.s_interp = None	# added, not sure needed
+		self.v_interp = None
 		
 		# some handles for plotting (see plot_interpolation)
 		self.f = None
@@ -117,6 +127,28 @@ class GPSRefTrajectory():
 		else:
 			return self.__waypoints_using_time(closest_traj_ind, yaw_init)			  #no v_ref, use time information for interpolation
 
+	####### FRENET ######
+	# s_ref, K_coeff, stop_cmd, s_curr, ey_curr, epsi_curr, x_ref, y_ref, psi_ref = grt[:get_waypoints_frenet](x_curr, y_curr, psi_curr)
+	def get_waypoints_frenet(self, X_init, Y_init, yaw_init, v_target=None):
+		XY_traj = self.trajectory[:,4:6]	# excluding 6 (python notation)
+		xy_query = np.array([[X_init,Y_init]])	# the vehicle's current position (X,Y); size: 1 by 2
+
+		# find the index of the closest point on the trajectory to the initial vehicle pose
+		diff_dists = np.sum( (XY_traj - xy_query)**2, axis=1 )
+		closest_traj_ind = np.argmin(diff_dists) 	# extract index along path
+		ey_abs_sq = np.min(diff_dists)		# compute ey^2
+		ey_abs = np.sqrt(ey_abs_sq)			# |ey| (sign not known, computed later on)
+		if v_target is not None:
+			print('not properly implemented yet')
+			return self.__waypoints_using_time_frenet(closest_traj_ind, yaw_init, ey_abs, X_init, Y_init)			  #NOT PROPERLY IMPLEMENTED - JUST SO THAT IT WORKS
+
+			# return self.__waypoints_using_vtarget(closest_traj_ind, v_target, yaw_init) #v_ref given, use distance information for interpolation
+		else:  # currently used
+			# return self.__waypoints_using_time(closest_traj_ind, yaw_init)			  #no v_ref, use time information for interpolation
+			return self.__waypoints_using_time_frenet(closest_traj_ind, yaw_init, ey_abs, X_init, Y_init)			  #no v_ref, use time information for interpolation
+
+
+
 	# Visualization Function to plot the vehicle's current position, the full global trajectory, and the local trajectory for MPC.
 	def plot_interpolation(self, x,y):
 		if self.x_interp is None:
@@ -145,8 +177,9 @@ class GPSRefTrajectory():
 		plt.pause(0.05)	
 
 	''' Helper functions: you shouldn't need to call these! '''
+	# hence it starts with __FUNCTIONNAME 
 	def __waypoints_using_vtarget(self, closest_traj_ind, v_target, yaw_init):
-		start_dist = self.trajectory[closest_traj_ind,6] # s0, cumulative dist corresponding to closest point
+		start_dist = self.trajectory[closest_traj_ind,6] # cumulative dist corresponding to look ahead point
 
 		dists_to_fit = [x*self.traj_dt*v_target + start_dist for x in range(0,self.traj_horizon+1)] # edit bounds
 		# NOTE: np.interp returns the first value x[0] if t < t[0] and the last value x[-1] if t > t[-1].
@@ -180,6 +213,69 @@ class GPSRefTrajectory():
 			stop_cmd = True
 
 		return self.x_interp, self.y_interp, self.psi_interp, stop_cmd
+
+
+	#### FRENET ###
+	# return: (s_ref, K_coeff, stop_cmd, s_curr, ey_curr, epsi_curr, x_ref, y_ref, psi_ref, v_ref); (x_ref, y_ref, psi_ref) only for plotting
+	# arguments: (closest_traj_ind, yaw_init, ey_abs, X_init, Y_init)
+	def __waypoints_using_time_frenet(self, closest_traj_ind, yaw_init, ey_abs, X_init, Y_init):
+		# 	self.trajectory =  np.column_stack((tms, lats, lons, yaws, Xs, Ys, cdists, curv)) 
+		start_tm = self.trajectory[closest_traj_ind,0]	# corresponds to look ahead point OR CURRENT ???????
+
+		# extract corresponding time indices
+		times_to_fit = [h*self.traj_dt + start_tm for h in range(0,self.traj_horizon+1)]
+
+		# get (X,Y, Psi) for plotting purposes
+		# NOTE: np.interp returns the first value x[0] if t < t[0] and the last value x[-1] if t > t[-1].
+		self.x_interp = np.interp(times_to_fit, self.trajectory[:,0], self.trajectory[:,4]) 	 # x_des = f_interp(t_des, t_actual, x_actual)
+		self.y_interp = np.interp(times_to_fit, self.trajectory[:,0], self.trajectory[:,5]) 	 # y_des = f_interp(t_des, t_actual, y_actual)
+		self.v_interp = np.interp(times_to_fit, self.trajectory[:,0], self.trajectory[:,7])
+
+
+		psi_ref = np.interp(times_to_fit, self.trajectory[:,0], self.trajectory[:,3])    # psi_des = f_interp(t_des, t_actual, psi_actual)
+		self.psi_interp = self.__fix_heading_wraparound(psi_ref, yaw_init)
+
+		self.s_interp = np.interp(times_to_fit, self.trajectory[:,0], self.trajectory[:,6])	# compute the look-ahead s
+		self.curv_interp = self.trajectory[closest_traj_ind,8:]	# extract local c(s) polynomial
+		stop_cmd = False
+		if self.s_interp[-1] == self.trajectory[-1,6]:
+			stop_cmd = True
+
+		# determine s_curr, epsi_curr
+		s_curr = self.trajectory[closest_traj_ind, 6]	# determine current progress along s
+		epsi_curr = yaw_init - self.trajectory[closest_traj_ind,3]	# e_psi = psi - \theta(s), where psi is vehicle-yaw and theta(s) is curve-yaw
+		
+		# VG EDITS
+		s_curr_vg = self.s_interp[0]
+		epsi_curr_vg = yaw_init - self.psi_interp[0]
+
+		# better approximation of ey
+		lat_error_X = X_init - self.x_interp[0]
+		lat_error_Y = Y_init - self.y_interp[0]
+		frenet_x = lat_error_X * np.cos(self.psi_interp[0]) + lat_error_Y * np.sin(self.psi_interp[0])
+		frenet_y = -lat_error_X * np.sin(self.psi_interp[0]) + lat_error_Y * np.cos(self.psi_interp[0])
+		ey_curr_vg = frenet_y
+
+
+		# to compute e_y, follow Rajamani's book, equations (2.54), (2.55)
+		# X = X_des - e_y * sin(psi), Y = Y_des + e_y*cos(psi)
+		# seems correct
+		X_des = self.trajectory[closest_traj_ind,4]
+		Y_des = self.trajectory[closest_traj_ind,5]
+		cos_psi = np.cos(yaw_init)
+		sin_psi = np.sin(yaw_init)
+		if abs(cos_psi) >= abs(sin_psi): 	# division is more stable
+			ey = (Y_init - Y_des)/cos_psi	# seems correct
+		else:
+			ey = (X_des - X_init)/sin_psi	# seems correct
+		ey_curr = np.sign(ey)*ey_abs	# use ey_abs b/c numerically more stable; ey only used to determine sign
+
+
+		# print(ey_curr)
+		# print(ey_curr_vg)
+
+		return self.s_interp, self.curv_interp, stop_cmd, s_curr, ey_curr_vg, epsi_curr, self.x_interp, self.y_interp, self.psi_interp, self.v_interp
+
 
 	def __fix_heading_wraparound(self, psi_ref, psi_current):
 		# This code ensures that the psi_reference agrees with psi_current, that there are no jumps by +/- 2*pi.
