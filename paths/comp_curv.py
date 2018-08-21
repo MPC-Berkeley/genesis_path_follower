@@ -2,7 +2,7 @@
 # code can be improved, but not too bad (in the author's humble opinion)
 
 # sample use
-# python comp_curv_CPG.py --infile cpg_clean.mat --outfile cpg_clean_curv.mat
+# python comp_curv.py --infile cpg_clean.mat --outfile cpg_clean_curv.mat
 
 
 import scipy.io as sio
@@ -132,6 +132,8 @@ def comp_curvature(infile, outfile):
 	# append last element so that all vertices of same 
 	Curv_all.append(0)
 	ds_tmp.append(0)	
+	print('-- done computing Curv_all --')
+
 
 	# heuristic: remove the jumps in the last few c(s)
 	# useful for RFS when car comes to stop
@@ -180,6 +182,8 @@ def comp_curvature(infile, outfile):
 	# tm_length = []
 	t_interpOffset = 1*dt_mpc	# offset used to add chunks to beginning and end for interpolation
 	for ii in range( int(len(cdists) - round(2*(N_mpc*dt_mpc)/dt_gps)) ) : # loop over index of 
+		if ii%1000 == 0:
+			print(ii)
 		ii_interp = max(0,ii - int(t_interpOffset/dt_gps))	# look ahead 0.1 sec (/0.01 because data comes in every 0.01s)
 		# data is sampled on average every dt_gps (e.g. 10ms = 0.01 for Black Genesis)
 		tm_interp = np.arange(T_all[ii_interp], T_all[ii_interp] + N_mpc*dt_mpc+t_interpOffset, dt_gps)	# interpolate time, WHAT IS A GOOD DISCRETIZATION? 10ms for now
@@ -245,7 +249,7 @@ def comp_curvature(infile, outfile):
 		sEnd = cdists[closest_ind]
 		s_max = sEnd - s0
 		x_recon, y_recon, psi_recon = reconstruct_frenet(X_all[i], Y_all[i], Psi_all[i], s0, s_max, curv_coeff[i,:])
-		print(curv_coeff[i,:])
+		# print(curv_coeff[i,:])
 		# pdb.set_trace()
 		plt.plot(x_recon, y_recon,'--',lw=2)
 	plt.show()

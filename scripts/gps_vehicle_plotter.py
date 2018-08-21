@@ -171,8 +171,8 @@ class PlotGPSTrajectory():
 		self.y_mpc_traj = msg.ys
 		
 		# Update the reference for the MPC module.
-		self.x_ref_traj = msg.xr
-		self.y_ref_traj = msg.yr
+		self.x_ref_traj = msg.xr_recon
+		self.y_ref_traj = msg.yr_recon
 
 if __name__=='__main__':
 	p = PlotGPSTrajectory()

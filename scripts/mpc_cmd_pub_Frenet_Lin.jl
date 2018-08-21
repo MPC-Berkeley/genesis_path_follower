@@ -201,9 +201,9 @@ function pub_loop(acc_pub_obj, steer_pub_obj, mpc_path_pub_obj)
 	control_rate = 20 	# max 50 Hz
     loop_rate = Rate(control_rate)
 
-	solv_time_long_gurobi1_all = zeros(control_rate/10*3000)		# over Gurobi.jl interface; mean: 2ms, max 4ms
-	solv_time_lat_gurobi1_all = zeros(control_rate/10*3000)		# over Gurobi.jl interface; mean: 2ms, max 4ms
-	solv_time_gurobi_tot_all = zeros(control_rate/10*3000)
+	solv_time_long_gurobi1_all = zeros(control_rate/10*6000)		# over Gurobi.jl interface; mean: 2ms, max 4ms
+	solv_time_lat_gurobi1_all = zeros(control_rate/10*6000)		# over Gurobi.jl interface; mean: 2ms, max 4ms
+	solv_time_gurobi_tot_all = zeros(control_rate/10*6000)
 
     num_warmStarts = 2	# number of warmstarts - no control applied during these steps
     it_num = 0	# iteration_count
