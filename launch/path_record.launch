@@ -1,7 +1,11 @@
 <?xml version="1.0"?>
 
 <launch>
-  <!-- This launch file is intended to aid in recording a path at Richmond Field Station.  State publishing and GPS plotting are enabled. -->
+  <!-- This launch file is intended to aid in recording a path with GPS.  State publishing and GPS plotting are enabled. -->
+
+	<!-- Pick between CPG + RFS coordinate systems here. -->
+	<!--rosparam command="load" file="$(find genesis_path_follower)/launch/rfs.yaml" ns="vehicle"/-->
+	<rosparam command="load" file="$(find genesis_path_follower)/launch/cpg.yaml" ns="vehicle"/>
 
   <param name="vehicle/scripts_dir" type="str" value="$(find genesis_path_follower)/scripts/" />
 
@@ -17,11 +21,6 @@
   <param name="vehicle/is_heading_info" type="bool" value="False"/>
   <param name="vehicle/time_check_on" type="bool" value="False"/>
 
-  <!-- RFS Coordinate System Definition -->
-  <param name="vehicle/lat0" type="double" value="37.917929"/>
-  <param name="vehicle/lon0" type="double" value="-122.331798"/>
-  <param name="vehicle/yaw0" type="double" value="0.0"/>
-
   <!--...................................................................-->
 
   <!-- State Publishing and Plotting Nodes -->
@@ -29,11 +28,9 @@
   <node ns="vehicle" pkg="genesis_path_follower" type="gps_plotter.py" name="plot_node" output="log"/>
 
   <!-- Recording Node -->
-  <arg name="can_topics" default="/can_1/can_rx /can_1/can_tx /can_2/can_rx /rosout /rosout_agg"/>
-  <arg name="gps_topics" default="/gps/fix /gps/odom /gps/vel /imu/data/"/>
-  <arg name="vehicle_topics" default="/vehicle/imu /vehicle/state_est /vehicle/steering /vehicle/wheel_speeds"/>
-  <arg name="perception_topics" default="/mando_camera/lane_left /mando_camera/lane_right"/>
+  <arg name="exclude_topics" default="/image_raw"/>
 
   <node pkg="rosbag" type="record" name="rosbag_path_recorder" respawn="true" output="screen" 
-        args="-o $(find genesis_path_follower)/bags/path_record $(arg can_topics) $(arg gps_topics) $(arg vehicle_topics) $(arg perception_topics)" />
+        args="-a -o $(find genesis_path_follower)/bags/path_record -x $(arg exclude_topics)" />
+
 </launch>

@@ -50,15 +50,16 @@ def latlon_to_XY(lat0, lon0, lat1, lon1):
 
 ''' Topic Parsing Functions '''
 def parse_gps_fix(msg):
+	# This function gets the latitude and longitude from the OxTS.
 	global tm_gps, lat, lon
 	tm_gps = msg.header.stamp.secs + 1e-9 * msg.header.stamp.nsecs
 	lat = msg.latitude
 	lon = msg.longitude
 
 def parse_gps_vel(msg):
+	# This function gets the velocity and low-pass filtered acceleration from the OxTS.
 	global tm_vel, vel, acc_filt
-
-	# TODO: can get v_longitudinal and v_lateral by rotating v_east and v_north by psi.
+	
 	v_east = msg.twist.twist.linear.x
 	v_north = msg.twist.twist.linear.y
 	v_gps = m.sqrt(v_east**2 + v_north**2)
@@ -66,7 +67,6 @@ def parse_gps_vel(msg):
 	if tm_vel is None:
 		tm_vel = msg.header.stamp.secs + 1e-9 * msg.header.stamp.nsecs
 		acc_filt = 0.0
-
 	else:
 		dtm_vel = msg.header.stamp.secs + 1e-9 * msg.header.stamp.nsecs - tm_vel
 		tm_vel = msg.header.stamp.secs + 1e-9 * msg.header.stamp.nsecs
@@ -74,14 +74,6 @@ def parse_gps_vel(msg):
 		acc_filt = 0.01 * acc_raw + 0.99 * acc_filt # Low Pass Filter for Acceleration
 
 	vel = v_gps
-
-'''
-def parse_wheel_speeds(msg):
-	# just use two rear wheels to get speed for now
-	tm = msg.header.stamp.secs + 1e-9 * msg.header.stamp.nsecs
-	avg_speed = 0.5 * (msg.wheel_speed_rl + msg.wheel_speed_rr) * KPH_TO_MPS
-	return tm, avg_speed
-'''
 
 def parse_imu_data(msg):
 	# Get yaw angle.
@@ -105,7 +97,7 @@ def parse_imu_data(msg):
 	# so heading is actually ccw radians from N = 0.
 
 def parse_steering_angle(msg):
-	# Get steering angle (wheel angle/steering ratio).
+	# Get steering angle (steering wheel angle/steering ratio).
 	global tm_df, df
 	tm_df= msg.header.stamp.secs + 1e-9 * msg.header.stamp.nsecs
 	df = m.radians(msg.steering_wheel_angle) / 15.87

@@ -6,7 +6,7 @@ from std_msgs.msg import UInt8
 from lk_utils.controllers import *
 from lk_utils.path_lib import *
 from lk_utils.vehicle_lib import *
-from lk_utils.velocityprofile_lib import *
+from lk_utils.velocityprofiles import *
 from lk_utils.sim_lib import *
 
 import math
@@ -45,7 +45,6 @@ class LanekeepingPublisher():
 
 		pathLocation = rospy.get_param('mat_waypoints')	
 		self.path.loadFromMAT(pathLocation)
-		self.path.setFriction(0.3)
 
 		#vehicle information needed - initialize to none
 		self.X = self.path.posE[0] 
@@ -59,8 +58,7 @@ class LanekeepingPublisher():
 		self.genesis = Vehicle('genesis')
 
 		#Create speed profile
-		self.speedProfile = VelocityProfile("racing")
-		self.speedProfile.generate(self.genesis, self.path)
+		self.speedProfile = BasicProfile(self.genesis, self.path, friction = 0.3, vMax = 20.)
 
 		#Create controller object - use lanekeeping
 		self.controller = LaneKeepingController(self.path, self.genesis, self.speedProfile)
@@ -113,7 +111,6 @@ class LanekeepingPublisher():
 
 			# use F = m*a to get desired acceleration. Limit acceleration command to 2 m/s
 			accel = min( Fx / self.genesis.m , 2.0)
-			print("\t\t\t accel is " +str(accel)) 
 
 
 
@@ -126,7 +123,7 @@ class LanekeepingPublisher():
 
 		#Disable inputs after test is ended
 		self.enable_steer_pub.publish(0) # disable steering control.
-		self.enabl_acc_pub.publish(0) # disable acceleration control.
+		self.enable_acc_pub.publish(0) # disable acceleration control.
 
 
 
