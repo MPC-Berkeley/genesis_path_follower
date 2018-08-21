@@ -2,7 +2,7 @@
 # code can be improved, but not too bad (in the author's humble opinion)
 
 # sample use
-# python comp_curv.py --infile cpg_clean.mat --outfile cpg_clean_curv.mat
+# 	python comp_curv.py --infile slow_lap_8_20.mat --outfile slow_lap_8_20_curv.mat
 
 
 import scipy.io as sio
@@ -63,7 +63,7 @@ def comp_curvature(infile, outfile):
 	N_mpc = 8		# should be longer in practice
 
 	# define gps-resolution
-	dt_gps = 0.07 	# sampling time [s] of data; 
+	dt_gps = 0.01 	# sampling time [s] of data; 
 					# 0.01 for new GPS on Black Genesis
 					# 0.07 for Azera data
 
@@ -85,6 +85,13 @@ def comp_curvature(infile, outfile):
 	Curv_all = []	# collects all curvature
 	T_all = np.ravel(path['t'])
 
+	# tmp = np.diff(T_all)
+	# max(tmp)
+	# min(tmp)
+	# np.mean(tmp)
+
+
+	pdb.set_trace()
 	# plot path figure
 	# plt.figure()
 	# plt.plot(X_all,Y_all)
@@ -132,12 +139,11 @@ def comp_curvature(infile, outfile):
 	# append last element so that all vertices of same 
 	Curv_all.append(0)
 	ds_tmp.append(0)	
-	print('-- done computing Curv_all --')
 
 
 	# heuristic: remove the jumps in the last few c(s)
 	# useful for RFS when car comes to stop
-	# Curv_all[-1-300:-1] = np.zeros(300)
+	Curv_all[-1-300:-1] = np.zeros(300)
 
 	# plt.figure()
 	# plt.title('Raw curv data')
@@ -178,6 +184,9 @@ def comp_curvature(infile, outfile):
 	curv_coeff = np.zeros((len(cdists),poly_order+1))				# this guy stores all the curv_coeff along 's'; 0 by default (straight)
 	curv_fit = np.empty((len(cdists), int(math.ceil(N_mpc*dt_mpc/dt_gps)) ))	# this is for plotting/verification purposes
 	s_fit = np.empty((len(cdists), int(math.ceil(N_mpc*dt_mpc/dt_gps)) ))		# this is for plotting/verification purposes
+
+	print('-- start fitting  --')
+
 
 	# tm_length = []
 	t_interpOffset = 1*dt_mpc	# offset used to add chunks to beginning and end for interpolation
