@@ -126,7 +126,7 @@ class LanekeepingPublisher():
 
 		#Disable inputs after test is ended
 		self.enable_steer_pub.publish(0) # disable steering control.
-		self.enabl_acc_pub.publish(0) # disable acceleration control.
+		self.enable_acc_pub.publish(0) # disable acceleration control.
 
 
 
