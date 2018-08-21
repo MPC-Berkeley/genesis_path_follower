@@ -1,8 +1,14 @@
 <?xml version="1.0"?>
 
 <launch>
+	<!-- This launch file is intended to run a path following experiment with GPS.  State publishing, GPS plotting, and vehicle control are enabled. -->
+
+	<!-- Pick between CPG + RFS coordinate systems here. -->
+	<!--rosparam command="load" file="$(find genesis_path_follower)/launch/rfs.yaml" ns="vehicle"/-->
+	<rosparam command="load" file="$(find genesis_path_follower)/launch/cpg.yaml" ns="vehicle"/>
 
   <param name="vehicle/scripts_dir" type="str" value="$(find genesis_path_follower)/scripts/" />
+
   <!-- The trajectory can be generated using recorded time or a target velocity. -->
   <!-- Set track_using_time to True to allow for time-varying velocity. -->
   <!-- Set track_using_time to False to use target_vel (m/s) instead. -->
@@ -15,11 +21,6 @@
   <param name="vehicle/is_heading_info" type="bool" value="False"/>
   <param name="vehicle/time_check_on" type="bool" value="False"/>
 
-  <!-- RFS Coordinate System Definition -->
-  <param name="vehicle/lat0" type="double" value="37.917929"/>
-  <param name="vehicle/lon0" type="double" value="-122.331798"/>
-  <param name="vehicle/yaw0" type="double" value="0.0"/>
-
   <!--...................................................................-->
 
   <!-- MPC, State Publisher, and Plotting Nodes -->
@@ -28,11 +29,7 @@
   <node ns="vehicle" pkg="genesis_path_follower" type="gps_plotter.py" name="plot_node" output="log"/>
 
   <!-- Recording Node -->
-  <arg name="can_topics" default="/can_1/can_rx /can_1/can_tx /can_2/can_rx /rosout /rosout_agg"/>
-  <arg name="gps_topics" default="/gps/fix /gps/odom /gps/vel /imu/data/"/>
-  <arg name="vehicle_topics" default="/vehicle/imu /vehicle/state_est /vehicle/steering /vehicle/wheel_speeds /vehicle/target_path /vehicle/mpc_path"/>
-  <arg name="control_topics" default="/control/enable_spas /control/enable_accel /control/accel /control/steer_angle"/>
-  <arg name="perception_topics" default="/mando_camera/lane_left /mando_camera/lane_right"/>
+  <arg name="exclude_topics" default="/image_raw"/>
 
   <node pkg="rosbag" type="record" name="rosbag_path_recorder" respawn="true" output="screen" 
         args="-a -o $(find genesis_path_follower)/bags/path_follow" />
