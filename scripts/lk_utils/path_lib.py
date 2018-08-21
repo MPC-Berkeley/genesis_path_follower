@@ -36,6 +36,7 @@ class Path:
 		self.posN = path['world']['roadN'].sum()
 		self.roadPsi = path['world']['roadPsi'].sum() 
 		self.roadIC = path['world']['road_IC'].sum()
+		self.isOpen = bool(path['world']['isOpen'].sum())
 
 
 
