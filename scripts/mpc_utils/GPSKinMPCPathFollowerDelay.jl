@@ -21,7 +21,7 @@
 
 __precompile__()
 
-module GPSKinMPCPathFollower
+module GPSKinMPCPathFollowerDelay
 
     using JuMP
     using Ipopt
@@ -48,7 +48,10 @@ module GPSKinMPCPathFollower
 	a_dmax = 1.5			# jerk bound, m/s^3
 
 	v_min = 0.0				# vel bounds (m/s)
-	v_max = 20.0			
+	v_max = 20.0
+	
+	time_constant_acc = 0.4 # s
+	alpha = dt_control/(time_constant_acc + dt_control) # LPF gain from https://en.wikipedia.org/wiki/Low-pass_filter
 	
     # Cost function gains.
 	@NLparameter(mdl, C_x    == 9.0) # longitudinal deviation
@@ -70,6 +73,7 @@ module GPSKinMPCPathFollower
 	#@variable( mdl, v_min <= v[1:(N+1)] <= v_max, start=0.0)
 	@variable( mdl, v[1:(N+1)], start=0.0)
 	@variable( mdl, psi[1:(N+1)], start=0.0)
+	@variable( mdl, acc_lp[1:(N+1)], start=0.0) # low pass filtered acceleration.
 
 	# Input Constraints
 	@variable( mdl, a_min <= acc[1:N] <= a_max, start=0.0)
@@ -118,12 +122,14 @@ module GPSKinMPCPathFollower
 
 	@NLexpression(mdl, bta[i = 1:N], atan( L_b / (L_a + L_b) * tan(d_f[i]) ) )
 
+	@NLconstraint(mdl, acc_lp[1] == acc_current)
 	for i in 1:N
         # equations of motion wrt CoG
 		@NLconstraint(mdl, x[i+1]   == x[i]   + dt*( v[i]*cos(psi[i] + bta[i]) ) )
 		@NLconstraint(mdl, y[i+1]   == y[i]   + dt*( v[i]*sin(psi[i] + bta[i]) ) )
 		@NLconstraint(mdl, psi[i+1] == psi[i] + dt*( v[i]/L_b*sin(bta[i]) ) )
-        @NLconstraint(mdl, v[i+1]   == v[i]   + dt*( acc[i] ) )
+        @NLconstraint(mdl, v[i+1]   == v[i]   + dt*( acc_lp[i] ) )
+        @NLconstraint(mdl, acc_lp[i+1] == (1.0-alpha) * acc_lp[i] + alpha * acc[i] )
 	end
 
     #### (5) Initialize Solver ####
