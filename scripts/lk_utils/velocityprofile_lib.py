@@ -25,7 +25,7 @@ class VelocityProfile:
 def generateRacingProfile(vehicle, path):
 	#Extract Peformance Limits and parameters
 	g = vehicle.g
-	vMax = vehicle.maxSpeed
+	vMax = 5.0 ##DO NOT COMMIT
 	AxMax = path.friction * g
 	AyMax = path.friction * g
 	K = path.curvature

@@ -1,0 +1,6 @@
+to do list: 
+
+ - add brake limit to reasonable value
+ - make plot publisher for real time plotting
+ - grab rosbags
+ - plot car as an actual car

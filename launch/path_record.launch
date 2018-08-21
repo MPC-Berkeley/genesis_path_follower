@@ -13,7 +13,7 @@
 
   <!-- Waypoints CSV to specify path. -->
   <!-- Set is_heading_info to true if Heading (N = 0) is used instead of Yaw (E = 0). -->
-  <param name="vehicle/mat_waypoints" type="str" value="$(find genesis_path_follower)/paths/path1_6_20.mat" />
+  <param name="vehicle/mat_waypoints" type="str" value="$(find genesis_path_follower)/paths/rightTurnRFSnitin.mat" />
   <param name="vehicle/is_heading_info" type="bool" value="False"/>
   <param name="vehicle/time_check_on" type="bool" value="False"/>
 
