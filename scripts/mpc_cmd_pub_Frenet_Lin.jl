@@ -71,8 +71,6 @@ unshift!(PyVector(pyimport("sys")["path"]), gps_utils_loc) # append the current 
 @pyimport ref_gps_traj as rgt
 grt = rgt.GPSRefTrajectory(mat_filename=mat_fname, LAT0=lat0, LON0=lon0, YAW0=yaw0, traj_horizon = kmpcLinLongGurobi.N, traj_dt=kmpcLinLongGurobi.dt)
 
-
-
 # Reference for MPC
 const t_ref = collect(0:kmpcLinLongGurobi.dt:kmpcLinLongGurobi.N*kmpcLinLongGurobi.dt) 	 # array of length (N+1)
 x_ref = zeros(length(t_ref))
@@ -84,8 +82,6 @@ s_ref = zeros(length(t_ref))
 a_opt = 0.0
 df_opt = 0.0
 
-received_reference = false 		#TODO: can use time from last reading to see if data is fresh for MPC update.
-
 if target_vel > 0.0
 	des_speed = target_vel
 else
@@ -93,6 +89,7 @@ else
 end
 
 ref_lock = false	# avoid racing
+received_reference = false 		#TODO: can use time from last reading to see if data is fresh for MPC update.
 x_curr  = 0.0
 y_curr  = 0.0
 psi_curr  = 0.0
@@ -210,7 +207,7 @@ function pub_loop(acc_pub_obj, steer_pub_obj, mpc_path_pub_obj)
 
 	gc()	# clear garbage
 	# can disable GC here, but memory consumption grows very quickly
-	gc_enable(false) # enable later on
+	# gc_enable(false) # enable later on
 
     while ! is_shutdown()
 	    if ! received_reference		# Reference not received so don't use MPC yet.
