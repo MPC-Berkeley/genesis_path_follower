@@ -201,8 +201,11 @@ def get_errors(pr_matfile, pf_matfile, bagfile, st_ind=None, end_ind=None):
 	plt.subplot(511)
 	#plt.plot(s_pr[closest_ind_xy], error_xy, 'r')
 	plt.plot(s_pr[closest_ind_xy], lat_error_xy, 'b')
+	print("max lat error: ", max(lat_error_xy[2000:-1-200]))
+	print("mean lat error: ", np.mean(abs(lat_error_xy[2000:-1-200])))
 	plt.xlabel('S (m)')
 	plt.ylabel('Path (m)')
+
 
 	plt.subplot(512)
 	ev = v_pr[closest_ind_xy] - v_pf
@@ -243,6 +246,9 @@ def get_errors(pr_matfile, pf_matfile, bagfile, st_ind=None, end_ind=None):
 	plt.suptitle('Tracking Error Over Reference Path')
 	#################################################
 	plt.show()
+
+	pdb.set_trace()
+
 
 if __name__=='__main__':
 	parser = argparse.ArgumentParser('Get path tracking performance of MPC controller trajectory.')
