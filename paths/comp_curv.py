@@ -91,7 +91,8 @@ def comp_curvature(infile, outfile):
 	# np.mean(tmp)
 
 
-	pdb.set_trace()
+	# pdb.set_trace()
+
 	# plot path figure
 	# plt.figure()
 	# plt.plot(X_all,Y_all)
@@ -228,7 +229,7 @@ def comp_curvature(infile, outfile):
 	plt.figure()
 	plt.plot(cdists,Curv_all)
 	# plt.plot(s_fit.T,curv_fit.T)	# plots column-wise
-	for i in range(0,len(cdists),10):
+	for i in range(0,len(cdists),50):
 		plt.plot(s_fit[i,:],curv_fit[i,:],lw=2)
 	plt.show()
 
