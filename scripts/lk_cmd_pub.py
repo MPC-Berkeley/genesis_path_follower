@@ -58,7 +58,7 @@ class LanekeepingPublisher():
 		self.genesis = Vehicle('genesis')
 
 		#Create speed profile
-		self.speedProfile = BasicProfile(self.genesis, self.path, friction = 0.3, vMax = 20.)
+		self.speedProfile = BasicProfile(self.genesis, self.path, friction = 0.3, vMax = 10.)
 
 		#Create controller object - use lanekeeping
 		self.controller = LaneKeepingController(self.path, self.genesis, self.speedProfile)
@@ -70,6 +70,7 @@ class LanekeepingPublisher():
 
 		#Initialize map matching object - use closest style
 		self.mapMatch = MapMatch(self.path, "closest")
+		
 
 		#Enable steering
 		self.enable_steer_pub.publish(0) # enable steering control.
@@ -102,6 +103,7 @@ class LanekeepingPublisher():
 
 			#Localize Vehicle
 			self.mapMatch.localize(self.localState, self.globalState)
+			print("Lateral Error is " + str(self.localState.e) )
 			
 
 			#Calculate control inputs
