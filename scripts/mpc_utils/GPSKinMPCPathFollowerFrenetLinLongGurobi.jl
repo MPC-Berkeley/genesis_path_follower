@@ -70,7 +70,7 @@ module GPSKinMPCPathFollowerFrenetLinLongGurobi
     C_s = 20			# track progress
 	C_v = 10;			# ref velocity tracking weight			
 	C_acc = 0
-	C_dacc = 20;		# jerk penalty (was 10 on Aug 21)
+	C_dacc = 11;		# 20 too high; 10 OK for med speed; 10 a big jerky for high speed; 13 too high
 
 	Q = diagm([C_s ; C_v])	# create diagonal matrix
 	R = C_acc
