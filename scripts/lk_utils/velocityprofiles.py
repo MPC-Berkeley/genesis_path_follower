@@ -12,13 +12,24 @@ class BasicProfile():
     def __init__(self, vehicle, path, friction = 0.3, vMax = 10., AxMax = 9.81):
 		self.vehicle = vehicle
 		self.path = path
-		self.mu = friction
-		self.vMax = vMax
 
 	    #initialize variables
 		self.s = path.s
 		self.Ux = np.zeros(self.s.shape)
 		self.Ax = np.zeros(self.s.shape)
+
+		if isinstance(vMax, np.ndarray):
+			self.vMax = vMax
+		else: 
+			self.vMax = vMax * np.ones(self.s.shape)
+
+		if isinstance(friction, np.ndarray):
+			self.mu = friction
+		else:
+			self.mu = friction * np.ones(self.s.shape)
+
+
+
 	    
 		if path.isOpen:
 			self.generateBasicProfileOpen(AxMax)
@@ -31,19 +42,22 @@ class BasicProfile():
 	    K = self.path.curvature
 	    s = self.s
 	    AyMax = self.mu* g
-	    AxMax = min( abs(AxMax) , self.mu * g) 
+	    AxMax = min( np.append(self.mu * g, abs(AxMax)))
 
 	    #calculate lowest velocity point
 	    UxSS = np.sqrt ( np.divide(AyMax, np.abs(K + 1e-8) ) )
 	    minUx = np.amin(UxSS)
+	    maxUx = self.vMax
 	    idx = np.argmin(UxSS)
 
 	    #shift so we generate starting at lowest point
 	    inds = np.arange(len(UxSS))
 	    shiftedInds = np.roll(inds, -idx)
 	    kShifted = K[shiftedInds]
+	    maxUxShifted = maxUx[shiftedInds]
+	    AyMaxShifted = AyMax[shiftedInds]
 
-	    UxShift, AxShift = self.genSpeed(kShifted, minUx, AxMax, AyMax)
+	    UxShift, AxShift = self.genSpeed(kShifted, minUx, maxUxShifted, AxMax, AyMaxShifted)
 
 	    #unshift back to original
 	    self.Ux = np.roll(UxShift, idx)
@@ -55,13 +69,12 @@ class BasicProfile():
     	g = 9.81
     	K = self.path.curvature
     	AyMax = self.mu* g
-    	AxMax = min( abs(AxMax) , self.mu * g)
-    	self.Ux, self.Ax = self.genSpeed(K, 0, AxMax, AyMax) #minimum velocity is zero
+    	AxMax = min( np.append(self.mu * g, abs(AxMax)))
+    	self.Ux, self.Ax = self.genSpeed(K, 0, self.vMax, AxMax, AyMax) #minimum velocity is zero
 
-    def genSpeed(self, K, minUx, AxMax, AyMax):
+    def genSpeed(self, K, minUx, maxUx, AxMax, AyMax):
 	    #Extract Peformance Limits and parameters
 	    g = 9.81
-	    maxUx = self.vMax
 	    s = self.s
 	    
 	    numSteps = s.size
@@ -82,9 +95,9 @@ class BasicProfile():
 	    # #Integrate forward to find acceleration limit
 	    for i in range(UxInit2.size-1):
 	         temp = np.sqrt( UxInit2[i]**2 + 2*AxMax*(s[i+1] - s[i]))
-	        
-	         if temp > maxUx:
-	             temp = maxUx
+	         
+	         if temp > maxUx[i]:
+	             temp = maxUx[i]
 
 	         if temp > UxInit1[i+1]:
 	             temp = UxInit1[i+1]
@@ -109,7 +122,6 @@ class BasicProfile():
 	    
 
 	    return UxInit3, ax
-
 
 
 
