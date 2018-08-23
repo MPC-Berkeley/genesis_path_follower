@@ -43,10 +43,10 @@ module GPSDynMPCPathFollowerFrenetLinLatGurobi
 	# x = (ey, epsi, vy, wz), u = (df)
 
 	# general control parameters
-	dt      = 0.20			# model discretization time, td (s)
-	# dt 		= 0.1
-	N       = 8				# horizon
-	# N 		= 16
+	#dt      = 0.20			# model discretization time, td (s)
+	dt 		= 0.1
+	#N       = 8				# horizon
+	N 		= 16
 	nx 		= 4				# dimension of x = (ey,epsi,vy,wz)
 	nu 		= 1				# number of inputs u = df
 	# L_a     = 1.108 		# dist from CoG to front axle (m)
@@ -86,12 +86,12 @@ module GPSDynMPCPathFollowerFrenetLinLatGurobi
 
 	# define cost functions
     C_ey 	= 5.0				# lateral deviation
-    C_epsi 	= 50.0			# heading deviation
-    C_vy   	= 1.0			# lateral velocity
-    C_wz 	= 1.0			# yaw rate 
+    C_epsi 	= 0.0			# heading deviation
+    C_vy   	= 0.0			# lateral velocity
+    C_wz 	= 0.0			# yaw rate 
 
 
-	C_df	 = 1.0	# 150			# tire angle input
+	C_df	 = 0.0	# 150			# tire angle input
 	C_ddf	 = 1000.0	# 3e4			# derivative of tire angle input
 
 	Q = diagm([C_ey ; C_epsi ; C_vy ; C_wz])	# state cost

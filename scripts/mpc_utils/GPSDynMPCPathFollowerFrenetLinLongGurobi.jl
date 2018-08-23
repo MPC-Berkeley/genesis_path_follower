@@ -48,10 +48,10 @@ module GPSDynMPCPathFollowerFrenetLinLongGurobi
 
 	# general control parameters
 	# some might be passed on as arguments
-	dt      = 0.20			# model discretization time, td (s)
-	# dt 		= 0.1
-	N       = 8				# horizon
-	# N		= 16
+	#dt      = 0.20			# model discretization time, td (s)
+	dt 		= 0.1
+	#N       = 8				# horizon
+	N		= 16
 	nx 		= 2				# dimension of x = (s,v)
 	nu 		= 1				# number of inputs u = a
 	# L_a     = 1.108 		# dist from CoG to front axle (m)
