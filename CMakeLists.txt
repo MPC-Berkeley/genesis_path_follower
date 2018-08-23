@@ -41,7 +41,8 @@ add_message_files(
 	state_est.msg
 	state_est_dyn.msg
 	mpc_path.msg
-	mpc_path_dyn.msg
+	#mpc_path_dyn.msg
+	mpc_path_dyn_frenet.msg
 )
 
 generate_messages(

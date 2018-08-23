@@ -11,8 +11,8 @@ module DynBicycleModel
 		d  = 0.945	 			# m  	(half-width, currently unused)
 		m  = 2303.1   			# kg 	(vehicle mass)
 		Iz  = 5520.1			# kg*m2 (vehicle inertia)
-		C_alpha_f = 7.6419e4    # N/rad	(front tire cornering stiffness)
-		C_alpha_r = 13.4851e4	# N/rad	(rear tire cornering stiffness)
+		C_alpha_f = 7.6419e4*2    # N/rad	(front tire cornering stiffness)
+		C_alpha_r = 13.4851e4*2	# N/rad	(rear tire cornering stiffness)
 		
 		X   = z[1]
 		Y   = z[2] 
@@ -27,7 +27,7 @@ module DynBicycleModel
 		# Compute tire slip angle
 		alpha_f = 0.0
 		alpha_r = 0.0
-		if abs(vx) > 1.0
+		if abs(vx) > 2.0
 			alpha_f = df - atan2( vy+lf*wz, vx )
 			alpha_r = -atan2(vy-lr*wz , vx)        		
 		end
@@ -37,13 +37,12 @@ module DynBicycleModel
 		Fyr = C_alpha_r * alpha_r
 
 		# Propagate the vehicle dynamics deltaT seconds ahead.			
-		vx_dot  = acc - 1/m*Fyf*sin(df) + wz*vy
-		vy_dot  = 1.0/m*(Fyf*cos(df) + Fyr) - wz*vx 
-		wz_dot  = 1.0/Iz*(lf*Fyf*cos(df) - lr*Fyr)
+		vx_dot  = acc - (Fyf*sin(df))/m + wz*vy
+		vy_dot  = (Fyf*cos(df) + Fyr)/m - wz*vx 
+		wz_dot  = (lf*Fyf*cos(df) - lr*Fyr)/Iz
 		psi_dot = wz
 		X_dot   = vx*cos(psi) - vy*sin(psi)
 		Y_dot   = vx*sin(psi) + vy*cos(psi)
-
 
 		z_dot = Vector(6)
 		z_dot[1] = X_dot

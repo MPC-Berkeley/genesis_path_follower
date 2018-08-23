@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from gps_utils import ref_gps_traj_dyn as r
 from genesis_path_follower.msg import state_est_dyn
-from genesis_path_follower.msg import mpc_path_dyn
+from genesis_path_follower.msg import mpc_path_dyn_frenet
 from plot_utils.getVehicleFrame import plotVehicle
 from mpl_toolkits.axes_grid1.inset_locator import zoomed_inset_axes
 
@@ -95,7 +95,7 @@ class PlotGPSTrajectory():
 
 		rospy.init_node('vehicle_plotter', anonymous=True)
 		rospy.Subscriber('state_est_dyn', state_est_dyn, self.update_state, queue_size=1)
-		rospy.Subscriber('mpc_path_dyn', mpc_path_dyn, self.update_mpc_trajectory, queue_size=1)
+		rospy.Subscriber('mpc_path_dyn', mpc_path_dyn_frenet, self.update_mpc_trajectory, queue_size=1)
 		self.loop()
 
 	def loop(self):
@@ -171,8 +171,8 @@ class PlotGPSTrajectory():
 		self.y_mpc_traj = msg.ys
 		
 		# Update the reference for the MPC module.
-		self.x_ref_traj = msg.xr
-		self.y_ref_traj = msg.yr
+		self.x_ref_traj = msg.xr_recon
+		self.y_ref_traj = msg.yr_recon
 
 if __name__=='__main__':
 	p = PlotGPSTrajectory()

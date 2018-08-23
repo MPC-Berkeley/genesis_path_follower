@@ -359,14 +359,6 @@ module GPSDynMPCPathFollowerFrenetLinLatGurobi
 		status = get_status(GurobiModel)
 
 
-
-
-
-
-		# log_str_lat = @sprintf("Solve Status Lat. IPOPT: %s, SA: %.3f, SolvTimeLat:  %.3f", is_opt_lat, df_opt, solv_time_lat)
-		# loginfo(log_str_lat)
-
-
 		# structure of z = [ (ddf,ey,epsi,vy, wz, df) ; (ddf, ey, epsi, vy, wz, df) ; ... ]
 		ddf_pred_gurobi = optimizer_gurobi[1:n_uxu:end]
 		df_pred_gurobi = optimizer_gurobi[6:n_uxu:end]
@@ -375,20 +367,20 @@ module GPSDynMPCPathFollowerFrenetLinLatGurobi
 		vy_pred_gurobi = [ vy_0 ; optimizer_gurobi[4:n_uxu:end] ]		# include current v 
 		wz_pred_gurobi = [ wz_0 ; optimizer_gurobi[5:n_uxu:end] ]		# include current v 
 
-		println("====== ey0, epsi0, vy0, wz0 in Gurobi LAT DYN:  $(x0') ====== ")
-		println("u0 LAT in Gurobi: $(u_0)")
+		# println("====== ey0, epsi0, vy0, wz0 in Gurobi LAT DYN:  $(x0') ====== ")
+		# println("u0 LAT in Gurobi: $(u_0)")
 
-		println("s_pred in Gurobi (incl s0): $(s_pred)")
-		println("vx_pred in Gurobi (incl v0): $(vx_pred)")
-		println("k_coeffs in Gurobi: $(k_coeffs)")
+		# println("s_pred in Gurobi (incl s0): $(s_pred)")
+		# println("vx_pred in Gurobi (incl v0): $(vx_pred)")
+		# println("k_coeffs in Gurobi: $(k_coeffs)")
 		
-		println("ddf_pred_gurobi: $(ddf_pred_gurobi)")
-		println("df_pred_gurobi: $(df_pred_gurobi)")
-		println("ey_pred_gurobi (incl ey0): $(ey_pred_gurobi)")
-		println("epsi_pred_gurobi (incl epsi0): $(epsi_pred_gurobi)")
-		println("vy_pred_gurobi (incl vy0): $(vy_pred_gurobi)")
-		println("wz_pred_gurobi (incl wz0): $(wz_pred_gurobi)")
-		println(" ")
+		# println("ddf_pred_gurobi: $(ddf_pred_gurobi)")
+		# println("df_pred_gurobi: $(df_pred_gurobi)")
+		# println("ey_pred_gurobi (incl ey0): $(ey_pred_gurobi)")
+		# println("epsi_pred_gurobi (incl epsi0): $(epsi_pred_gurobi)")
+		# println("vy_pred_gurobi (incl vy0): $(vy_pred_gurobi)")
+		# println("wz_pred_gurobi (incl wz0): $(wz_pred_gurobi)")
+		# println(" ")
 
 
 				# @printf "%.20f \n"  k_coeffs[1]

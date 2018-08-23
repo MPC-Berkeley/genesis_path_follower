@@ -8,7 +8,7 @@
 ###########################################
 using RobotOS
 @rosimport genesis_path_follower.msg: state_est_dyn
-@rosimport genesis_path_follower.msg: mpc_path_dyn
+@rosimport genesis_path_follower.msg: mpc_path_dyn_frenet
 @rosimport std_msgs.msg: UInt8
 @rosimport std_msgs.msg: Float32
 rostypegen()
@@ -46,7 +46,6 @@ else
 	error("Invalid rosparam global origin provided!")
 end
 
-
 ###########################################
 #### MPC Controller Module with Cost Function Weights.
 #### Global Variables for Callbacks/Control Loop.
@@ -54,11 +53,12 @@ end
 push!(LOAD_PATH, scripts_dir * "mpc_utils")
 import GPSDynMPCPathFollowerFrenetLinLongGurobi 
 import GPSDynMPCPathFollowerFrenetLinLatGurobi
+import DynBicycleModel
 
 # make sure the parameters (N, L, ...) are the same in both controllers
 const dmpcLinLongGurobi = GPSDynMPCPathFollowerFrenetLinLongGurobi
 const dmpcLinLatGurobi = GPSDynMPCPathFollowerFrenetLinLatGurobi
-
+const dyn_mdl = DynBicycleModel.f_dyn_bicycle_model
 
 ###########################################
 #### Reference GPS Trajectory Module
@@ -133,35 +133,62 @@ function state_est_callback(msg::state_est_dyn)
 	# end
 end
 
+function convertS2XY(acc, d_f, z_curr)
+   # states contain current states as well
+   x_mpc   = zeros(dmpcLinLongGurobi.N+1)
+   y_mpc   = zeros(dmpcLinLongGurobi.N+1)
+   psi_mpc = zeros(dmpcLinLongGurobi.N+1)
+   v_mpc = zeros(dmpcLinLongGurobi.N+1)
+   bta = zeros(dmpcLinLongGurobi.N)	
 
-# NEEDS TO BE FIXED
-# USES KINEMATIC bicycle model instead of DYNAMIC 
-function convertS2XY(acc, d_f)
-	# alternatively, could just use kin. model to forward integrate in time
-	global x_curr, y_curr, psi_curr, v_curr
+    # init initial state
+   x_mpc[1]   = z_curr[1]
+   y_mpc[1]   = z_curr[2]
+   psi_mpc[1] = z_curr[3]
+   v_mpc[1]   = z_curr[4]
 
+   for i in 1:dmpcLinLongGurobi.N
+    # equations of motion wrt CoG
+    bta[i] = atan( dmpcLinLongGurobi.L_b / (dmpcLinLongGurobi.L_a + dmpcLinLongGurobi.L_b) * tan(d_f[i]) )
+           x_mpc[i+1]   = x_mpc[i]   + dmpcLinLongGurobi.dt*( v_mpc[i]*cos(psi_mpc[i] + bta[i]) ) 
+           y_mpc[i+1]   = y_mpc[i]   + dmpcLinLongGurobi.dt*( v_mpc[i]*sin(psi_mpc[i] + bta[i]) ) 
+           psi_mpc[i+1] = psi_mpc[i] + dmpcLinLongGurobi.dt*( v_mpc[i]/dmpcLinLongGurobi.L_b*sin(bta[i]) ) 
+	       v_mpc[i+1]   = v_mpc[i]   + dmpcLinLongGurobi.dt*( acc[i] )
+    end
+	return x_mpc, y_mpc, psi_mpc, v_mpc
+end
+
+function convertS2XYdyn(acc, d_f, z_curr)
 	# states contain current states as well
-	x_mpc = zeros(dmpcLinLongGurobi.N+1)
-	y_mpc = zeros(dmpcLinLongGurobi.N+1)
+	x_mpc   = zeros(dmpcLinLongGurobi.N+1)
+	y_mpc   = zeros(dmpcLinLongGurobi.N+1)
 	psi_mpc = zeros(dmpcLinLongGurobi.N+1)
-	v_mpc = zeros(dmpcLinLongGurobi.N+1)
-	bta = zeros(dmpcLinLongGurobi.N)
+	vx_mpc  = zeros(dmpcLinLongGurobi.N+1)
+	vy_mpc  = zeros(dmpcLinLongGurobi.N+1)
+	wz_mpc  = zeros(dmpcLinLongGurobi.N+1)
+
 	# init initial state
-	x_mpc[1] = x_curr
-	y_mpc[1] = y_curr
-	psi_mpc[1] = psi_curr
-	v_mpc[1] = v_curr
+	x_mpc[1]   = z_curr[1]
+	y_mpc[1]   = z_curr[2]
+	psi_mpc[1] = z_curr[3]
+	vx_mpc[1]  = z_curr[4]
+	vy_mpc[1]  = z_curr[5]
+	wz_mpc[1]  = z_curr[6]
 
 	for i in 1:dmpcLinLongGurobi.N
-        # equations of motion wrt CoG
-        bta[i] = atan( dmpcLinLongGurobi.L_b / (dmpcLinLongGurobi.L_a + dmpcLinLongGurobi.L_b) * tan(d_f[i]) )
-		x_mpc[i+1]   = x_mpc[i]   + dmpcLinLongGurobi.dt*( v_mpc[i]*cos(psi_mpc[i] + bta[i]) ) 
-		y_mpc[i+1]   = y_mpc[i]   + dmpcLinLongGurobi.dt*( v_mpc[i]*sin(psi_mpc[i] + bta[i]) ) 
-		psi_mpc[i+1] = psi_mpc[i] + dmpcLinLongGurobi.dt*( v_mpc[i]/dmpcLinLongGurobi.L_b*sin(bta[i]) ) 
-        v_mpc[i+1]   = v_mpc[i]   + dmpcLinLongGurobi.dt*( acc[i] )
+        zu_curr = vec([z_curr; acc[i]; d_f[i]])
+		f = dyn_mdl(zu_curr)
+		z_curr = convert(Array{Float64,1}, z_curr + f * dmpcLinLongGurobi.dt )
+
+		x_mpc[i+1]   = z_curr[1]
+		y_mpc[i+1]   = z_curr[2]
+		psi_mpc[i+1] = z_curr[3]
+		vx_mpc[i+1]  = z_curr[4]
+		vy_mpc[i+1]  = z_curr[5]
+		wz_mpc[i+1]  = z_curr[6]
 	end
 
-	return x_mpc, y_mpc, v_mpc, psi_mpc
+	return x_mpc, y_mpc, psi_mpc, vx_mpc, vy_mpc, wz_mpc
 end
 
 # function compures reference points from curvature profile
@@ -210,6 +237,8 @@ function pub_loop(acc_pub_obj, steer_pub_obj, mpc_path_pub_obj)
 	it_num = 0	# iteration_count
 
 	gc()		# clear garbage
+
+	# gc_enable(false)
     
     while ! is_shutdown()
 	    if ! received_reference		# Reference not received so don't use MPC yet.
@@ -253,7 +282,7 @@ function pub_loop(acc_pub_obj, steer_pub_obj, mpc_path_pub_obj)
 
 		# Update Model
 		# z_ref = [x_ref y_ref psi_ref vx_ref vy_ref wz_ref]
-		# z_curr = vec([x_curr; y_curr; psi_curr; vx_curr; vy_curr; wz_curr])
+		z_curr = vec([x_curr; y_curr; psi_curr; vx_curr; vy_curr; wz_curr])
 		# u_curr = vec([prev_a; prev_df])
 		# dmpc.update_reference(z_ref)
 		# dmpc.update_model(z_curr, u_curr)
@@ -306,45 +335,48 @@ function pub_loop(acc_pub_obj, steer_pub_obj, mpc_path_pub_obj)
 			# THIS FUNCTION SHOULD BE UPDATED WITH DYNAMIC MODEL
 			x_ref_recon, y_ref_recon, psi_ref_recon = compRefXYfromCurv(s_curr, s_ref[end]-s_ref[1], K_coeff, length(s_ref)-1)
 
-			# compute the predicted x,y 
-			x_mpc, y_mpc, v_mpc, psi_mpc = convertS2XY(a_pred, df_pred)	# this function converts the (s,c(s)) to (X,Y)
+			# this function converts the (s,c(s)) to (X,Y)
+			if z_curr[4] 
+			x_mpc, y_mpc, psi_mpc, vx_mpc, vy_mpc, wz_mpc = convertS2XYdyn(a_pred, df_pred, z_curr) 			
 
+			mpc_path_msg = mpc_path_dyn_frenet()
+			mpc_path_msg.header.stamp = rostm			
+			mpc_path_msg.solv_status_long = string(is_opt_long)
+			mpc_path_msg.solv_status_lat  = string(is_opt_lat)
+			mpc_path_msg.solv_time_long = solv_time_long
+			mpc_path_msg.solv_time_lat = solv_time_lat
 
-			# OLD VIJAY X-Y position code
-			mpc_path_msg = mpc_path_dyn()
-			mpc_path_msg.header.stamp = rostm
-			mpc_path_msg.solv_status  = string(is_opt_long)
-			mpc_path_msg.solv_time = solv_time_tot_all[it_num+1]
-
-			# res_mpc = res[1]
+			# predicted states in X-Y coordinates
 			mpc_path_msg.xs   = x_mpc 	# x_mpc
-			# mpc_path_msg.xs   = res_mpc[:,1] 	# x_mpc
 			mpc_path_msg.ys   = y_mpc 	# y_mpc
-			# mpc_path_msg.ys   = res_mpc[:,2] 	# y_mpc
-			mpc_path_msg.psis = psi_mpc 	# psi_mpc
-			# mpc_path_msg.psis = res_mpc[:,3] 	# psi_mpc
-			mpc_path_msg.vxs  = v_mpc 	# vx_mpc
-			# mpc_path_msg.vxs  = res_mpc[:,4] 	# vx_mpc
-			# mpc_path_msg.vys  = res_mpc[:,5] 	# vy_mpc
-			# mpc_path_msg.wzs  = res_mpc[:,6] 	# vz_mpc
+			mpc_path_msg.psis = psi_mpc # psi_mpc
+			mpc_path_msg.vxs  = vx_mpc 	# vx_mpc
+			mpc_path_msg.vys  = vy_mpc 	# vy_mpc
+			mpc_path_msg.wzs  = wz_mpc 	# vz_mpc
+			mpc_path_msg.ss_fren 	= s_pred
+			mpc_path_msg.eys_fren	= ey_pred
+			mpc_path_msg.epsis_fren = epsi_pred
+			mpc_path_msg.curv 		= K_coeff
 
-			# res_ref = res[2]
-			mpc_path_msg.xr   = x_ref_recon 	# x_ref
-			# mpc_path_msg.xr   = res_ref[:,1] 	# x_ref
-			mpc_path_msg.yr   = y_ref_recon 	# y_ref
-			# mpc_path_msg.yr   = res_ref[:,2] 	# y_ref
-			mpc_path_msg.psir = psi_ref_recon 	# psi_ref
-			# mpc_path_msg.psir = res_ref[:,3] 	# psi_ref
-			mpc_path_msg.vxr  = vx_ref 			# vx_ref
-			# mpc_path_msg.vxr  = res_ref[:,4] 	# vx_ref
-			mpc_path_msg.vyr  = vy_ref 			# vy_ref
-			# mpc_path_msg.vyr  = res_ref[:,5] 	# vy_ref
-			mpc_path_msg.wzr  = wz_ref 			# vz_ref
-			# mpc_path_msg.wzr  = res_ref[:,6] 	# vz_ref
+			mpc_path_msg.xr   = x_ref 		# x_ref
+			mpc_path_msg.yr   = y_ref 		# y_ref
+			mpc_path_msg.psir = psi_ref 	# psi_ref
+			mpc_path_msg.vxr  = vx_ref 		# vx_ref
+			mpc_path_msg.vyr  = vy_ref 		# vy_ref
+			mpc_path_msg.wzr  = wz_ref 		# vz_ref
+
+
+
+			mpc_path_msg.xr_recon 	= x_ref_recon
+			mpc_path_msg.yr_recon   = y_ref_recon
+			mpc_path_msg.psir_recon = psi_ref_recon
+			# mpc_path_msg.vxr_recon =      			# unused
+			# mpc_path_msg.vyr_recon = 					# unused
+			# mpc_path_msg.wzr_recon = 					# unused
 
 			mpc_path_msg.df   = df_pred	# d_f (vectors)
 			mpc_path_msg.acc  = a_pred	# acc (vectors)
-
+			
 			publish(mpc_path_pub_obj, mpc_path_msg)
 
 			it_num = it_num + 1 	# update iteration iteration_count
@@ -370,6 +402,8 @@ function pub_loop(acc_pub_obj, steer_pub_obj, mpc_path_pub_obj)
 		end
 	    rossleep(loop_rate)
 	end
+
+	# gc_enable()
 end	
 
 function start_mpc_node()
@@ -380,7 +414,7 @@ function start_mpc_node()
     acc_enable_pub   = Publisher("/control/enable_accel", UInt8Msg, queue_size=2, latch=true)
     steer_enable_pub = Publisher("/control/enable_spas",  UInt8Msg, queue_size=2, latch=true)
 
-    mpc_path_pub = Publisher("mpc_path_dyn", mpc_path_dyn, queue_size=2)
+    mpc_path_pub = Publisher("mpc_path_dyn", mpc_path_dyn_frenet, queue_size=2)
 	sub_state  = Subscriber("state_est_dyn", state_est_dyn, state_est_callback, queue_size=2)    
 
 	# Start up Ipopt/Solver.
