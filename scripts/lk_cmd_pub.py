@@ -58,7 +58,7 @@ class LanekeepingPublisher():
 		self.genesis = Vehicle('genesis')
 
 		#Create speed profile
-		self.speedProfile = BasicProfile(self.genesis, self.path, friction = 0.3, vMax = 10.)
+		self.speedProfile = BasicProfile(self.genesis, self.path, friction = 0.3, vMax = 15., AxMax = 2.0)
 
 		#Create controller object - use lanekeeping
 		self.controller = LaneKeepingController(self.path, self.genesis, self.speedProfile)
