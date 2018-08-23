@@ -123,7 +123,6 @@ class BasicProfile():
 
 
 
-
 #This is a more sophisticated velocity profile generation algorithm that accounts for weight 
 #transfer, front and rear wheel friction limitations, etc. Note that it is not the full version
 #published by Subosits and Gerdes acccounting for bank, grade, and vertical curvature. 
