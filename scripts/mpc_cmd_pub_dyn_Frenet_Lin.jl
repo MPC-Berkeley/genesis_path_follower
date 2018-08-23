@@ -53,11 +53,13 @@ end
 push!(LOAD_PATH, scripts_dir * "mpc_utils")
 import GPSDynMPCPathFollowerFrenetLinLongGurobi 
 import GPSDynMPCPathFollowerFrenetLinLatGurobi
+import GPSKinMPCPathFollowerFrenetLinLatGurobi
 import DynBicycleModel
 
 # make sure the parameters (N, L, ...) are the same in both controllers
 const dmpcLinLongGurobi = GPSDynMPCPathFollowerFrenetLinLongGurobi
 const dmpcLinLatGurobi = GPSDynMPCPathFollowerFrenetLinLatGurobi
+const kmpcLinLatGurobi = GPSKinMPCPathFollowerFrenetLinLatGurobi
 const dyn_mdl = DynBicycleModel.f_dyn_bicycle_model
 
 ###########################################
@@ -301,9 +303,14 @@ function pub_loop(acc_pub_obj, steer_pub_obj, mpc_path_pub_obj)
 			a_opt, a_pred, s_pred, vx_pred, solv_time_long, is_opt_long = dmpcLinLongGurobi.solve_gurobi(s_curr, vx_curr, prev_a, s_ref, vx_ref)
 			solv_time_long_all[it_num+1] = solv_time_long
 
-			df_opt, df_pred, ey_pred, epsi_pred, vy_pred, wz_pred, solv_time_lat, is_opt_lat = dmpcLinLatGurobi.solve_gurobi(ey_curr, epsi_curr, vy_curr, wz_curr, prev_df, s_pred, vx_pred, K_coeff)
-			solv_time_lat_all[it_num+1] = solv_time_lat
 
+			if min(vx_pred) < 5.0
+				df_opt, df_pred, ey_pred, epsi_pred, solv_time_lat, is_opt_lat = kmpcLinLatGurobi.solve_gurobi(ey_curr, epsi_curr, prev_df, s_pred, vx_pred, K_coeff)
+			else
+				df_opt, df_pred, ey_pred, epsi_pred, vy_pred, wz_pred, solv_time_lat, is_opt_lat = dmpcLinLatGurobi.solve_gurobi(ey_curr, epsi_curr, vy_curr, wz_curr, prev_df, s_pred, vx_pred, K_coeff)
+
+			end
+			solv_time_lat_all[it_num+1] = solv_time_lat
     		solv_time_tot_all[it_num+1] = solv_time_long + solv_time_lat
 
 
@@ -336,15 +343,25 @@ function pub_loop(acc_pub_obj, steer_pub_obj, mpc_path_pub_obj)
 			x_ref_recon, y_ref_recon, psi_ref_recon = compRefXYfromCurv(s_curr, s_ref[end]-s_ref[1], K_coeff, length(s_ref)-1)
 
 			# this function converts the (s,c(s)) to (X,Y)
-			if z_curr[4] 
-			x_mpc, y_mpc, psi_mpc, vx_mpc, vy_mpc, wz_mpc = convertS2XYdyn(a_pred, df_pred, z_curr) 			
+			model = ""
+			if min(vx_pred) < 5
+				x_mpc, y_mpc, psi_mpc, vx_mpc = convertS2XY(a_pred, df_pred, z_curr) 
+				vy_mpc = [0] 		# size is "flag" for kinematic model
+				wz_mpc = [0]		# suze is "flag" for dyn model
+				model = "kin"
+			else
+				x_mpc, y_mpc, psi_mpc, vx_mpc, vy_mpc, wz_mpc = convertS2XYdyn(a_pred, df_pred, z_curr) 
+				model = "dyn"			
+			end
 
-			mpc_path_msg = mpc_path_dyn_frenet()
-			mpc_path_msg.header.stamp = rostm			
-			mpc_path_msg.solv_status_long = string(is_opt_long)
-			mpc_path_msg.solv_status_lat  = string(is_opt_lat)
-			mpc_path_msg.solv_time_long = solv_time_long
-			mpc_path_msg.solv_time_lat = solv_time_lat
+			# Save relevant messages
+			mpc_path_msg 					= mpc_path_dyn_frenet()
+			mpc_path_msg.header.stamp 		= rostm	
+			mpc_path_msg.model 				= string(model)		
+			mpc_path_msg.solv_status_long 	= string(is_opt_long)
+			mpc_path_msg.solv_status_lat  	= string(is_opt_lat)
+			mpc_path_msg.solv_time_long 	= solv_time_long
+			mpc_path_msg.solv_time_lat 		= solv_time_lat
 
 			# predicted states in X-Y coordinates
 			mpc_path_msg.xs   = x_mpc 	# x_mpc
@@ -354,8 +371,11 @@ function pub_loop(acc_pub_obj, steer_pub_obj, mpc_path_pub_obj)
 			mpc_path_msg.vys  = vy_mpc 	# vy_mpc
 			mpc_path_msg.wzs  = wz_mpc 	# vz_mpc
 			mpc_path_msg.ss_fren 	= s_pred
+			mpc_path_msg.vs_fren 	= vx_pred
 			mpc_path_msg.eys_fren	= ey_pred
 			mpc_path_msg.epsis_fren = epsi_pred
+			mpc_path_msg.vys_fren 	= vy_pred
+			mpc_path_msg.wzs_fren 	= wz_pred
 			mpc_path_msg.curv 		= K_coeff
 
 			mpc_path_msg.xr   = x_ref 		# x_ref
