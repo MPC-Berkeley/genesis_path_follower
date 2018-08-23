@@ -15,7 +15,7 @@ class LaneKeepingController():
         self.profile = profile
         self.xLA = 14.2    #lookahead distance, meters
         self.kLK = 0.0538  #proportional gain , rad / meter
-        self.kSpeed = 3000.0 #Speed proportional gain - N / (m/s)
+        self.kSpeed = 6000.0 #Speed proportional gain - N / (m/s)
         self.alphaFlim = 7.0 * np.pi / 180 #steering limits for feedforward controller
         self.alphaRlim = 5.0 * np.pi / 180 #steering limits for feedforward controller
         
