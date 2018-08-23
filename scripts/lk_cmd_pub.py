@@ -8,6 +8,7 @@ from lk_utils.path_lib import *
 from lk_utils.vehicle_lib import *
 from lk_utils.velocityprofiles import *
 from lk_utils.sim_lib import *
+import matplotlib.pyplot as plt
 
 import math
 
@@ -57,8 +58,12 @@ class LanekeepingPublisher():
 		#Initialize vehicle
 		self.genesis = Vehicle('genesis')
 
-		#Create speed profile
-		self.speedProfile = BasicProfile(self.genesis, self.path, friction = 0.3, vMax = 15., AxMax = 2.0)
+		#Create speed profile - choose between constant velocity limit or track-varying velocity limit
+		#self.speedProfile  = BasicProfile(self.genesis, self.path, friction = 0.4, vMax = 15., AxMax = 2.0)
+		self.speedProfile = BasicProfile(self.genesis, self.path, self.path.friction, self.path.vMax, AxMax = 2.0)
+
+		plt.plot(self.speedProfile.s, self.speedProfile.Ux)
+		plt.show()
 
 		#Create controller object - use lanekeeping
 		self.controller = LaneKeepingController(self.path, self.genesis, self.speedProfile)
@@ -103,7 +108,7 @@ class LanekeepingPublisher():
 
 			#Localize Vehicle
 			self.mapMatch.localize(self.localState, self.globalState)
-			print("Lateral Error is " + str(self.localState.e) )
+			#print("Lateral Error is " + str(self.localState.e) )
 			
 
 			#Calculate control inputs
@@ -113,6 +118,7 @@ class LanekeepingPublisher():
 
 			# use F = m*a to get desired acceleration. Limit acceleration command to 2 m/s
 			accel = min( Fx / self.genesis.m , 2.0)
+			print("Accel Desired (mps2) is " + str(accel) )
 
 
 

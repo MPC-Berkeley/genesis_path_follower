@@ -71,8 +71,8 @@ class VehicleSimulator():
 		d  = 0.945	 			# m  	(half-width, currently unused)
 		m  = 2303.1   			# kg 	(vehicle mass)
 		Iz  = 5520.1			# kg*m2 (vehicle inertia)
-		C_alpha_f = 7.6419e4    # N/rad	(front tire cornering stiffness)
-		C_alpha_r = 13.4851e4	# N/rad	(rear tire cornering stiffness)
+		C_alpha_f = 200000    # N/rad	(front tire cornering stiffness)
+		C_alpha_r = 250000	# N/rad	(rear tire cornering stiffness)
 
 		deltaT = self.dt_model/disc_steps
 		self._update_low_level_control(self.dt_model)

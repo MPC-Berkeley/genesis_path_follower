@@ -13,10 +13,11 @@ class Path:
 		self.roadPsi = [0] #heading
 		self.curvature = [0] #curvature
 		self.s = [0]
-		self.type = "open" #does not form a loop
+		self.isOpen = True #open = whether track forms loop or not
 		self.referencePoint =np.zeros((3,1)) #GPS reference point
-		self.refPointName = "none" #name of reference point
-		self.friction = 1.0 #default value
+		self.refPointName = None #name of reference point
+		self.friction = None  #initialize to none
+		self.vMax = None
 
 	#loads map from csv file - CRUDE
 	def loadFromCSV(self, pathName):
@@ -30,19 +31,21 @@ class Path:
 
 	def loadFromMAT(self, pathName):
 		path = sio.loadmat(pathName, squeeze_me = True)
-		self.s = path['world']['s'].sum()
+		self.s = path['world']['s'].sum() #No idea why you need the .sum, but otherwise doesn't work
 		self.curvature = path['world']['K'].sum()
 		self.posE = path['world']['roadE'].sum()
 		self.posN = path['world']['roadN'].sum()
-		self.roadPsi = path['world']['roadPsi'].sum() 
+		self.roadPsi = path['world']['roadPsi'].sum()
 		self.roadIC = path['world']['road_IC'].sum()
 		self.isOpen = bool(path['world']['isOpen'].sum())
-
-
-
-
-	def setFriction(self, value):
-		self.friction = value
+		try:
+			self.vMax = path['world']['vMax'].sum()
+		except:
+			self.vMax = None
+		try:
+			self.friction = path['world']['friction'].sum()
+		except:
+			self.friction = None
 		
 
 
