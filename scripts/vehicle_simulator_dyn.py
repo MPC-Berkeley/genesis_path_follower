@@ -79,8 +79,8 @@ class VehicleSimulator():
 		d  = 0.945	 			# m  	(half-width, currently unused)
 		m  = 2303.1   			# kg 	(vehicle mass)
 		Iz  = 5520.1			# kg*m2 (vehicle inertia)
-		C_alpha_f = 7.6419e4    # N/rad	(front tire cornering stiffness)
-		C_alpha_r = 13.4851e4	# N/rad	(rear tire cornering stiffness)
+		C_alpha_f = 7.6419e4 * 2    # N/rad	(front tire cornering stiffness)
+		C_alpha_r = 13.4851e4 * 2	# N/rad	(rear tire cornering stiffness)
 
 		# storing longitudinal and lateral velocities before to allow for computatation of accelerations.
 		vy_prev = self.vy
