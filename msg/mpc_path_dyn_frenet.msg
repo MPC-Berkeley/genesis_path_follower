@@ -1,4 +1,5 @@
 Header header
+string model
 string solv_status_long
 string solv_status_lat
 float64 solv_time_long

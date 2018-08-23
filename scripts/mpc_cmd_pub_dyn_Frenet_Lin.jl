@@ -304,8 +304,10 @@ function pub_loop(acc_pub_obj, steer_pub_obj, mpc_path_pub_obj)
 			solv_time_long_all[it_num+1] = solv_time_long
 
 
-			if min(vx_pred) < 5.0
+			if minimum(vx_pred) < 5.0
 				df_opt, df_pred, ey_pred, epsi_pred, solv_time_lat, is_opt_lat = kmpcLinLatGurobi.solve_gurobi(ey_curr, epsi_curr, prev_df, s_pred, vx_pred, K_coeff)
+				vy_pred = [0]
+				wz_pred = [0]
 			else
 				df_opt, df_pred, ey_pred, epsi_pred, vy_pred, wz_pred, solv_time_lat, is_opt_lat = dmpcLinLatGurobi.solve_gurobi(ey_curr, epsi_curr, vy_curr, wz_curr, prev_df, s_pred, vx_pred, K_coeff)
 
@@ -344,7 +346,7 @@ function pub_loop(acc_pub_obj, steer_pub_obj, mpc_path_pub_obj)
 
 			# this function converts the (s,c(s)) to (X,Y)
 			model = ""
-			if min(vx_pred) < 5
+			if minimum(vx_pred) < 5
 				x_mpc, y_mpc, psi_mpc, vx_mpc = convertS2XY(a_pred, df_pred, z_curr) 
 				vy_mpc = [0] 		# size is "flag" for kinematic model
 				wz_mpc = [0]		# suze is "flag" for dyn model

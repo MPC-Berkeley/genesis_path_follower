@@ -100,10 +100,10 @@ def parse_rosbag(mode, in_rosbag, out_mat):
 	# TODO: alternatively use ada_stat/acc_mode status information to see 
 	# if the controller is enabled or not.
 	t_enable = None
-	for topic, msg, _ in b.read_messages(topics=mpc_path_topic_name):
-		if msg.solv_status == 'Optimal':
-			t_enable = msg.header.stamp.secs + 1e-9 * msg.header.stamp.nsecs
-			break				
+	#for topic, msg, _ in b.read_messages(topics=mpc_path_topic_name):
+		#if msg.solv_status == 'Optimal':
+		#	t_enable = msg.header.stamp.secs + 1e-9 * msg.header.stamp.nsecs
+		#	break				
 	
 	# Some notes on the resulting output data.
 	# If simulated data, lat/lon will just be an array of 0's.
