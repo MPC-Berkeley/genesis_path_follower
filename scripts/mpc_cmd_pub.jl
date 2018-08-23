@@ -147,8 +147,10 @@ function pub_loop(acc_pub_obj, steer_pub_obj, mpc_path_pub_obj)
 		    log_str = @sprintf("Solve Status: %s, Acc: %.3f, SA: %.3f, ST: %.3f", is_opt, a_opt, df_opt, solv_time)
 		    loginfo(log_str)
 
-			publish( acc_pub_obj,   Float32Msg(a_opt) )
-			publish( steer_pub_obj, Float32Msg(df_opt) )
+		    if is_opt == :Optimal
+				publish( acc_pub_obj,   Float32Msg(a_opt) )
+				publish( steer_pub_obj, Float32Msg(df_opt) )
+			end
 
 			kmpc.update_current_input(df_opt, a_opt)
 			res = kmpc.get_solver_results()
