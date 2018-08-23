@@ -54,10 +54,14 @@ end
 push!(LOAD_PATH, scripts_dir * "mpc_utils")
 import GPSDynMPCPathFollowerFrenetLinLongGurobi 
 import GPSDynMPCPathFollowerFrenetLinLatGurobi
+import GPSKinMPCPathFollowerFrenetLinLatGurobi    # this one for low velocity
+
+
 
 # make sure the parameters (N, L, ...) are the same in both controllers
 const dmpcLinLongGurobi = GPSDynMPCPathFollowerFrenetLinLongGurobi
 const dmpcLinLatGurobi = GPSDynMPCPathFollowerFrenetLinLatGurobi
+const kmpcLinLatGurobi = GPSKinMPCPathFollowerFrenetLinLatGurobi
 
 
 ###########################################
@@ -272,8 +276,14 @@ function pub_loop(acc_pub_obj, steer_pub_obj, mpc_path_pub_obj)
 			a_opt, a_pred, s_pred, vx_pred, solv_time_long, is_opt_long = dmpcLinLongGurobi.solve_gurobi(s_curr, vx_curr, prev_a, s_ref, vx_ref)
 			solv_time_long_all[it_num+1] = solv_time_long
 
-			df_opt, df_pred, ey_pred, epsi_pred, vy_pred, wz_pred, solv_time_lat, is_opt_lat = dmpcLinLatGurobi.solve_gurobi(ey_curr, epsi_curr, vy_curr, wz_curr, prev_df, s_pred, vx_pred, K_coeff)
+			if min(vx_pred) < 5
+				df_opt, df_pred, ey_pred, epsi_pred, solv_time_lat, is_opt_lat = kmpcLinLatGurobi.solve_gurobi(ey_curr, epsi_curr, prev_df, s_pred, vx_pred, K_coeff)
+			else
+				df_opt, df_pred, ey_pred, epsi_pred, vy_pred, wz_pred, solv_time_lat, is_opt_lat = dmpcLinLatGurobi.solve_gurobi(ey_curr, epsi_curr, vy_curr, wz_curr, prev_df, s_pred, vx_pred, K_coeff)
+			end
+
 			solv_time_lat_all[it_num+1] = solv_time_lat
+
 
     		solv_time_tot_all[it_num+1] = solv_time_long + solv_time_lat
 
