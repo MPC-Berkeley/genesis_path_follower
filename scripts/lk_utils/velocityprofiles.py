@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 #transfer and generally aggressive braking in the straight segments. 
 
 class BasicProfile():
-    def __init__(self, vehicle, path, friction = 0.3, vMax = 10.):
+    def __init__(self, vehicle, path, friction = 0.3, vMax = 10., AxMax = 9.81):
 		self.vehicle = vehicle
 		self.path = path
 		self.mu = friction
@@ -21,16 +21,17 @@ class BasicProfile():
 		self.Ax = np.zeros(self.s.shape)
 	    
 		if path.isOpen:
-			self.generateBasicProfileOpen()
+			self.generateBasicProfileOpen(AxMax)
 
 		else:
-			self.generateBasicProfileClosed()
+			self.generateBasicProfileClosed(AxMax)
 
-    def generateBasicProfileClosed(self):
+    def generateBasicProfileClosed(self, AxMax):
 	    g = 9.81
 	    K = self.path.curvature
 	    s = self.s
 	    AyMax = self.mu* g
+	    AxMax = min( abs(AxMax) , self.mu * g) 
 
 	    #calculate lowest velocity point
 	    UxSS = np.sqrt ( np.divide(AyMax, np.abs(K + 1e-8) ) )
@@ -42,7 +43,7 @@ class BasicProfile():
 	    shiftedInds = np.roll(inds, -idx)
 	    kShifted = K[shiftedInds]
 
-	    UxShift, AxShift = self.genSpeed(kShifted, minUx)
+	    UxShift, AxShift = self.genSpeed(kShifted, minUx, AxMax, AyMax)
 
 	    #unshift back to original
 	    self.Ux = np.roll(UxShift, idx)
@@ -50,15 +51,16 @@ class BasicProfile():
 
 	    return
 
-    def generateBasicProfileOpen(self):
+    def generateBasicProfileOpen(self, AxMax):
+    	g = 9.81
     	K = self.path.curvature
-    	self.Ux, self.Ax = self.genSpeed(K, minUx = 0) #minimum velocity is zero
+    	AyMax = self.mu* g
+    	AxMax = min( abs(AxMax) , self.mu * g)
+    	self.Ux, self.Ax = self.genSpeed(K, 0, AxMax, AyMax) #minimum velocity is zero
 
-    def genSpeed(self, K, minUx):
+    def genSpeed(self, K, minUx, AxMax, AyMax):
 	    #Extract Peformance Limits and parameters
 	    g = 9.81
-	    AxMax = self.mu * g
-	    AyMax = self.mu * g
 	    maxUx = self.vMax
 	    s = self.s
 	    
@@ -107,7 +109,6 @@ class BasicProfile():
 	    
 
 	    return UxInit3, ax
-
 
 
 
