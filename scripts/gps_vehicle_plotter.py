@@ -7,6 +7,7 @@ from genesis_path_follower.msg import state_est
 from genesis_path_follower.msg import mpc_path
 from plot_utils.getVehicleFrame import plotVehicle
 from mpl_toolkits.axes_grid1.inset_locator import zoomed_inset_axes
+import scipy.io as sio
 
 class PlotGPSTrajectory():
 	'''
@@ -31,7 +32,16 @@ class PlotGPSTrajectory():
 
 		grt = r.GPSRefTrajectory(mat_filename=mat_name, LAT0=lat0, LON0=lon0, YAW0=yaw0) # only 1 should be valid.
 
+		#Load road edge data
+		boundFile = rospy.get_param('road_edges')
+		bounds = sio.loadmat(boundFile)
+
+
+
 		# Set up Data
+		self.edges_in = bounds["in"]
+		self.edges_out = bounds["out"]
+
 		self.x_global_traj = grt.get_Xs()
 		self.y_global_traj = grt.get_Ys()
 		self.x_ref_traj = self.x_global_traj[0]; self.y_ref_traj = self.y_global_traj[0]
@@ -39,7 +49,7 @@ class PlotGPSTrajectory():
 		self.x_vehicle = self.x_global_traj[0];  self.y_vehicle = self.y_global_traj[0]; self.psi_vehicle = yaw0
 		self.df_vehicle = 0.0	# rad	(steering angle)
 		
-		# This should be include in a launch file/yaml for the future.
+		# This should be included in a launch file/yaml for the future.
 		self.a = 1.5213  		# m  	(CoG to front axle)
 		self.b = 1.4987  		# m  	(CoG to rear axle)
 		self.vW = 1.89	 		# m  	(vehicle width)
@@ -49,6 +59,10 @@ class PlotGPSTrajectory():
 		self.f = plt.figure()
 		self.ax = plt.gca()		
 		plt.ion()
+
+		# Road Edges
+		self.e1 = self.ax.plot(self.edges_in[:,0], self.edges_in[:,1])
+		self.e2 = self.ax.plot(self.edges_out[:,0], self.edges_out[:,1])
 		
 		# Trajectory 
 		self.l1, = self.ax.plot(self.x_global_traj, self.y_global_traj, 'k') 			
@@ -75,6 +89,8 @@ class PlotGPSTrajectory():
 		# Zoomed Inset Plot: Based off tutorial/code here: http://akuederle.com/matplotlib-zoomed-up-inset
 		self.ax_zoom = zoomed_inset_axes(self.ax, 5, loc=2) # axis, zoom_factor, location (2 = upper left)
 		self.window = 25 # m
+		self.ze1 =  self.ax_zoom.plot(self.edges_in[:,0], self.edges_in[:,1], 'k--')
+		self.ze2 =  self.ax_zoom.plot(self.edges_out[:,0], self.edges_out[:,1], 'k--')
 		self.zl1, = self.ax_zoom.plot(self.x_global_traj, self.y_global_traj, 'k') 			
 		self.zl2, = self.ax_zoom.plot(self.x_ref_traj,    self.y_ref_traj, 'rx')	
 		self.zl3, = self.ax_zoom.plot(self.x_mpc_traj, self.y_mpc_traj, 'g*')
