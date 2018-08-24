@@ -70,10 +70,16 @@ module GPSDynMPCPathFollowerFrenetLinLatGurobi
 	B_init = zeros(nx, nu, N)
 	g_init = zeros(nx, N)
 	for i = 1:N
-		A_init[:,:,i] = [	1 		dt*vx_pred_init[i] 		dt 											0 
-							0		1						0											dt
-							0 		0						1-dt*(C_f+C_r)/(m*vx_pred_init[i])			dt*((L_b*C_r-L_a*C_f)/(m*vx_pred_init[i])-vx_pred_init[i])
-							0		0						dt*(-L_a*C_f+L_b*C_r)/(Iz*vx_pred_init[i]) 	1+dt*(-L_a^2*C_f-L_b^2*C_r)/(Iz*vx_pred_init[i])			]
+		# A_init[:,:,i] = [	1 		dt*vx_pred_init[i] 		dt 											0 
+		# 					0		1						0											dt
+		# 					0 		0						1-dt*(C_f+C_r)/(m*vx_pred_init[i])			dt*((L_b*C_r-L_a*C_f)/(m*vx_pred_init[i])-vx_pred_init[i])
+		# 					0		0						dt*(-L_a*C_f+L_b*C_r)/(Iz*vx_pred_init[i]) 	1+dt*(-L_a^2*C_f-L_b^2*C_r)/(Iz*vx_pred_init[i])			]
+		
+		A_init[:,:,i] = expm(dt*[	0 		1*vx_pred_init[i] 		1 											0 
+							0		0						0											1
+							0 		0						-1*(C_f+C_r)/(m*vx_pred_init[i])			1*((L_b*C_r-L_a*C_f)/(m*vx_pred_init[i])-vx_pred_init[i])
+							0		0						1*(-L_a*C_f+L_b*C_r)/(Iz*vx_pred_init[i]) 	1*(-L_a^2*C_f-L_b^2*C_r)/(Iz*vx_pred_init[i])			])
+
 		B_init[:,:,i] = [	0
 							0
 							dt*C_f/m
@@ -291,10 +297,16 @@ module GPSDynMPCPathFollowerFrenetLinLatGurobi
 		B_updated = zeros(nx, nu, N)
 		g_updated = zeros(nx, N)
 		for i = 1 : N
-			A_updated[:,:,i] = [	1 		dt*vx_pred[i] 			dt 											0 
-									0		1						0											dt
-									0 		0						1-dt*(C_f+C_r)/(m*vx_pred_denom[i])			dt*((L_b*C_r-L_a*C_f)/(m*vx_pred_denom[i])-vx_pred[i])
-									0		0						dt*(-L_a*C_f+L_b*C_r)/(Iz*vx_pred_denom[i]) 		1+dt*(-L_a^2*C_f-L_b^2*C_r)/(Iz*vx_pred_denom[i])			]
+			# A_updated[:,:,i] = [	1 		dt*vx_pred[i] 			dt 											0 
+			# 						0		1						0											dt
+			# 						0 		0						1-dt*(C_f+C_r)/(m*vx_pred_denom[i])			dt*((L_b*C_r-L_a*C_f)/(m*vx_pred_denom[i])-vx_pred[i])
+			# 						0		0						dt*(-L_a*C_f+L_b*C_r)/(Iz*vx_pred_denom[i]) 		1+dt*(-L_a^2*C_f-L_b^2*C_r)/(Iz*vx_pred_denom[i])			]
+
+			A_updated[:,:,i] = expm(dt*[0 		1*vx_pred[i] 		1 											0 
+										0		0						0											1
+										0 		0						-1*(C_f+C_r)/(m*vx_pred_denom[i])			1*((L_b*C_r-L_a*C_f)/(m*vx_pred_denom[i])-vx_pred[i])
+										0		0						1*(-L_a*C_f+L_b*C_r)/(Iz*vx_pred_denom[i]) 	1*(-L_a^2*C_f-L_b^2*C_r)/(Iz*vx_pred_denom[i])		])
+
 
 			B_updated[:,:,i] = [	0
 									0
@@ -340,9 +352,16 @@ module GPSDynMPCPathFollowerFrenetLinLatGurobi
 		# println("f_gurobi_init:  $(f_gurobi_init)")
 
 	    GurobiEnv = Gurobi.Env()
-		setparam!(GurobiEnv, "Presolve", -1)	# -1: automatic; example has 0; no big influence on solution time
-		setparam!(GurobiEnv, "LogToConsole", 0)	# # set presolve to 0 what does it mean?
+		setparam!(GurobiEnv, "Presolve", 0)	# -1: automatic; example has 0; no big influence on solution time
+		#setparam!(GurobiEnv, "LogToConsole", 0)	# # set presolve to 0 what does it mean?
 		# setparam!(GurobiEnv, "TimeLimit",0.025)		# for 20Hz = 50ms
+
+		println("====== ey0, epsi0, vy0, wz0 in Gurobi LAT DYN:  $(x0') ====== ")
+		println("u0 LAT in Gurobi: $(u_0)")
+
+		println("s_pred in Gurobi (incl s0): $(s_pred)")
+		println("vx_pred in Gurobi (incl v0): $(vx_pred)")
+		println("k_coeffs in Gurobi: $(k_coeffs)")
 
 		# note that: (1/2) * z' * (2*H) * z + f' * z
 	    GurobiModel = gurobi_model(GurobiEnv;
@@ -367,20 +386,17 @@ module GPSDynMPCPathFollowerFrenetLinLatGurobi
 		vy_pred_gurobi = [ vy_0 ; optimizer_gurobi[4:n_uxu:end] ]		# include current v 
 		wz_pred_gurobi = [ wz_0 ; optimizer_gurobi[5:n_uxu:end] ]		# include current v 
 
-		# println("====== ey0, epsi0, vy0, wz0 in Gurobi LAT DYN:  $(x0') ====== ")
-		# println("u0 LAT in Gurobi: $(u_0)")
 
-		# println("s_pred in Gurobi (incl s0): $(s_pred)")
-		# println("vx_pred in Gurobi (incl v0): $(vx_pred)")
-		# println("k_coeffs in Gurobi: $(k_coeffs)")
+
 		
-		# println("ddf_pred_gurobi: $(ddf_pred_gurobi)")
-		# println("df_pred_gurobi: $(df_pred_gurobi)")
-		# println("ey_pred_gurobi (incl ey0): $(ey_pred_gurobi)")
-		# println("epsi_pred_gurobi (incl epsi0): $(epsi_pred_gurobi)")
-		# println("vy_pred_gurobi (incl vy0): $(vy_pred_gurobi)")
-		# println("wz_pred_gurobi (incl wz0): $(wz_pred_gurobi)")
-		# println(" ")
+		
+		println("ddf_pred_gurobi: $(ddf_pred_gurobi)")
+		println("df_pred_gurobi: $(df_pred_gurobi)")
+		println("ey_pred_gurobi (incl ey0): $(ey_pred_gurobi)")
+		println("epsi_pred_gurobi (incl epsi0): $(epsi_pred_gurobi)")
+		println("vy_pred_gurobi (incl vy0): $(vy_pred_gurobi)")
+		println("wz_pred_gurobi (incl wz0): $(wz_pred_gurobi)")
+		println(" ")
 
 
 				# @printf "%.20f \n"  k_coeffs[1]

@@ -2,7 +2,7 @@ __precompile__()
 
 module DynBicycleModel
 
-	using ForwardDiff
+	#using ForwardDiff
 
 	function f_dyn_bicycle_model(z::Vector)
 		# Genesis Parameters from HCE:
@@ -54,7 +54,7 @@ module DynBicycleModel
 		return z_dot
 	end
 
-	function jacobian_f_dyn_bicycle_model(z)
-		return ForwardDiff.jacobian(f_dyn_bicycle_model, z)
-	end
+	#function jacobian_f_dyn_bicycle_model(z)
+	#	return ForwardDiff.jacobian(f_dyn_bicycle_model, z)
+	#end
 end

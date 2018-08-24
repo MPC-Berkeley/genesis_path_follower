@@ -1,0 +1,46 @@
+  14   6.49077015e+01 -7.40444363e+06  3.95e+00 1.09e+00  1.06e+05     0s
+  15   1.39752331e+02  1.45005893e+06  3.86e+00 1.06e+00  1.03e+05     0s
+  16   2.14825121e+08 -2.98488259e+08  8.29e+03 2.75e+03  2.47e+07     0s
+  17   3.42608672e+04 -3.16579763e+05  1.11e+02 6.15e+01  9.14e+03     0s
+  18   1.53447012e+02 -3.19528672e+04  5.13e+00 2.48e+00  5.10e+02     0s
+  19   9.30310494e+01 -2.60570513e+04  4.75e+00 1.92e+00  4.62e+02     0s
+  20   7.11830645e+01 -1.76623543e+04  4.11e+00 1.58e+00  3.79e+02     0s
+  21   6.49342654e+01 -6.19437185e+03  4.01e+00 1.53e+00  3.70e+02     0s
+  22   6.94237745e+01  1.01362681e+04  3.95e+00 1.50e+00  3.67e+02     0s
+  23   1.29588241e+02  5.56244723e+04  3.87e+00 1.45e+00  3.65e+02     0s
+  24   4.47936744e+02  2.97122528e+05  4.10e+00 1.34e+00  6.65e+02     0s
+  25   4.23428434e+02  3.42149147e+05  4.09e+00 1.32e+00  6.96e+02     0s
+  26   1.16572191e+02  3.98005279e+05  4.01e+00 1.14e+00  7.36e+02     0s
+  27   2.56267481e+02  4.81415753e+06  4.10e+00 1.31e-08  6.64e+03     0s
+  28   1.18769999e+02  2.59453409e+07  4.36e+00 3.02e-07  1.50e+05     0s
+  29   1.47870883e+02  5.03419654e+07  5.32e+00 3.13e-07  1.37e+06     0s
+  30   1.27055540e+02  1.42925214e+08  4.55e+00 7.27e-07  1.18e+07     0s
+  31*  1.33188717e+02  6.31809469e+10  1.65e-03 1.37e-04  8.21e+00     0s
+  32*  1.33138175e+02  6.21809114e+13  1.65e-06 1.47e-07  8.21e-03     0s
+  33*  1.33138155e+02  6.21784902e+16  1.65e-09 2.24e-08  8.21e-06     0s
+  34*  1.33138135e+02  6.21784851e+19  1.65e-12 2.10e-08  8.21e-09     0s
+
+Barrier performed 34 iterations in 0.00 seconds
+Infeasible model
+
+ERROR: LoadError: Gurobi.GurobiError(10005, "Unable to retrieve attribute 'X'")
+Stacktrace:
+ [1] get_dblattrarray!(::Array{Float64,1}, ::Gurobi.Model, ::String, ::Int64) at /home/mpc/.julia/v0.6/Gurobi/src/grb_attrs.jl:128
+ [2] get_dblattrarray(::Gurobi.Model, ::String, ::Int64, ::Int64) at /home/mpc/.julia/v0.6/Gurobi/src/grb_attrs.jl:153
+ [3] get_solution(::Gurobi.Model) at /home/mpc/.julia/v0.6/Gurobi/src/grb_solve.jl:115
+ [4] solve_gurobi(::Float64, ::Float64, ::Float64, ::Float64, ::Float64, ::Array{Float64,1}, ::Array{Float64,1}, ::Array{Float64,1}) at /home/mpc/GenesisAutoware/ros/src/genesis_path_follower/scripts/mpc_utils/GPSDynMPCPathFollowerFrenetLinLatGurobi.jl:365
+ [5] pub_loop(::RobotOS.Publisher{std_msgs.msg.Float32Msg}, ::RobotOS.Publisher{std_msgs.msg.Float32Msg}, ::RobotOS.Publisher{genesis_path_follower.msg.mpc_path_dyn_frenet}) at /home/mpc/GenesisAutoware/ros/src/genesis_path_follower/scripts/mpc_cmd_pub_dyn_Frenet_Lin.jl:312
+ [6] start_mpc_node() at /home/mpc/GenesisAutoware/ros/src/genesis_path_follower/scripts/mpc_cmd_pub_dyn_Frenet_Lin.jl:450
+ [7] include_from_node1(::String) at ./loading.jl:576
+ [8] include(::String) at ./sysimg.jl:14
+ [9] process_options(::Base.JLOptions) at ./client.jl:305
+ [10] _start() at ./client.jl:371
+while loading /home/mpc/GenesisAutoware/ros/src/genesis_path_follower/scripts/mpc_cmd_pub_dyn_Frenet_Lin.jl, in expression starting on line 455
+[vehicle/mpc_node-1] process has died [pid 16495, exit code 1, cmd /home/mpc/GenesisAutoware/ros/src/genesis_path_follower/scripts/mpc_cmd_pub_dyn_Frenet_Lin.jl __name:=mpc_node __log:=/home/mpc/.ros/log/79b4e0e8-a703-11e8-8c76-78d0042488a0/vehicle-mpc_node-1.log].
+log file: /home/mpc/.ros/log/79b4e0e8-a703-11e8-8c76-78d0042488a0/vehicle-mpc_node-1*.log
+^C[rosbag_path_recorder-4] killing on exit
+[vehicle/plot_node-3] killing on exit
+[vehicle/state_pub_node-2] killing on exit
+shutting down processing monitor...
+... shutting down processing monitor complete
+done

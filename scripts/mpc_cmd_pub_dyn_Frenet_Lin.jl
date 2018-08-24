@@ -237,6 +237,7 @@ function pub_loop(acc_pub_obj, steer_pub_obj, mpc_path_pub_obj)
 
 	num_warmStarts = 2 	# number of warm starts (no control applied during these steps)
 	it_num = 0	# iteration_count
+	it_num_dyn = 0
 
 	gc()		# clear garbage
 
@@ -304,7 +305,7 @@ function pub_loop(acc_pub_obj, steer_pub_obj, mpc_path_pub_obj)
 			solv_time_long_all[it_num+1] = solv_time_long
 
 
-			if minimum(vx_pred) < 5.0
+			if minimum(vx_pred) < 10.0
 				df_opt, df_pred, ey_pred, epsi_pred, solv_time_lat, is_opt_lat = kmpcLinLatGurobi.solve_gurobi(ey_curr, epsi_curr, prev_df, s_pred, vx_pred, K_coeff)
 				vy_pred = [0]
 				wz_pred = [0]
@@ -318,12 +319,6 @@ function pub_loop(acc_pub_obj, steer_pub_obj, mpc_path_pub_obj)
 
 			rostm = get_rostime()
 			tm_secs = rostm.secs + 1e-9 * rostm.nsecs
-
-		    log_str_long = @sprintf("Solve Status Long.: %s, Acc: %.3f, SolvTimeLong Gurobi:  %.3f", is_opt_long,  a_opt, solv_time_long)
-			loginfo(log_str_long)
-
-			log_str_lat = @sprintf("Solve Status Lat.: %s, SA: %.3f, SolvTimeLat:  %.3f", is_opt_lat, df_opt, solv_time_lat)
-		    loginfo(log_str_lat)
 
 			# do not apply any inputs during warm start
 		    if it_num <= num_warmStarts
@@ -346,7 +341,7 @@ function pub_loop(acc_pub_obj, steer_pub_obj, mpc_path_pub_obj)
 
 			# this function converts the (s,c(s)) to (X,Y)
 			model = ""
-			if minimum(vx_pred) < 5
+			if minimum(vx_pred) < 10.0
 				x_mpc, y_mpc, psi_mpc, vx_mpc = convertS2XY(a_pred, df_pred, z_curr) 
 				vy_mpc = [0] 		# size is "flag" for kinematic model
 				wz_mpc = [0]		# suze is "flag" for dyn model
@@ -355,6 +350,12 @@ function pub_loop(acc_pub_obj, steer_pub_obj, mpc_path_pub_obj)
 				x_mpc, y_mpc, psi_mpc, vx_mpc, vy_mpc, wz_mpc = convertS2XYdyn(a_pred, df_pred, z_curr) 
 				model = "dyn"			
 			end
+
+		    log_str_long = @sprintf("Solve Status Long.: %s, Acc: %.3f, SolvTimeLong Gurobi:  %.3f", is_opt_long,  a_opt, solv_time_long)
+			loginfo(log_str_long)
+
+			log_str_lat = @sprintf("MDL: %s, Solve Status Lat.: %s, SA: %.3f, SolvTimeLat:  %.3f", model, is_opt_lat, df_opt, solv_time_lat)
+		    loginfo(log_str_lat)
 
 			# Save relevant messages
 			mpc_path_msg 					= mpc_path_dyn_frenet()
@@ -404,16 +405,16 @@ function pub_loop(acc_pub_obj, steer_pub_obj, mpc_path_pub_obj)
 			it_num = it_num + 1 	# update iteration iteration_count
 
 			if mod(it_num,100)==0
-				println("================  iteration $(it_num) =====================")
-				println("--- max comput time Long GUROBI: $(maximum(solv_time_long_all[5:end])*1000) ms ---")
-				println("avg comput time Long GUROBI: $(mean(solv_time_long_all[5:it_num-1])*1000) ms")
+				loginfo("================  iteration $(it_num) =====================")
+				loginfo("--- max comput time Long GUROBI: $(maximum(solv_time_long_all[5:end])*1000) ms ---")
+				loginfo("avg comput time Long GUROBI: $(mean(solv_time_long_all[5:it_num-1])*1000) ms")
 				# println("solv times Long GUROBI 1 more than 15ms: $(sum(solv_time_long_gurobi1_all[5:end] .> 15e-3*ones(1000-4) ))")
-				println("--- max comput time Lat GUROBI: $(maximum(solv_time_lat_all[5:end])*1000) ms ---")
-				println("avg comput time Lat GUROBI: $(mean(solv_time_lat_all[5:it_num-1])*1000) ms")
+				loginfo("--- max comput time Lat GUROBI: $(maximum(solv_time_lat_all[5:end])*1000) ms ---")
+				loginfo("avg comput time Lat GUROBI: $(mean(solv_time_lat_all[5:it_num-1])*1000) ms")
 				# println("--- max comput time Lat Ipopt: $(maximum(solv_time_lat_ipopt_all[5:end])*1000) ms ---")
 				# println("avg comput time Lat Ipopt: $(mean(solv_time_lat_ipopt_all[5:it_num-1])*1000) ms")
-				println("--- max comput time tot GUROBI: $(maximum(solv_time_tot_all[5:end])*1000) ms ---")
-				println(" avg comput time tot GUROBI: $(mean(solv_time_tot_all[5:end])*1000) ms")
+				loginfo("--- max comput time tot GUROBI: $(maximum(solv_time_tot_all[5:end])*1000) ms ---")
+				loginfo(" avg comput time tot GUROBI: $(mean(solv_time_tot_all[5:end])*1000) ms")
 			end
 
 			gc_enable(true)
@@ -440,9 +441,11 @@ function start_mpc_node()
 	sub_state  = Subscriber("state_est_dyn", state_est_dyn, state_est_callback, queue_size=2)    
 
 	# Start up Ipopt/Solver.
-	# for i = 1:3
+	for i = 1:3
 	# 	dmpc.solve_model()
-	# end
+		dmpcLinLatGurobi.solve_gurobi(0.0, 0.0, 0.0, 0.0, 0.0, 1.1*ones(16+1), 1.1*ones(16+1), 0.0*ones(4))
+
+	end
 
 	publish(acc_enable_pub, UInt8Msg(2))
 	publish(steer_enable_pub, UInt8Msg(1))

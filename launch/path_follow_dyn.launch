@@ -17,14 +17,17 @@
 
   <!-- Waypoints CSV to specify path. -->
   <!-- Set is_heading_info to true if Heading (N = 0) is used instead of Yaw (E = 0). -->
-  <param name="vehicle/mat_waypoints" type="str" value="$(find genesis_path_follower)/paths/slow_lap_8_20_curv.mat" />
+
+
+  <param name="vehicle/mat_waypoints" type="str" value="$(find genesis_path_follower)/paths/fast_lap_8_20_curv.mat" />
+  <!-- <param name="vehicle/mat_waypoints" type="str" value="$(find genesis_path_follower)/paths/med_lap_center_8_21_curv.mat" /> -->
   <param name="vehicle/is_heading_info" type="bool" value="False"/>
   <param name="vehicle/time_check_on" type="bool" value="False"/>
 
   <!--...................................................................-->
 
   <!-- MPC, State Publisher, and Plotting Nodes -->
-  <node ns="vehicle" pkg="genesis_path_follower" type="mpc_cmd_pub_dyn.jl" name="mpc_node" output="log"/>
+  <node ns="vehicle" pkg="genesis_path_follower" type="mpc_cmd_pub_dyn_Frenet_Lin.jl" name="mpc_node" output="screen"/>
   <node ns="vehicle" pkg="genesis_path_follower" type="state_publisher_dyn.py" name="state_pub_node" output="log"/>
   <node ns="vehicle" pkg="genesis_path_follower" type="gps_vehicle_plotter_dyn.py" name="plot_node" output="log" respawn="true"/>
 
