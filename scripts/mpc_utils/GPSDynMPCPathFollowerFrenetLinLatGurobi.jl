@@ -75,15 +75,16 @@ module GPSDynMPCPathFollowerFrenetLinLatGurobi
 		# 					0 		0						1-dt*(C_f+C_r)/(m*vx_pred_init[i])			dt*((L_b*C_r-L_a*C_f)/(m*vx_pred_init[i])-vx_pred_init[i])
 		# 					0		0						dt*(-L_a*C_f+L_b*C_r)/(Iz*vx_pred_init[i]) 	1+dt*(-L_a^2*C_f-L_b^2*C_r)/(Iz*vx_pred_init[i])			]
 		
-		A_init[:,:,i] = expm(dt*[	0 		1*vx_pred_init[i] 		1 											0 
-							0		0						0											1
-							0 		0						-1*(C_f+C_r)/(m*vx_pred_init[i])			1*((L_b*C_r-L_a*C_f)/(m*vx_pred_init[i])-vx_pred_init[i])
-							0		0						1*(-L_a*C_f+L_b*C_r)/(Iz*vx_pred_init[i]) 	1*(-L_a^2*C_f-L_b^2*C_r)/(Iz*vx_pred_init[i])			])
+		A_init[:,:,i] = expm(dt*[	0 		vx_pred_init[i] 		1 											0 
+									0		0						0											1
+									0 		0						-(C_f+C_r)/(m*vx_pred_init[i])				(L_b*C_r-L_a*C_f)/(m*vx_pred_init[i])-vx_pred_init[i]
+									0		0						(-L_a*C_f+L_b*C_r)/(Iz*vx_pred_init[i]) 	(-L_a^2*C_f-L_b^2*C_r)/(Iz*vx_pred_init[i])			])
 
 		B_init[:,:,i] = [	0
 							0
 							dt*C_f/m
 							dt*L_a*C_f/Iz 	]
+
 		g_init[:,i] = [ 	0	# column vector
 							-dt*vx_pred_init[i]*(k_coeff_init[1]*s_pred_init[i]^3 + k_coeff_init[2]*s_pred_init[i]^2 + k_coeff_init[3]*s_pred_init[i] + k_coeff_init[4]) 	
 							0
@@ -302,10 +303,10 @@ module GPSDynMPCPathFollowerFrenetLinLatGurobi
 			# 						0 		0						1-dt*(C_f+C_r)/(m*vx_pred_denom[i])			dt*((L_b*C_r-L_a*C_f)/(m*vx_pred_denom[i])-vx_pred[i])
 			# 						0		0						dt*(-L_a*C_f+L_b*C_r)/(Iz*vx_pred_denom[i]) 		1+dt*(-L_a^2*C_f-L_b^2*C_r)/(Iz*vx_pred_denom[i])			]
 
-			A_updated[:,:,i] = expm(dt*[0 		1*vx_pred[i] 		1 											0 
+			A_updated[:,:,i] = expm(  dt*[0 		vx_pred[i] 				1 											0 
 										0		0						0											1
-										0 		0						-1*(C_f+C_r)/(m*vx_pred_denom[i])			1*((L_b*C_r-L_a*C_f)/(m*vx_pred_denom[i])-vx_pred[i])
-										0		0						1*(-L_a*C_f+L_b*C_r)/(Iz*vx_pred_denom[i]) 	1*(-L_a^2*C_f-L_b^2*C_r)/(Iz*vx_pred_denom[i])		])
+										0 		0						-(C_f+C_r)/(m*vx_pred_denom[i])				(L_b*C_r-L_a*C_f)/(m*vx_pred_denom[i])-vx_pred[i]
+										0		0						(-L_a*C_f+L_b*C_r)/(Iz*vx_pred_denom[i]) 	(-L_a^2*C_f-L_b^2*C_r)/(Iz*vx_pred_denom[i])		]  )
 
 
 			B_updated[:,:,i] = [	0
@@ -386,9 +387,6 @@ module GPSDynMPCPathFollowerFrenetLinLatGurobi
 		vy_pred_gurobi = [ vy_0 ; optimizer_gurobi[4:n_uxu:end] ]		# include current v 
 		wz_pred_gurobi = [ wz_0 ; optimizer_gurobi[5:n_uxu:end] ]		# include current v 
 
-
-
-		
 		
 		println("ddf_pred_gurobi: $(ddf_pred_gurobi)")
 		println("df_pred_gurobi: $(df_pred_gurobi)")
