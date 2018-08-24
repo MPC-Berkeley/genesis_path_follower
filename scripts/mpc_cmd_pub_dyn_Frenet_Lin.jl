@@ -305,7 +305,7 @@ function pub_loop(acc_pub_obj, steer_pub_obj, mpc_path_pub_obj)
 			solv_time_long_all[it_num+1] = solv_time_long
 
 
-			if minimum(vx_pred) < 10.0
+			if (minimum(vx_pred) < 10.0) 
 				df_opt, df_pred, ey_pred, epsi_pred, solv_time_lat, is_opt_lat = kmpcLinLatGurobi.solve_gurobi(ey_curr, epsi_curr, prev_df, s_pred, vx_pred, K_coeff)
 				vy_pred = [0]
 				wz_pred = [0]
@@ -323,6 +323,8 @@ function pub_loop(acc_pub_obj, steer_pub_obj, mpc_path_pub_obj)
 			# do not apply any inputs during warm start
 		    if it_num <= num_warmStarts
 		    	it_num = it_num + 1;
+			 	# solve dmpc to warm start it (kin is solved above)
+				df_opt, df_pred, ey_pred, epsi_pred, vy_pred, wz_pred, solv_time_lat, is_opt_lat = dmpcLinLatGurobi.solve_gurobi(ey_curr, epsi_curr, vy_curr, wz_curr, prev_df, s_pred, vx_pred, K_coeff)
 		    	continue					
 		    end
 
@@ -354,7 +356,7 @@ function pub_loop(acc_pub_obj, steer_pub_obj, mpc_path_pub_obj)
 		    log_str_long = @sprintf("Solve Status Long.: %s, Acc: %.3f, SolvTimeLong Gurobi:  %.3f", is_opt_long,  a_opt, solv_time_long)
 			loginfo(log_str_long)
 
-			log_str_lat = @sprintf("MDL: %s, Solve Status Lat.: %s, SA: %.3f, SolvTimeLat:  %.3f", model, is_opt_lat, df_opt, solv_time_lat)
+			log_str_lat = @sprintf("mdl: %s, Solve Status Lat.: %s, SA: %.3f, SolvTimeLat:  %.3f", model, is_opt_lat, df_opt, solv_time_lat)
 		    loginfo(log_str_lat)
 
 			# Save relevant messages

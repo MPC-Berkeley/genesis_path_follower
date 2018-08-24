@@ -353,16 +353,16 @@ module GPSDynMPCPathFollowerFrenetLinLatGurobi
 		# println("f_gurobi_init:  $(f_gurobi_init)")
 
 	    GurobiEnv = Gurobi.Env()
-		setparam!(GurobiEnv, "Presolve", 0)	# -1: automatic; example has 0; no big influence on solution time
-		#setparam!(GurobiEnv, "LogToConsole", 0)	# # set presolve to 0 what does it mean?
+		setparam!(GurobiEnv, "Presolve", -1)	# -1: automatic; example has 0; no big influence on solution time
+		setparam!(GurobiEnv, "LogToConsole", 0)	# # set presolve to 0 what does it mean?
 		# setparam!(GurobiEnv, "TimeLimit",0.025)		# for 20Hz = 50ms
 
-		println("====== ey0, epsi0, vy0, wz0 in Gurobi LAT DYN:  $(x0') ====== ")
-		println("u0 LAT in Gurobi: $(u_0)")
+		# println("====== ey0, epsi0, vy0, wz0 in Gurobi LAT DYN:  $(x0') ====== ")
+		# println("u0 LAT in Gurobi: $(u_0)")
 
-		println("s_pred in Gurobi (incl s0): $(s_pred)")
-		println("vx_pred in Gurobi (incl v0): $(vx_pred)")
-		println("k_coeffs in Gurobi: $(k_coeffs)")
+		# println("s_pred in Gurobi (incl s0): $(s_pred)")
+		# println("vx_pred in Gurobi (incl v0): $(vx_pred)")
+		# println("k_coeffs in Gurobi: $(k_coeffs)")
 
 		# note that: (1/2) * z' * (2*H) * z + f' * z
 	    GurobiModel = gurobi_model(GurobiEnv;
@@ -388,13 +388,13 @@ module GPSDynMPCPathFollowerFrenetLinLatGurobi
 		wz_pred_gurobi = [ wz_0 ; optimizer_gurobi[5:n_uxu:end] ]		# include current v 
 
 		
-		println("ddf_pred_gurobi: $(ddf_pred_gurobi)")
-		println("df_pred_gurobi: $(df_pred_gurobi)")
-		println("ey_pred_gurobi (incl ey0): $(ey_pred_gurobi)")
-		println("epsi_pred_gurobi (incl epsi0): $(epsi_pred_gurobi)")
-		println("vy_pred_gurobi (incl vy0): $(vy_pred_gurobi)")
-		println("wz_pred_gurobi (incl wz0): $(wz_pred_gurobi)")
-		println(" ")
+		# println("ddf_pred_gurobi: $(ddf_pred_gurobi)")
+		# println("df_pred_gurobi: $(df_pred_gurobi)")
+		# println("ey_pred_gurobi (incl ey0): $(ey_pred_gurobi)")
+		# println("epsi_pred_gurobi (incl epsi0): $(epsi_pred_gurobi)")
+		# println("vy_pred_gurobi (incl vy0): $(vy_pred_gurobi)")
+		# println("wz_pred_gurobi (incl wz0): $(wz_pred_gurobi)")
+		# println(" ")
 
 
 				# @printf "%.20f \n"  k_coeffs[1]
