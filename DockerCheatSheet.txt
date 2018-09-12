@@ -1,0 +1,101 @@
+---------------------
+RUNNING THE IMAGE
+---------------------
+(1) First roscore on the host OS (or run GenesisAutoware, genesis_interface, cameras)
+(1.1) sudo docker load < XXX.tar
+(2) sudo docker run -it -e DISPLAY=$DISPLAY -e ROS_MASTER_URI=$ROS_MASTER_URI -v /tmp/.X11-unix:/tmp/.X11-unix --net=host <IMG_NAME>
+(3) inside the container, roslaunch appropriate launch file from genesis_path_follower package
+(4) after finished, transfer rosbags to host OS (see below) and delete this data off the container
+(5) save the modified image
+(6) docker container rm <> the correct container once done
+
+-------------------------------
+COPY THE ROSBAGS FROM CONTAINER (on host pc)
+-------------------------------
+
+
+docker cp [OPTIONS] CONTAINER:SRC_PATH DEST_PATH|-
+OR
+docker cp [OPTIONS] SRC_PATH|- CONTAINER:DEST_PATH
+
+e.g.
+docker cp <container_name>:/home/developer/catkin_ws/src/genesis_path_follower/bags/ ./
+
+-------------------------
+SAVING THE MODIFIED IMAGE (on host pc)
+-------------------------
+< 
+leave docker: ctrl+d
+
+saves new images:   docker commit [OPTIONS] <container_name> [REPOSITORY[:TAG]]
+-a "AUTHOR NAME EMAIL"
+-m "COMMIT MESSAGE"
+
+e.g. 
+docker commit -a "Vijay G." -m "Set up environment and finished precompilation of Julia modules" elated_brown govvijaycal/mpc_images:genesis_latest
+
+change the tag so that we can multiple backups
+
+To transfer (and read it back) to a hard drive:
+docker save "IMAGE_NAME" > "OUT_NAME.tar"
+
+sudo docker save govvijaycal/mpc_images:genesis_frenet > Docker_KinFrenet_7_30.tar
+
+
+
+docker load < "IN_NAME.tar"
+
+
+-------------------------------
+PUSHING THE IMAGE TO DOCKER HUB
+-------------------------------
+sudo docker login
+sudo docker push <USERNAME>/<REMOTE_REPO_NAME>:<TAG>
+sudo docker pull is the same.
+
+
+-------------------------------
+DOCKER COMMANDS
+-------------------------------
+display containers:     sudo docker container ps -l
+remove containers: 		sudo docker container rm CONTAINER_NAME (e.g. objective_bhabha)
+display images:			sudo docker images
+remove images:			sudo docker image rm 9eeee6d0a3f1  (number from images)
+
+-------------------------------
+LOADING IMAGES
+-------------------------------
+
+load images:			 sudo docker load < Docker_KinFrenet.tar
+show images:			sudo docker images
+run image:				sudo docker run -it -e DISPLAY=$DISPLAY -e ROS_MASTER_URI=$ROS_MASTER_URI -v /tmp/.X11-unix:/tmp/.X11-unix --net=host 9eeee6d0a3f1
+
+
+-------------------------------
+Basic UNIX commands
+-------------------------------
+
+1) delete genesis_path_follower folder on Docker
+	sudo rm -rf genesis_path_follower/
+
+2) copy file from laptop
+	sudo docker cp genesis_path_follower/ nostalgic_khorana:/home/developer/catkin_ws/src
+
+3) catkin_make
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
