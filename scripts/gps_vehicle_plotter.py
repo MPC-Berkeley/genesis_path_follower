@@ -8,6 +8,13 @@ from genesis_path_follower.msg import mpc_path
 from plot_utils.getVehicleFrame import plotVehicle
 from mpl_toolkits.axes_grid1.inset_locator import zoomed_inset_axes
 import scipy.io as sio
+from std_msgs.msg import Float32
+from std_msgs.msg import UInt8
+from lk_utils.controllers import *
+from lk_utils.path_lib import *
+from lk_utils.vehicle_lib import *
+from lk_utils.velocityprofiles import *
+from lk_utils.sim_lib import *
 
 class PlotGPSTrajectory():
 	'''
@@ -36,8 +43,58 @@ class PlotGPSTrajectory():
 		boundFile = rospy.get_param('road_edges')
 		bounds = sio.loadmat(boundFile)
 
+		#Initialize nodes, publishers, and subscribers
+		rospy.init_node('vehicle_plotter', anonymous=True)
+		rospy.Subscriber('state_est', state_est, self.parseStateEstMessage, queue_size=2)
+
+		self.accel_pub = rospy.Publisher("/control/accel", Float32, queue_size =2)
+		self.steer_pub = rospy.Publisher("/control/steer_angle", Float32, queue_size = 2)
+
+		self.enable_acc_pub   = rospy.Publisher("/control/enable_accel", UInt8, queue_size =2, latch=True)  ##Why queue_size = 10?
+		self.enable_steer_pub = rospy.Publisher("/control/enable_spas",  UInt8, queue_size =2, latch=True)
 
 
+
+		self.r = rospy.Rate(50.0)  ##TODO: Can we run this fast?
+
+		#Initialize Path object
+		self.path = Path()
+		if not rospy.has_param('mat_waypoints'):
+			raise ValueError('Invalid rosparam global origin provided!')	
+
+		pathLocation = rospy.get_param('mat_waypoints')	
+		self.path.loadFromMAT(pathLocation)
+
+		#vehicle information needed - initialize to none
+		self.X = self.path.posE[0] 
+		self.Y = self.path.posN[0]
+		self.psi = self.path.roadPsi[0]
+		self.Ux = 0.
+		self.Ax = 0.
+		self.delta = 0.
+
+		#Initialize vehicle
+		self.genesis = Vehicle('genesis')
+
+		
+		# Set up Plots includes full ("global") trajectory, target trajectory, MPC prediction trajectory, vehicle and Speed Profile
+		self.f = plt.figure()
+		self.ax2=self.f.add_subplot(211)
+		self.ax1=self.f.add_subplot(212)
+		self.ax = plt.gca()		
+		plt.ion()
+#Create speed profile - choose between constant velocity limit or track-varying velocity limit
+		self.speedProfile  = BasicProfile(self.genesis, self.path, friction = 0.4, vMax = 15., AxMax = 2.0)
+		
+		#self.speedProfile = BasicProfile(self.genesis, self.path, self.path.friction, self.path.vMax, AxMax = 2.0)
+
+		self.ax1.plot(self.speedProfile.s, self.speedProfile.Ux)
+
+		self.ax1.set_autoscaley_on(True)
+
+		self.ax1.set_ylabel('Speed (m/s)')
+		self.ax1.set_xlabel('Displacement (m)') 
+	
 		# Set up Data
 		self.edges_in = bounds["in"]
 		self.edges_out = bounds["out"]
@@ -55,56 +112,53 @@ class PlotGPSTrajectory():
 		self.vW = 1.89	 		# m  	(vehicle width)
 		self.rW = 0.3			# m		(wheel radius, estimate based on Shelley's value of 0.34 m).
 
-		# Set up Plot: includes full ("global") trajectory, target trajectory, MPC prediction trajectory, and vehicle.
-		self.f = plt.figure()
-		self.ax = plt.gca()		
-		plt.ion()
+		
 
 		# Road Edges
-		self.e1 = self.ax.plot(self.edges_in[:,0], self.edges_in[:,1])
-		self.e2 = self.ax.plot(self.edges_out[:,0], self.edges_out[:,1])
+		self.e1 = self.ax2.plot(self.edges_in[:,0], self.edges_in[:,1])
+		self.e2 = self.ax2.plot(self.edges_out[:,0], self.edges_out[:,1])
 		
 		# Trajectory 
-		self.l1, = self.ax.plot(self.x_global_traj, self.y_global_traj, 'k') 			
-		self.l2, = self.ax.plot(self.x_ref_traj,    self.y_ref_traj, 'rx')	
-		self.l3, = self.ax.plot(self.x_mpc_traj, self.y_mpc_traj, 'g*')
+		self.l1, = self.ax2.plot(self.x_global_traj, self.y_global_traj, 'k') 			
+		self.l2, = self.ax2.plot(self.x_ref_traj,    self.y_ref_traj, 'rx')	
+		self.l3, = self.ax2.plot(self.x_mpc_traj, self.y_mpc_traj, 'g*')
 		
 		# Vehicle coordinates
 		FrontBody, RearBody, FrontAxle, RearAxle, RightFrontTire, RightRearTire, LeftFrontTire, LeftRearTire = \
 			plotVehicle(self.x_vehicle, self.y_vehicle, self.psi_vehicle, self.df_vehicle, self.a, self.b, self.vW, self.rW)
 			
-		self.vl0, = self.ax.plot(self.x_vehicle,      self.y_vehicle,      'bo',   MarkerSize= 8)
-		self.vl1, = self.ax.plot(FrontBody[0,:],      FrontBody[1,:],      'gray', LineWidth = 2.5)
-		self.vl2, = self.ax.plot(RearBody[0,:],       RearBody[1,:],       'gray', LineWidth = 2.5) 
-		self.vl3, = self.ax.plot(FrontAxle[0,:],      FrontAxle[1,:],      'gray', LineWidth = 2.5)
-		self.vl4, = self.ax.plot(RearAxle[0,:],       RearAxle[1,:],       'gray', LineWidth = 2.5)
-		self.vl5, = self.ax.plot(RightFrontTire[0,:], RightFrontTire[1,:], 'r',    LineWidth = 3)
-		self.vl6, = self.ax.plot(RightRearTire[0,:],  RightRearTire[1,:],  'k',    LineWidth = 3)
-		self.vl7, = self.ax.plot(LeftFrontTire[0,:],  LeftFrontTire[1,:],  'r',    LineWidth = 3)
-		self.vl8, = self.ax.plot(LeftRearTire[0,:],   LeftRearTire[1,:],   'k',    LineWidth = 3)
+		self.vl0, = self.ax2.plot(self.x_vehicle,      self.y_vehicle,      'bo',   MarkerSize= 8)
+		self.vl1, = self.ax2.plot(FrontBody[0,:],      FrontBody[1,:],      'gray', LineWidth = 2.5)
+		self.vl2, = self.ax2.plot(RearBody[0,:],       RearBody[1,:],       'gray', LineWidth = 2.5) 
+		self.vl3, = self.ax2.plot(FrontAxle[0,:],      FrontAxle[1,:],      'gray', LineWidth = 2.5)
+		self.vl4, = self.ax2.plot(RearAxle[0,:],       RearAxle[1,:],       'gray', LineWidth = 2.5)
+		self.vl5, = self.ax2.plot(RightFrontTire[0,:], RightFrontTire[1,:], 'r',    LineWidth = 3)
+		self.vl6, = self.ax2.plot(RightRearTire[0,:],  RightRearTire[1,:],  'k',    LineWidth = 3)
+		self.vl7, = self.ax2.plot(LeftFrontTire[0,:],  LeftFrontTire[1,:],  'r',    LineWidth = 3)
+		self.vl8, = self.ax2.plot(LeftRearTire[0,:],   LeftRearTire[1,:],   'k',    LineWidth = 3)
 		
-		plt.xlabel('X (m)'); plt.ylabel('Y (m)')
-		plt.axis('equal')
+		self.ax2.set_xlabel('X (m)'); self.ax2.set_ylabel('Y (m)')
+		
 		
 		# Zoomed Inset Plot: Based off tutorial/code here: http://akuederle.com/matplotlib-zoomed-up-inset
-		self.ax_zoom = zoomed_inset_axes(self.ax, 5, loc=2) # axis, zoom_factor, location (2 = upper left)
+		self.ax2_zoom = zoomed_inset_axes(self.ax2, 5, loc=2) # axis, zoom_factor, location (2 = upper left)
 		self.window = 25 # m
-		self.ze1 =  self.ax_zoom.plot(self.edges_in[:,0], self.edges_in[:,1], 'k--')
-		self.ze2 =  self.ax_zoom.plot(self.edges_out[:,0], self.edges_out[:,1], 'k--')
-		self.zl1, = self.ax_zoom.plot(self.x_global_traj, self.y_global_traj, 'k') 			
-		self.zl2, = self.ax_zoom.plot(self.x_ref_traj,    self.y_ref_traj, 'rx')	
-		self.zl3, = self.ax_zoom.plot(self.x_mpc_traj, self.y_mpc_traj, 'g*')
-		self.zvl0,= self.ax_zoom.plot(self.x_vehicle,      self.y_vehicle,      'bo',   MarkerSize= 8)
-		self.zvl1,= self.ax_zoom.plot(FrontBody[0,:],      FrontBody[1,:],      'gray', LineWidth = 2.5)
-		self.zvl2,= self.ax_zoom.plot(RearBody[0,:],       RearBody[1,:],       'gray', LineWidth = 2.5) 
-		self.zvl3,= self.ax_zoom.plot(FrontAxle[0,:],      FrontAxle[1,:],      'gray', LineWidth = 2.5)
-		self.zvl4,= self.ax_zoom.plot(RearAxle[0,:],       RearAxle[1,:],       'gray', LineWidth = 2.5)
-		self.zvl5,= self.ax_zoom.plot(RightFrontTire[0,:], RightFrontTire[1,:], 'r',    LineWidth = 3)
-		self.zvl6,= self.ax_zoom.plot(RightRearTire[0,:],  RightRearTire[1,:],  'k',    LineWidth = 3)
-		self.zvl7,= self.ax_zoom.plot(LeftFrontTire[0,:],  LeftFrontTire[1,:],  'r',    LineWidth = 3)
-		self.zvl8,= self.ax_zoom.plot(LeftRearTire[0,:],   LeftRearTire[1,:],   'k',    LineWidth = 3)
-		self.ax_zoom.set_xlim(self.x_vehicle - self.window, self.x_vehicle + self.window)
-		self.ax_zoom.set_ylim(self.y_vehicle - self.window, self.y_vehicle + self.window)
+		self.ze1 =  self.ax2_zoom.plot(self.edges_in[:,0], self.edges_in[:,1], 'k--')
+		self.ze2 =  self.ax2_zoom.plot(self.edges_out[:,0], self.edges_out[:,1], 'k--')
+		self.zl1, = self.ax2_zoom.plot(self.x_global_traj, self.y_global_traj, 'k') 			
+		self.zl2, = self.ax2_zoom.plot(self.x_ref_traj,    self.y_ref_traj, 'rx')	
+		self.zl3, = self.ax2_zoom.plot(self.x_mpc_traj, self.y_mpc_traj, 'g*')
+		self.zvl0,= self.ax2_zoom.plot(self.x_vehicle,      self.y_vehicle,      'bo',   MarkerSize= 8)
+		self.zvl1,= self.ax2_zoom.plot(FrontBody[0,:],      FrontBody[1,:],      'gray', LineWidth = 2.5)
+		self.zvl2,= self.ax2_zoom.plot(RearBody[0,:],       RearBody[1,:],       'gray', LineWidth = 2.5) 
+		self.zvl3,= self.ax2_zoom.plot(FrontAxle[0,:],      FrontAxle[1,:],      'gray', LineWidth = 2.5)
+		self.zvl4,= self.ax2_zoom.plot(RearAxle[0,:],       RearAxle[1,:],       'gray', LineWidth = 2.5)
+		self.zvl5,= self.ax2_zoom.plot(RightFrontTire[0,:], RightFrontTire[1,:], 'r',    LineWidth = 3)
+		self.zvl6,= self.ax2_zoom.plot(RightRearTire[0,:],  RightRearTire[1,:],  'k',    LineWidth = 3)
+		self.zvl7,= self.ax2_zoom.plot(LeftFrontTire[0,:],  LeftFrontTire[1,:],  'r',    LineWidth = 3)
+		self.zvl8,= self.ax2_zoom.plot(LeftRearTire[0,:],   LeftRearTire[1,:],   'k',    LineWidth = 3)
+		self.ax2_zoom.set_xlim(self.x_vehicle - self.window, self.x_vehicle + self.window)
+		self.ax2_zoom.set_ylim(self.y_vehicle - self.window, self.y_vehicle + self.window)
 		plt.yticks(visible=False)
 		plt.xticks(visible=False)
 		
@@ -112,6 +166,8 @@ class PlotGPSTrajectory():
 		rospy.init_node('vehicle_plotter', anonymous=True)
 		rospy.Subscriber('state_est', state_est, self.update_state, queue_size=1)
 		rospy.Subscriber('mpc_path', mpc_path, self.update_mpc_trajectory, queue_size=1)
+
+
 		self.loop()
 
 	def loop(self):
@@ -167,12 +223,20 @@ class PlotGPSTrajectory():
 			self.zvl8.set_xdata(LeftRearTire[0,:])
 			self.zvl8.set_ydata(LeftRearTire[1,:])
 			
-			self.ax_zoom.set_xlim(self.x_vehicle - self.window, self.x_vehicle + self.window)
-			self.ax_zoom.set_ylim(self.y_vehicle - self.window, self.y_vehicle + self.window)
+			self.ax2_zoom.set_xlim(self.x_vehicle - self.window, self.x_vehicle + self.window)
+			self.ax2_zoom.set_ylim(self.y_vehicle - self.window, self.y_vehicle + self.window)
 			
 			self.f.canvas.draw()
 			plt.pause(0.001)
 			r.sleep()
+
+	def parseStateEstMessage(self, msg):
+		self.X = msg.x
+		self.Y = msg.y
+		self.psi = msg.psi
+		self.Ux = msg.v
+		self.Ax = msg.a
+		self.delta =  msg.df
 
 	def update_state(self, msg):
 		# Update vehicle's position.
