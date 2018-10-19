@@ -195,7 +195,7 @@ function pub_loop(acc_pub_obj, steer_pub_obj, mpc_path_pub_obj)
 
 	# println("start pub_loop")
 
-	control_rate = 50 	# max 50 Hz
+	control_rate = 10 	# max 50 Hz
     loop_rate = Rate(control_rate)
 
 	solv_time_long_gurobi1_all = zeros(control_rate/10*6000)		# over Gurobi.jl interface; mean: 2ms, max 4ms
@@ -259,10 +259,10 @@ function pub_loop(acc_pub_obj, steer_pub_obj, mpc_path_pub_obj)
 			# println("================  iteration $(it_num) =====================")
 
 			# a_opt=u0 ; a_pred = (u_0, u_1, ... u_{N-1})
-			a_opt_gurobi, a_pred_gurobi, s_pred_gurobi, v_pred_gurobi, solv_time_long_gurobi1, is_opt_long = kmpcLinLongGurobi.solve_gurobi(s_curr, v_curr, a_opt, s_ref, v_ref)
+			a_opt_gurobi, a_pred_gurobi, s_pred_gurobi, v_pred_gurobi, dA_opt_gurobi, solv_time_long_gurobi1, is_opt_long = kmpcLinLongGurobi.solve_gurobi(s_curr, v_curr, a_opt, s_ref, v_ref)
 			solv_time_long_gurobi1_all[it_num+1] = solv_time_long_gurobi1
 
-			df_opt_gurobi, df_pred_gurobi, ey_pred_gurobi, epsi_pred_gurobi, solv_time_lat_gurobi1, is_opt_lat_gurobi = kmpcLinLatGurobi.solve_gurobi(ey_curr, epsi_curr, df_opt, s_pred_gurobi, v_pred_gurobi, K_coeff)
+			df_opt_gurobi, df_pred_gurobi, ddf_opt_gurobi, ey_pred_gurobi, epsi_pred_gurobi, solv_time_lat_gurobi1, is_opt_lat_gurobi = kmpcLinLatGurobi.solve_gurobi(ey_curr, epsi_curr, df_opt, s_pred_gurobi, v_pred_gurobi, K_coeff)
 			solv_time_lat_gurobi1_all[it_num+1] = solv_time_lat_gurobi1
 
 			rostm = get_rostime()
@@ -311,12 +311,13 @@ function pub_loop(acc_pub_obj, steer_pub_obj, mpc_path_pub_obj)
 			mpc_path_msg.ss_fren   	=  s_pred_gurobi		# contains s_0 
 			mpc_path_msg.vs_fren   	=  v_pred_gurobi		# contains v_0
 			mpc_path_msg.eys_fren   = ey_pred_gurobi	# contains ey_0
-			mpc_path_msg.epsis_fren = epsi_pred_gurobi 	# psi_mpc
+			mpc_path_msg.epsis_fren = epsi_pred_gurobi 	# contains epsi_0
 			mpc_path_msg.curv 		= K_coeff
 			# add reference trajectory in X,Y coordinates
 			mpc_path_msg.xr   = x_ref 	# x_ref
 			mpc_path_msg.yr   = y_ref 	# y_ref
-			mpc_path_msg.vr   = v_ref	# v_ref
+			mpc_path_msg.vr   = v_ref	# v_ref; contains v0
+			mpc_path_msg.sr   = s_ref	# s_ref; contains s0; for policy-learning
 			mpc_path_msg.psir = psi_ref 	# psi_ref
 			# "ref"-path reconstructed from Frenet
 			mpc_path_msg.xr_recon   = x_ref_recon 	# x_ref
@@ -326,6 +327,8 @@ function pub_loop(acc_pub_obj, steer_pub_obj, mpc_path_pub_obj)
 			# store current and predicted inputs
 			mpc_path_msg.df   = a_pred_gurobi	# d_f
 			mpc_path_msg.acc  = df_pred_gurobi	# acc
+			mpc_path_msg.ddf = ddf_opt_gurobi   # delta df; for policy-learning
+			mpc_path_msg.dacc = dA_opt_gurobi	# delta ACC; for policy-learning
 			publish(mpc_path_pub_obj, mpc_path_msg)
 
 	    	it_num = it_num + 1		# iteration_count

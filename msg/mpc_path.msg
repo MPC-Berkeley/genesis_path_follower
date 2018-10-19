@@ -15,6 +15,7 @@ float64[] curv
 float64[] xr
 float64[] yr
 float64[] vr
+float64[] sr
 float64[] psir
 float64[] xr_recon
 float64[] yr_recon
@@ -22,3 +23,5 @@ float64[] vr_recon
 float64[] psir_recon
 float64[] df
 float64[] acc
+float64[] dacc
+float64[] ddf

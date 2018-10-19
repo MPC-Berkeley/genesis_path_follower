@@ -47,10 +47,10 @@ module GPSKinMPCPathFollowerFrenetLinLatGurobi
 	# x = (ey, epsi), u = (df)
 
 	# general control parameters
-	# dt      = 0.20			# model discretization time, td (s)
-	dt 		= 0.1
-	# N       = 8				# horizon
-	N 		= 16
+	dt      = 0.20			# model discretization time, td (s)
+	# dt 		= 0.1
+	N       = 8				# horizon
+	# N 		= 16
 	nx 		= 2				# dimension of x = (ey,epsi)
 	nu 		= 1				# number of inputs u = df
 	# L_a     = 1.108 		# dist from CoG to front axle (m)
@@ -374,7 +374,7 @@ module GPSKinMPCPathFollowerFrenetLinLatGurobi
 		# println("epsi_pred_gurobi (incl v0): $(epsi_pred_gurobi)")
 
 		df_opt = optimizer_gurobi[4]
-	   	return df_opt, df_pred_gurobi, ey_pred_gurobi, epsi_pred_gurobi, solvTimeGurobi1, status
+	   	return df_opt, df_pred_gurobi, ddf_pred_gurobi, ey_pred_gurobi, epsi_pred_gurobi, solvTimeGurobi1, status
 	   	# return df_opt, df_pred_gurobi, ey_pred_gurobi, epsi_pred_gurobi,  solvTimeGurobi1, status
 
 	end  	# end of solve_gurobi()

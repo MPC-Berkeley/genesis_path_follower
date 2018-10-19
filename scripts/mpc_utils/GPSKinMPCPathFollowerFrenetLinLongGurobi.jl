@@ -48,10 +48,10 @@ module GPSKinMPCPathFollowerFrenetLinLongGurobi
 
 	# general control parameters
 	# some might be passed on as arguments
-	# dt      = 0.20			# model discretization time, td (s)
-	dt 		= 0.1
-	# N       = 8				# horizon
-	N		= 16
+	dt      = 0.20			# model discretization time, td (s)
+	# dt 		= 0.1
+	N       = 8				# horizon
+	# N		= 16
 	nx 		= 2				# dimension of x = (s,v)
 	nu 		= 1				# number of inputs u = a
 	# L_a     = 1.108 		# dist from CoG to front axle (m)
@@ -347,7 +347,8 @@ module GPSKinMPCPathFollowerFrenetLinLongGurobi
 		a_pred_gurobi = optimizer_gurobi[4:n_uxu:end]
 		s_pred_gurobi = [ s_0 ; optimizer_gurobi[2:n_uxu:end] ] 	# include current s 
 		v_pred_gurobi = [ v_0 ; optimizer_gurobi[3:n_uxu:end] ]		# include current v 
-
+		dA_pred_gurobi = optimizer_gurobi[1:n_uxu:end]				# include current v 
+		
 		# println("deltaA_gurobi: $(optimizer_gurobi[1:n_uxu:end]')")
 		# println("s_pred_gurobi (incl s0): $(s_pred_gurobi)")
 		# println("v_pred_gurobi (incl v0): $(v_pred_gurobi)")
@@ -356,7 +357,7 @@ module GPSKinMPCPathFollowerFrenetLinLongGurobi
 
 		acc_opt = optimizer_gurobi[4]
 
-   	 	return acc_opt, a_pred_gurobi, s_pred_gurobi, v_pred_gurobi,  solvTimeGurobi1, status
+   	 	return acc_opt, a_pred_gurobi, s_pred_gurobi, v_pred_gurobi, dA_pred_gurobi, solvTimeGurobi1, status
 
 	end  	# end of solve_gurobi()
 
