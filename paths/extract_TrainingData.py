@@ -81,8 +81,10 @@ N_mpc = np.size(df_pred,1)	# number of training points
 k_coeffs = path['K_coeff']  # numTrPts x 4
 # extract curvature
 c_pred = np.zeros([numTrPts, N_mpc])
-for i in range(numTrPts-1):
-	for j in range(N_mpc-1):
+
+
+for i in range(numTrPts):
+	for j in range(N_mpc):
 		c_pred[i,j] = k_coeffs[i,0]*s_pred[i,j]**3 + k_coeffs[i,1]*s_pred[i,j]**2 + k_coeffs[i,2]*s_pred[i,j] + k_coeffs[i,3]
 
 
