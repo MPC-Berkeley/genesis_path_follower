@@ -259,10 +259,10 @@ function pub_loop(acc_pub_obj, steer_pub_obj, mpc_path_pub_obj)
 			# println("================  iteration $(it_num) =====================")
 
 			# a_opt=u0 ; a_pred = (u_0, u_1, ... u_{N-1})
-			a_opt_gurobi, a_pred_gurobi, s_pred_gurobi, v_pred_gurobi, dA_opt_gurobi, solv_time_long_gurobi1, is_opt_long = kmpcLinLongGurobi.solve_gurobi(s_curr, v_curr, a_opt, s_ref, v_ref)
+			a_opt_gurobi, a_pred_gurobi, s_pred_gurobi, v_pred_gurobi, dA_pred_gurobi, solv_time_long_gurobi1, is_opt_long = kmpcLinLongGurobi.solve_gurobi(s_curr, v_curr, a_opt, s_ref, v_ref)
 			solv_time_long_gurobi1_all[it_num+1] = solv_time_long_gurobi1
 
-			df_opt_gurobi, df_pred_gurobi, ddf_opt_gurobi, ey_pred_gurobi, epsi_pred_gurobi, solv_time_lat_gurobi1, is_opt_lat_gurobi = kmpcLinLatGurobi.solve_gurobi(ey_curr, epsi_curr, df_opt, s_pred_gurobi, v_pred_gurobi, K_coeff)
+			df_opt_gurobi, df_pred_gurobi, ddf_pred_gurobi, ey_pred_gurobi, epsi_pred_gurobi, solv_time_lat_gurobi1, is_opt_lat_gurobi = kmpcLinLatGurobi.solve_gurobi(ey_curr, epsi_curr, df_opt, s_pred_gurobi, v_pred_gurobi, K_coeff)
 			solv_time_lat_gurobi1_all[it_num+1] = solv_time_lat_gurobi1
 
 			rostm = get_rostime()
@@ -274,8 +274,10 @@ function pub_loop(acc_pub_obj, steer_pub_obj, mpc_path_pub_obj)
 			log_str_lat = @sprintf("Solve Status Lat. Gurobi: %s, SA: %.3f, SolvTimeLat:  %.3f", is_opt_lat_gurobi, df_opt_gurobi, solv_time_lat_gurobi1)
 		    loginfo(log_str_lat)
 
-			a_opt = a_opt_gurobi
-			df_opt = df_opt_gurobi
+		    a_prev = a_opt    		# store previous acceleration (not super clean)
+			a_opt = a_opt_gurobi	# update new acceleration
+			df_prev = df_opt		# store previous acceleration
+			df_opt = df_opt_gurobi 	# update new acceleration
 
 		    # do not apply any inputs during warm start
 		    if it_num <= num_warmStarts
@@ -302,6 +304,13 @@ function pub_loop(acc_pub_obj, steer_pub_obj, mpc_path_pub_obj)
 			mpc_path_msg.solv_status_lat  = string(is_opt_lat_gurobi)
 			mpc_path_msg.solv_time_long = solv_time_long_gurobi1
 			mpc_path_msg.solv_time_lat = solv_time_lat_gurobi1
+			# store current states and previous inputs (for NN learning)
+			mpc_path_msg.s_curr = s_curr
+			mpc_path_msg.v_curr = v_curr
+			mpc_path_msg.a_prev = a_prev
+			mpc_path_msg.ey_curr = ey_curr
+			mpc_path_msg.epsi_curr = epsi_curr
+			mpc_path_msg.df_prev = df_prev
 			# store the predicted paths in (X,Y)
 			mpc_path_msg.xs   = x_mpc 	# x_mpc; containts x_curr
 			mpc_path_msg.ys   = y_mpc 	# y_mpc; containts y_curr
@@ -325,10 +334,10 @@ function pub_loop(acc_pub_obj, steer_pub_obj, mpc_path_pub_obj)
 			mpc_path_msg.vr_recon   = v_ref	# v_ref
 			mpc_path_msg.psir_recon = psi_ref_recon 	# psi_ref
 			# store current and predicted inputs
-			mpc_path_msg.df   = a_pred_gurobi	# d_f
-			mpc_path_msg.acc  = df_pred_gurobi	# acc
-			mpc_path_msg.ddf = ddf_opt_gurobi   # delta df; for policy-learning
-			mpc_path_msg.dacc = dA_opt_gurobi	# delta ACC; for policy-learning
+			mpc_path_msg.acc   = a_pred_gurobi	# d_f
+			mpc_path_msg.df  = df_pred_gurobi	# acc
+			mpc_path_msg.ddf = ddf_pred_gurobi   # delta df; for policy-learning
+			mpc_path_msg.dacc = dA_pred_gurobi	# delta ACC; for policy-learning
 			publish(mpc_path_pub_obj, mpc_path_msg)
 
 	    	it_num = it_num + 1		# iteration_count

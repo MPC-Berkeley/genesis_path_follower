@@ -3,6 +3,12 @@ string solv_status_long
 string solv_status_lat
 float64 solv_time_long
 float64 solv_time_lat
+float64 s_curr
+float64 v_curr
+float64 a_prev
+float64 ey_curr
+float64 epsi_curr
+float64 df_prev
 float64[] xs
 float64[] ys
 float64[] vs
