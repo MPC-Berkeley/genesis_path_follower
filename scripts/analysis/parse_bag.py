@@ -8,6 +8,7 @@ import math
 ''' Code to convert rosbag into a matfile for further plotting/analysis. 
 	This code should be able to handle data recorded using either the state_est 
 	and the state_est_dyn message types.
+	GXZ: Code modified to also extract MPC solutions
 '''
 	
 def parse_rosbag(mode, in_rosbag, out_mat):
@@ -15,6 +16,13 @@ def parse_rosbag(mode, in_rosbag, out_mat):
 	lat = []; lon = []; a = []; df = []
 	se_v_x = []; se_v_y = []; se_yaw_rate = [];
 	se_long_accel = []; se_lat_accel = [];
+	
+	# added by GXZ for policy learning (stores data from mpc solutions)
+	s_ref = []; v_ref=[]; K_coeff = []; 
+	a_pred = []; da_pred = []; df_pred = []; ddf_pred = [];
+	solvStat_long = []; solvStat_lat = []; solvTime_long = []; solvTime_lat = [];
+	ey_pred = []; epsi_pred = []; s_pred = []; v_pred = [];
+	s_curr = []; v_curr = []; a_prev = []; ey_curr = []; epsi_curr = []; df_prev = [];
 
 	b = rosbag.Bag(in_rosbag)
 	state_est_topic_name = '/vehicle/state_est'
@@ -60,6 +68,34 @@ def parse_rosbag(mode, in_rosbag, out_mat):
 			a.append(msg.a)
 			df.append(msg.df)
 
+		####### added by GXZ to extract data for learning  #######
+		for topic, msg, _ in b.read_messages(topics='/vehicle/mpc_path'):
+			# collect solver time and status
+			solvStat_long.append(msg.solv_status_long)
+			solvStat_lat.append(msg.solv_status_lat)
+			solvTime_long.append(msg.solv_time_long)
+			solvTime_lat.append(msg.solv_time_lat)
+			s_ref.append(msg.sr)
+			v_ref.append(msg.vr)
+			K_coeff.append(msg.curv)
+			a_pred.append(msg.acc)
+			da_pred.append(msg.dacc)
+			df_pred.append(msg.df)
+			ddf_pred.append(msg.ddf)
+			ey_pred.append(msg.eys_fren)
+			epsi_pred.append(msg.epsis_fren)
+			s_pred.append(msg.ss_fren)
+			v_pred.append(msg.vs_fren)
+			s_curr.append(msg.s_curr)
+			v_curr.append(msg.v_curr)
+			a_prev.append(msg.a_prev)
+			ey_curr.append(msg.ey_curr)
+			epsi_curr.append(msg.epsi_curr)
+			df_prev.append(msg.df_prev)
+
+			# print('append inside mpc_path')
+			# pdb.set_trace()	
+		
 		if mode != 'Sim': # only populate dynamic fields if we have real data from the vehicle.
 			tm = []
 			lat_accel = []
@@ -130,6 +166,29 @@ def parse_rosbag(mode, in_rosbag, out_mat):
 	rdict['a_lat'] = se_lat_accel
 	rdict['a_long'] = se_long_accel
 	rdict['df']  = df
+
+	rdict['solvStat_long'] = solvStat_long
+	rdict['solvStat_lat'] = solvStat_lat
+	rdict['solvTime_long'] = solvTime_long
+	rdict['solvTime_lat'] = solvTime_lat
+	rdict['s_ref'] = s_ref
+	rdict['v_ref'] = v_ref
+	rdict['K_coeff'] = K_coeff
+	rdict['a_pred'] = a_pred
+	rdict['da_pred'] = da_pred
+	rdict['df_pred'] = df_pred
+	rdict['ddf_pred'] = ddf_pred
+	rdict['ey_pred'] = ey_pred
+	rdict['epsi_pred'] = epsi_pred
+	rdict['s_pred'] = s_pred
+	rdict['v_pred'] = v_pred
+	rdict['s_curr'] = s_curr
+	rdict['v_curr'] = v_curr
+	rdict['a_prev'] = a_prev
+	rdict['ey_curr'] = ey_curr
+	rdict['epsi_curr'] = epsi_curr
+	rdict['df_prev'] = df_prev
+
 				
 	sio.savemat(out_mat, rdict)
 
