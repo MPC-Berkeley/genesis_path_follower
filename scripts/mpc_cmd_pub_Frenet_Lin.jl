@@ -195,7 +195,7 @@ function pub_loop(acc_pub_obj, steer_pub_obj, mpc_path_pub_obj)
 
 	# println("start pub_loop")
 
-	control_rate = 10 	# max 50 Hz
+	control_rate = 50 	# max 50 Hz
     loop_rate = Rate(control_rate)
 
 	solv_time_long_gurobi1_all = zeros(control_rate/10*6000)		# over Gurobi.jl interface; mean: 2ms, max 4ms
