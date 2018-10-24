@@ -5,23 +5,30 @@ using MAT
 using Gurobi
 using JuMP
 
-#### problem paramters for LONGITUDINAL Control
-# should be read out later on
-N 		= 8
-dt 		= 0.2
-nx 		= 2				# dimension of x = (ey,epsi)
-nu 		= 1				# number of inputs u = df
-L_a 	= 1.5213		# from CoG to front axle (according to Jongsang)
-L_b 	= 1.4987		# from CoG to rear axle (according to Jongsang)
+
+
+#### problem paramters for LONGITUDINAL Control 
+# Global variable LOAD_PATH contains the directories Julia searches for modules when calling require. It can be extended using push!:
+push!(LOAD_PATH, "../scripts/mpc_utils") 	
+import GPSKinMPCPathFollowerFrenetLinLatGurobi
+const kmpcLinLat = GPSKinMPCPathFollowerFrenetLinLatGurobi  # short-hand-notation
+
+
+# Load as Many parameters as possible from MPC file to avoid parameter mis-match
+N 		= kmpcLinLat.N
+dt 		= kmpcLinLat.dt
+nx 		= kmpcLinLat.nx				# dimension of x = (ey,epsi)
+nu 		= kmpcLinLat.nu				# number of inputs u = df
+L_a 	= kmpcLinLat.L_a		# from CoG to front axle (according to Jongsang)
+L_b 	= kmpcLinLat.L_b		# from CoG to rear axle (according to Jongsang)
 
 ############## load all data ##############
-longData = matread("NN_test_trainingData.mat")
+latData = matread("NN_test_trainingData.mat")
 
-inputParam_long = longData["inputParam_long"]   # np.hstack((s_curr.T, v_curr.T ,a_prev.T, s_ref, v_ref ))
-
-
-outputParamAcc_long = longData["outputParamAcc_long"]
-outputParamDacc_long = longData["outputParamDacc_long"]
+# inputParam_lat = np.hstack((ey_curr.T, epsi_curr.T ,df_prev.T, v_pred, c_pred))
+inputParam_lat = latData["inputParam_lat"]   #
+outputParamAcc_long = latData["outputParamAcc_long"]
+outputParamDacc_long = latData["outputParamDacc_long"]
 
 # parse initial data
 s_curr_all = inputParam_long[:,1]
@@ -30,46 +37,8 @@ a_prev_all = inputParam_long[:,3]
 s_ref_all = inputParam_long[:,4:4+N-1]
 v_ref_all = inputParam_long[:,12:end]
 
-######### Define parameters that don't change ############
-# define System matrices (all time-invariant)
-# in principle, these should all be read from the long-file (in case stuff change)
-A = [	1 	dt 		# can be made more exact using matrix exponential
-		0	1 	]
-B = [ 	0
-		dt 		]
-g = [	0
-		0	]
-# define cost functions
-C_s = 20			# track progress
-C_v = 10;			# ref velocity tracking weight			
-C_acc = 0
-C_dacc = 11;		# 20 too high; 10 OK for med speed; 10 a big jerky for high speed; 13 too high
 
-Q = diagm([C_s ; C_v])	# create diagonal matrix
-R = C_acc
-Rdelta = C_dacc
-
-# define (box) constraints
-largeNumber = 1e5;		# use this number for variables that are not upper/lower bounded
-v_min = 0.0				# vel bounds (m/s)
-v_max = 20.0	
-a_max = 2.0				# acceleration and deceleration bound, m/s^2
-a_dmax = 1.5			# jerk bound, m/s^3
-
-x_lb = [	-largeNumber	# make sure car doesnt travel more than largeNumber [m]
-			v_min		]
-x_ub = [	largeNumber
-			v_max		]
-
-u_lb = -a_max
-u_ub = a_max
-
-dU_lb = -a_dmax*dt 	# double check if *dt is needed (or not)
-dU_ub = a_dmax*dt
-
-
-# input reference
-u_ref_init = zeros(N,1)	# if not used, set cost to zeros
+u_ref_init = kmpcLinLat.u_ref_init	# if not used, set cost to zeros
 
 
 # ================== Transformation 1 ======================
@@ -77,24 +46,9 @@ u_ref_init = zeros(N,1)	# if not used, set cost to zeros
 # x_tilde_k := (x_k , u_{k-1})
 # u_tilde_k := (u_k - u_{k-1})
 
-A_tilde = [	A 				B
-			zeros(nu,nx) 	eye(nu)	]
+A_tilde = kmpcLinLat.A_tilde
 
-B_tilde = [	B ; eye(nu)	]
-
-g_tilde = [	g ;	zeros(nu) ]
-
-x_tilde_lb = [x_lb ; u_lb]
-x_tilde_ub = [x_ub ; u_ub]
-u_tilde_lb = dU_lb
-u_tilde_ub = dU_ub
-
-Q_tilde = [	Q 			zeros(nx,nu) 		# may also use cat(?)
-			zeros(nu,nx)	R 			]	# actually not needed
-
-R_tilde = Rdelta
-
-u_tilde_ref_init = zeros(N*nu) 	# goal is to minimize uTilde = (acc_k - acc_{k-1})
+g_tilde = kmpcLinLat.g_tilde
 
 # # ================== Transformation 2 ======================
 # # bring into GUROBI format
@@ -104,30 +58,24 @@ u_tilde_ref_init = zeros(N*nu) 	# goal is to minimize uTilde = (acc_k - acc_{k-1
 # #				z_lb <= z <= z_ub
 
 # z := (u_tilde_0, x_tilde_1 , u_tilde_1 x_tilde_2 , ... u_tilde_{N-1}, x_tilde_N , )
-n_uxu = nu+nx+nu 	# size of one block of (u_tilde, x_tilde) = (deltaU, x, u)
+n_uxu = kmpcLinLat.n_uxu	# size of one block of (u_tilde, x_tilde) = (deltaU, x, u)
 
 # Build cost function
 # cost for (u_tilde, x_tilde) = (deltaU , S, V, U)
-H_block = [	R_tilde zeros(nu, nu+nx)
-			zeros(nu+nx,nu) Q_tilde		];
-H_gurobi = kron(eye(N), H_block)
+H_gurobi = kmpcLinLat.H_gurobi
 
 
 # build box constraints lb_gurobi <= z <= ub_gurobi
 # recall: z = (u_tilde, x_tilde, ....)
-lb_gurobi = repmat([u_tilde_lb ; x_tilde_lb], N, 1)		# (deltaU, X, U)
-ub_gurobi = repmat([u_tilde_ub ; x_tilde_ub], N, 1)		# (deltaU, X, U)
+lb_gurobi = kmpcLinLat.lb_gurobi		# (deltaU, X, U)
+ub_gurobi = kmpcLinLat.ub_gurobi		# (deltaU, X, U)
 
 
 # build equality matrix (most MALAKA task ever)
-nu_tilde = nu
-nx_tilde = nu+nx
-# n_uxu = nu_tilde + nx_tilde
-Aeq_gurobi = zeros(N*nx_tilde , N*(nx_tilde+nu_tilde))
-Aeq_gurobi[1:nx_tilde, 1:(nx_tilde+nu_tilde)] = [-B_tilde eye(nx_tilde)] 	# fill out first row associated with x_tilde_1
-for i = 2 : N  	# fill out rows associated to x_tilde_2, ... , x_tilde_N
-	Aeq_gurobi[ (i-1)*nx_tilde+1 : i*nx_tilde  , (i-2)*(nu_tilde+nx_tilde)+(nu_tilde)+1 : (i-2)*(nu_tilde+nx_tilde)+nu_tilde+(nx_tilde+nu_tilde+nx_tilde)    ] = [-A_tilde -B_tilde eye(nx_tilde)]
-end
+nu_tilde = kmpcLinLat.nu_tilde
+nx_tilde = kmpcLinLat.nx_tilde
+Aeq_gurobi = kmpcLinLat.Aeq_gurobi
+
 
 ######################## ITERATE OVER saved parameters ################
 # build problem
@@ -144,7 +92,7 @@ dual_eq = []
 dual_ub = []
 dual_lb = []
 
-for ii = 1 : num_DataPoints	
+for ii = 1 : 1	
 	# extract appropriate parameters
 	s_0 = s_curr_all[ii]
 	v_0 = v_curr_all[ii]
@@ -185,24 +133,6 @@ for ii = 1 : num_DataPoints
 	f_gurobi_updated = -2*H_gurobi*z_gurobi_ref
 
 
-	# # OLD: formulate optimization problem
-	# GurobiEnv = Gurobi.Env()	# really necessary?
-	# setparam!(GurobiEnv, "Presolve", -1)		# -1: automatic; no big influence on solution time
-	# setparam!(GurobiEnv, "LogToConsole", 0)		# set presolve to 0
-	# # setparam!(GurobiEnv, "TimeLimit",0.025)		# for 20Hz = 50ms
-	# # Formulate Optimization Problem
-	#  	GurobiModel = gurobi_model(GurobiEnv;
-	# 		name = "qp_01",
-	# 		H = 2*H_gurobi,
-	# 		f = f_gurobi_updated,	# need to make it "flat"
-	# 		Aeq = Aeq_gurobi,
-	# 		beq = squeeze(beq_gurobi_updated,2), # need to make it "flat"
-	# 		lb = squeeze(lb_gurobi,2), # need to make it "flat"
-	# 		ub = squeeze(ub_gurobi,2)	) # need to make it "flat"
-	# optimize(GurobiModel)		 		# solve optimization problem
-	# 	solvTimeGurobi1 = toq()
-	# optimizer_gurobi = get_solution(GurobiModel)
-	# status = get_status(GurobiModel)
 
 	# Solve optimization problem
 	# ================== recall Transformation 2 ======================
@@ -250,7 +180,7 @@ println("max dA-residual:  $(maximum(dA_res_all))")
 println("max solv-time (excl modelling time):  $(maximum(solv_time_all[3:end]))")
 println("avg solv-time (excl modelling time):  $(mean(solv_time_all[3:end]))")
 
-matwrite("NN_test_trainingData_PrimalDual.mat", Dict(
+matwrite("NN_test_trainingDataLat_PrimalDual.mat", Dict(
 	"inputParam_long" => inputParam_long,
 	"outputParamAcc_long" => outputParamAcc_long,
 	"outputParamDacc_long" => outputParamDacc_long,
