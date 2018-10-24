@@ -5,27 +5,21 @@ using MAT
 using Gurobi
 using JuMP
 
-
-
-#### problem paramters for LONGITUDINAL Control 
-# Global variable LOAD_PATH contains the directories Julia searches for modules when calling require. It can be extended using push!:
-push!(LOAD_PATH, "../scripts/mpc_utils") 	
-import GPSKinMPCPathFollowerFrenetLinLongGurobi
-const kmpcLinLong = GPSKinMPCPathFollowerFrenetLinLongGurobi  # short-hand-notation
-
-
-# Load as Many parameters as possible from MPC file to avoid parameter mis-match
-N 		= kmpcLinLong.N
-dt 		= kmpcLinLong.dt
-nx 		= kmpcLinLong.nx				# dimension of x = (ey,epsi)
-nu 		= kmpcLinLong.nu				# number of inputs u = df
-L_a 	= kmpcLinLong.L_a		# from CoG to front axle (according to Jongsang)
-L_b 	= kmpcLinLong.L_b		# from CoG to rear axle (according to Jongsang)
+#### problem paramters for LONGITUDINAL Control
+# should be read out later on
+N 		= 8
+dt 		= 0.2
+nx 		= 2				# dimension of x = (ey,epsi)
+nu 		= 1				# number of inputs u = df
+L_a 	= 1.5213		# from CoG to front axle (according to Jongsang)
+L_b 	= 1.4987		# from CoG to rear axle (according to Jongsang)
 
 ############## load all data ##############
 longData = matread("NN_test_trainingData.mat")
 
 inputParam_long = longData["inputParam_long"]   # np.hstack((s_curr.T, v_curr.T ,a_prev.T, s_ref, v_ref ))
+
+
 outputParamAcc_long = longData["outputParamAcc_long"]
 outputParamDacc_long = longData["outputParamDacc_long"]
 
@@ -39,44 +33,43 @@ v_ref_all = inputParam_long[:,12:end]
 ######### Define parameters that don't change ############
 # define System matrices (all time-invariant)
 # in principle, these should all be read from the long-file (in case stuff change)
-# A = kmpcLinLong.A
-# # A = [	1 	dt 		# can be made more exact using matrix exponential
-# # 		0	1 	]
-# B = kmpcLinLong.B
-# # B = [ 	0
-# 		# dt 		]
-# g = kmpcLinLong.g
-# # g = [	0
-# 		# 0	]
-# # define cost functions
-# C_s = kmpcLinLong.C_s			# track progress
-# C_v = kmpcLinLong.C_v			# ref velocity tracking weight			
-# C_acc = kmpcLinLong.C_acc
-# C_dacc = kmpcLinLong.C_dacc;		# 20 too high; 10 OK for med speed; 10 a big jerky for high speed; 13 too high
+A = [	1 	dt 		# can be made more exact using matrix exponential
+		0	1 	]
+B = [ 	0
+		dt 		]
+g = [	0
+		0	]
+# define cost functions
+C_s = 20			# track progress
+C_v = 10;			# ref velocity tracking weight			
+C_acc = 0
+C_dacc = 11;		# 20 too high; 10 OK for med speed; 10 a big jerky for high speed; 13 too high
 
-# Q = kmpcLinLong.Q
-# R = kmpcLinLong.R
-# Rdelta = kmpcLinLong.Rdelta
+Q = diagm([C_s ; C_v])	# create diagonal matrix
+R = C_acc
+Rdelta = C_dacc
 
-# # define (box) constraints
-# largeNumber = kmpcLinLong.largeNumber;		# use this number for variables that are not upper/lower bounded
-# v_min = kmpcLinLong.v_min				# vel bounds (m/s)
-# v_max = kmpcLinLong.v_max	
-# a_max = kmpcLinLong.a_max				# acceleration and deceleration bound, m/s^2
-# a_dmax = kmpcLinLong.a_dmax			# jerk bound, m/s^3
+# define (box) constraints
+largeNumber = 1e5;		# use this number for variables that are not upper/lower bounded
+v_min = 0.0				# vel bounds (m/s)
+v_max = 20.0	
+a_max = 2.0				# acceleration and deceleration bound, m/s^2
+a_dmax = 1.5			# jerk bound, m/s^3
 
-# x_lb = kmpcLinLong.x_lb
-# x_ub = kmpcLinLong.x_ub
+x_lb = [	-largeNumber	# make sure car doesnt travel more than largeNumber [m]
+			v_min		]
+x_ub = [	largeNumber
+			v_max		]
 
-# u_lb = kmpcLinLong.u_lb
-# u_ub = kmpcLinLong.u_ub
+u_lb = -a_max
+u_ub = a_max
 
-# dU_lb = kmpcLinLong.dU_lb 	# double check if *dt is needed (or not)
-# dU_ub = kmpcLinLong.dU_ub
+dU_lb = -a_dmax*dt 	# double check if *dt is needed (or not)
+dU_ub = a_dmax*dt
 
 
 # input reference
-u_ref_init = kmpcLinLong.u_ref_init	# if not used, set cost to zeros
+u_ref_init = zeros(N,1)	# if not used, set cost to zeros
 
 
 # ================== Transformation 1 ======================
@@ -84,26 +77,24 @@ u_ref_init = kmpcLinLong.u_ref_init	# if not used, set cost to zeros
 # x_tilde_k := (x_k , u_{k-1})
 # u_tilde_k := (u_k - u_{k-1})
 
-A_tilde = kmpcLinLong.A_tilde
+A_tilde = [	A 				B
+			zeros(nu,nx) 	eye(nu)	]
 
-# B_tilde = kmpcLinLong.B_tilde
+B_tilde = [	B ; eye(nu)	]
 
-g_tilde = kmpcLinLong.g_tilde
+g_tilde = [	g ;	zeros(nu) ]
 
-# x_tilde_lb = kmpcLinLong.x_tilde_lb
-# x_tilde_ub = kmpcLinLong.x_tilde_ub
-# u_tilde_lb = kmpcLinLong.u_tilde_lb
-# u_tilde_ub = kmpcLinLong.u_tilde_ub
+x_tilde_lb = [x_lb ; u_lb]
+x_tilde_ub = [x_ub ; u_ub]
+u_tilde_lb = dU_lb
+u_tilde_ub = dU_ub
 
-# Q_tilde = kmpcLinLong.Q_tilde
-# Q_tilde = [	Q 			zeros(nx,nu) 		# may also use cat(?)
-			# zeros(nu,nx)	R 			]	# actually not needed
+Q_tilde = [	Q 			zeros(nx,nu) 		# may also use cat(?)
+			zeros(nu,nx)	R 			]	# actually not needed
 
-# R_tilde = kmpcLinLong.R_tilde
-# R_tilde = Rdelta
+R_tilde = Rdelta
 
-
-# u_tilde_ref_init = kmpcLinLong.u_tilde_ref_init 	# goal is to minimize uTilde = (acc_k - acc_{k-1})
+u_tilde_ref_init = zeros(N*nu) 	# goal is to minimize uTilde = (acc_k - acc_{k-1})
 
 # # ================== Transformation 2 ======================
 # # bring into GUROBI format
@@ -113,31 +104,30 @@ g_tilde = kmpcLinLong.g_tilde
 # #				z_lb <= z <= z_ub
 
 # z := (u_tilde_0, x_tilde_1 , u_tilde_1 x_tilde_2 , ... u_tilde_{N-1}, x_tilde_N , )
-n_uxu = kmpcLinLong.n_uxu	# size of one block of (u_tilde, x_tilde) = (deltaU, x, u)
+n_uxu = nu+nx+nu 	# size of one block of (u_tilde, x_tilde) = (deltaU, x, u)
 
 # Build cost function
 # cost for (u_tilde, x_tilde) = (deltaU , S, V, U)
-# H_block = kmpcLinLong.H_block
-H_gurobi = kmpcLinLong.H_gurobi
+H_block = [	R_tilde zeros(nu, nu+nx)
+			zeros(nu+nx,nu) Q_tilde		];
+H_gurobi = kron(eye(N), H_block)
 
 
 # build box constraints lb_gurobi <= z <= ub_gurobi
 # recall: z = (u_tilde, x_tilde, ....)
-lb_gurobi = kmpcLinLong.lb_gurobi		# (deltaU, X, U)
-ub_gurobi = kmpcLinLong.ub_gurobi		# (deltaU, X, U)
+lb_gurobi = repmat([u_tilde_lb ; x_tilde_lb], N, 1)		# (deltaU, X, U)
+ub_gurobi = repmat([u_tilde_ub ; x_tilde_ub], N, 1)		# (deltaU, X, U)
 
 
 # build equality matrix (most MALAKA task ever)
-nu_tilde = kmpcLinLong.nu_tilde
-nx_tilde = kmpcLinLong.nx_tilde
-Aeq_gurobi = kmpcLinLong.Aeq_gurobi
+nu_tilde = nu
+nx_tilde = nu+nx
 # n_uxu = nu_tilde + nx_tilde
-# Aeq_gurobi = zeros(N*nx_tilde , N*(nx_tilde+nu_tilde))
-# Aeq_gurobi[1:nx_tilde, 1:(nx_tilde+nu_tilde)] = [-B_tilde eye(nx_tilde)] 	# fill out first row associated with x_tilde_1
-# for i = 2 : N  	# fill out rows associated to x_tilde_2, ... , x_tilde_N
-	# Aeq_gurobi[ (i-1)*nx_tilde+1 : i*nx_tilde  , (i-2)*(nu_tilde+nx_tilde)+(nu_tilde)+1 : (i-2)*(nu_tilde+nx_tilde)+nu_tilde+(nx_tilde+nu_tilde+nx_tilde)    ] = [-A_tilde -B_tilde eye(nx_tilde)]
-# end
-
+Aeq_gurobi = zeros(N*nx_tilde , N*(nx_tilde+nu_tilde))
+Aeq_gurobi[1:nx_tilde, 1:(nx_tilde+nu_tilde)] = [-B_tilde eye(nx_tilde)] 	# fill out first row associated with x_tilde_1
+for i = 2 : N  	# fill out rows associated to x_tilde_2, ... , x_tilde_N
+	Aeq_gurobi[ (i-1)*nx_tilde+1 : i*nx_tilde  , (i-2)*(nu_tilde+nx_tilde)+(nu_tilde)+1 : (i-2)*(nu_tilde+nx_tilde)+nu_tilde+(nx_tilde+nu_tilde+nx_tilde)    ] = [-A_tilde -B_tilde eye(nx_tilde)]
+end
 
 ######################## ITERATE OVER saved parameters ################
 # build problem
