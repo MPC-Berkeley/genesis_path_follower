@@ -6,37 +6,6 @@ using Gurobi
 using JuMP
 
 
-## Code for concatinating matrices 
-
-# function appendMat(N, nx, nu, nw, A, B, E)
-
-# 	Ax_vec = zeros(N*nx, nx)
-#         for ii = 1 : N
-#             Ax_vec[1+(ii-1)*nx:ii*nx,:] = A^ii
-#         end
-
-# 	Bx_vec = zeros(N*nx, nu*N)
-
-#         for ii = 0 : N-1
-#             for jj = 0 : ii-1
-#                 Bx_vec[1+ii*nx:(ii+1)*nx, 1+jj*nu:  (jj+1)*nu] = A^(ii-jj)*B
-#             end
-#             Bx_vec[1+ii*nx:(ii+1)*nx, 1+ii*nu:(ii+1)*nu] = B
-#         end
-
-#     Ex_vec = zeros(N*nx, nw*N)
-
-#         for ii = 0 : N-1
-#             for jj = 0 : ii-1
-#                 Ex_vec[1+ii*nx:(ii+1)*nx, 1+jj*nw:  (jj+1)*nw] = A^(ii-jj)*E
-#             end
-#             Ex_vec[1+ii*nx:(ii+1)*nx, 1+ii*nw:(ii+1)*nw] = E
-#         end
-
-# 	return Ax_vec, Bx_vec, Ex_vec
-# end
-
-
 #### problem paramters for LONGITUDINAL Control 
 # Global variable LOAD_PATH contains the directories Julia searches for modules when calling require. It can be extended using push!:
 push!(LOAD_PATH, "../scripts/mpc_utils") 	
@@ -66,48 +35,9 @@ a_prev_all = inputParam_long[:,3]
 s_ref_all = inputParam_long[:,4:4+N-1]
 v_ref_all = inputParam_long[:,12:end]
 
-######### Define parameters that don't change ############
-# define System matrices (all time-invariant)
-# in principle, these should all be read from the long-file (in case stuff change)
-# A = kmpcLinLong.A
-# # A = [	1 	dt 		# can be made more exact using matrix exponential
-# # 		0	1 	]
-# B = kmpcLinLong.B
-# # B = [ 	0
-# 		# dt 		]
-# g = kmpcLinLong.g
-# # g = [	0
-# 		# 0	]
-# # define cost functions
-# C_s = kmpcLinLong.C_s			# track progress
-# C_v = kmpcLinLong.C_v			# ref velocity tracking weight			
-# C_acc = kmpcLinLong.C_acc
-# C_dacc = kmpcLinLong.C_dacc;		# 20 too high; 10 OK for med speed; 10 a big jerky for high speed; 13 too high
-
-# Q = kmpcLinLong.Q
-# R = kmpcLinLong.R
-# Rdelta = kmpcLinLong.Rdelta
-
-# # define (box) constraints
-# largeNumber = kmpcLinLong.largeNumber;		# use this number for variables that are not upper/lower bounded
-# v_min = kmpcLinLong.v_min				# vel bounds (m/s)
-# v_max = kmpcLinLong.v_max	
-# a_max = kmpcLinLong.a_max				# acceleration and deceleration bound, m/s^2
-# a_dmax = kmpcLinLong.a_dmax			# jerk bound, m/s^3
-
-# x_lb = kmpcLinLong.x_lb
-# x_ub = kmpcLinLong.x_ub
-
-# u_lb = kmpcLinLong.u_lb
-# u_ub = kmpcLinLong.u_ub
-
-# dU_lb = kmpcLinLong.dU_lb 	# double check if *dt is needed (or not)
-# dU_ub = kmpcLinLong.dU_ub
-
 
 # input reference
 u_ref_init = kmpcLinLong.u_ref_init	# if not used, set cost to zeros
-
 
 # ================== Transformation 1 ======================
 # augment state and redefine system dynamics (A,B,g) and constraints
@@ -115,9 +45,7 @@ u_ref_init = kmpcLinLong.u_ref_init	# if not used, set cost to zeros
 # u_tilde_k := (u_k - u_{k-1})
 
 A_tilde = kmpcLinLong.A_tilde
-
 B_tilde = kmpcLinLong.B_tilde
-
 g_tilde = kmpcLinLong.g_tilde
 
 x_tilde_lb = kmpcLinLong.x_tilde_lb
@@ -126,14 +54,9 @@ u_tilde_lb = kmpcLinLong.u_tilde_lb
 u_tilde_ub = kmpcLinLong.u_tilde_ub
 
 Q_tilde = kmpcLinLong.Q_tilde
-# Q_tilde = [	Q 			zeros(nx,nu) 		# may also use cat(?)
-			# zeros(nu,nx)	R 			]	# actually not needed
 
 R_tilde = kmpcLinLong.R_tilde
-# R_tilde = Rdelta
 
-
-# u_tilde_ref_init = kmpcLinLong.u_tilde_ref_init 	# goal is to minimize uTilde = (acc_k - acc_{k-1})
 
 # # ================== Transformation 2 ======================
 # # bring into GUROBI format
@@ -145,33 +68,14 @@ R_tilde = kmpcLinLong.R_tilde
 # z := (u_tilde_0, x_tilde_1 , u_tilde_1 x_tilde_2 , ... u_tilde_{N-1}, x_tilde_N , )
 n_uxu = kmpcLinLong.n_uxu	# size of one block of (u_tilde, x_tilde) = (deltaU, x, u)
 
-# Build cost function
-# cost for (u_tilde, x_tilde) = (deltaU , S, V, U)
-# H_block = kmpcLinLong.H_block
-H_gurobi = kmpcLinLong.H_gurobi
-
-
-# build box constraints lb_gurobi <= z <= ub_gurobi
-# recall: z = (u_tilde, x_tilde, ....)
-lb_gurobi = kmpcLinLong.lb_gurobi		# (deltaU, X, U)
-ub_gurobi = kmpcLinLong.ub_gurobi		# (deltaU, X, U)
-
 
 # build equality matrix (most MALAKA task ever)
 nu_tilde = kmpcLinLong.nu_tilde
 nx_tilde = kmpcLinLong.nx_tilde
-Aeq_gurobi = kmpcLinLong.Aeq_gurobi
-# n_uxu = nu_tilde + nx_tilde
-# Aeq_gurobi = zeros(N*nx_tilde , N*(nx_tilde+nu_tilde))
-# Aeq_gurobi[1:nx_tilde, 1:(nx_tilde+nu_tilde)] = [-B_tilde eye(nx_tilde)] 	# fill out first row associated with x_tilde_1
-# for i = 2 : N  	# fill out rows associated to x_tilde_2, ... , x_tilde_N
-	# Aeq_gurobi[ (i-1)*nx_tilde+1 : i*nx_tilde  , (i-2)*(nu_tilde+nx_tilde)+(nu_tilde)+1 : (i-2)*(nu_tilde+nx_tilde)+nu_tilde+(nx_tilde+nu_tilde+nx_tilde)    ] = [-A_tilde -B_tilde eye(nx_tilde)]
-# end
 
-Q_tilde_vec = kron(eye(N),Q_tilde)
-R_tilde_vec = kron(eye(N),R_tilde)
+Q_tilde_vec = kron(eye(N),Q_tilde)   # for x_tilde_vec
+R_tilde_vec = kron(eye(N),R_tilde)	 # for u_tilde_vec
 
-# A_tilde_vec, B_tilde_vec, E_tilde_vec = appendMat(N, nx, nu, A_tilde, B_tilde, eye(nx+nu))
 A_tilde_vec = zeros(N*(nx+nu), (nx+nu))
 for ii = 1 : N
     A_tilde_vec[1+(ii-1)*(nx+nu):ii*(nx+nu),:] = A_tilde^ii
@@ -195,11 +99,8 @@ for ii = 0 : N-1
     E_tilde_vec[1+ii*(nx+nu):(ii+1)*(nx+nu), 1+ii*nw:(ii+1)*nw] = eye(nx+nu)
 end
 
-
 g_tilde_vec = repmat(g_tilde,N)
 u_ref_init = zeros(N,1)	# if not used, set cost to zeros
-
-
 
 Fu_tilde = [eye(nu) ; -eye(nu)]
 fu_tilde = [u_tilde_ub; -u_tilde_lb]
@@ -226,14 +127,9 @@ solv_time_all = zeros(num_DataPoints)
 a_res_all = zeros(num_DataPoints)
 dA_res_all = zeros(num_DataPoints)
 dual_gap = zeros(num_DataPoints)
-
+optVal_long = zeros(num_DataPoints)
 outputParamDual_long = zeros(num_DataPoints, N*(nf+ng))
 
-# dual_eq = []
-# dual_ub = []
-# dual_lb = []
-# z_opt_uc = []
-# opt_val_dual = []
 dual_Fx = []
 dual_Fu = []
 L_test_opt = []
@@ -258,14 +154,13 @@ for ii = 1 : num_DataPoints
 		x_tilde_ref[(i-1)*(nx+nu)+1 : (i-1)*(nx+nu)+nx] = x_ref[(i-1)*nx+1 : (i-1)*nx+nx]
 		x_tilde_ref[(i-1)*(nx+nu)+nx+1 : (i-1)*(nx+nu)+nx+nu] = u_ref_init[i]	# u_ref_init always 0, but no no weights
 	end
-################################################### TRAFO 1
-
 
 	x0 = [s_0 ; v_0]
 	u0 = u_0 				# it's really u_{-1}
 	x_tilde_0 = [x0 ; u0]	# initial state of system; PARAMETER
 
-
+	# solve primal problem
+	# use it to test consistency
 	mdl = Model(solver=GurobiSolver(Presolve=0, LogToConsole=0))
 	@variable(mdl, x_tilde_vec[1:N*(nx+nu)])  	# decision variable; contains everything
 	@variable(mdl, u_tilde_vec[1:N*nu] )
@@ -277,28 +172,28 @@ for ii = 1 : num_DataPoints
 	tic()
 	status = solve(mdl)
 	obj_primal = getobjectivevalue(mdl)
+	optVal_long[ii] = obj_primal
 	solv_time_all[ii] = toq()
 
 	# extract solution
 	x_tilde_vec_opt = getvalue(x_tilde_vec)
 	dA_pred_opt = getvalue(u_tilde_vec)
 	a_pred_opt = x_tilde_vec_opt[3:nx+nu:end]
-	# s_pred_opt = z_opt[2:n_uxu:end]  	# does not include s0
-	# v_pred_opt = z_opt[3:n_uxu:end] 		# does not include v0 
 
-	#### compare solution ####
+	#### compare solution with stored solutions ####
 	a_res_all[ii] = norm(a_pred_opt - acc_stored)
 	dA_res_all[ii] = norm(dA_pred_opt - dAcc_stored)
 
 	#### extract dual variables ####
+	### seems to be wrong 
 	dual_eq = getdual(constr_eq)
 	dual_Fx = getdual(constr_Fx)
 	dual_Fu = getdual(constr_Fu)
-
 	dual_ineq = [dual_Fx; dual_Fu]
 
 
-	## compute dual cost
+	#### compute dual cost ####
+	#### get dual variables ###
 	Q_dual = 2*(B_tilde_vec'*Q_tilde_vec*B_tilde_vec + R_tilde_vec);
      
     c_dual = (2*x_tilde_0'*A_tilde_vec'*Q_tilde_vec*B_tilde_vec + 2*g_tilde_vec'*E_tilde_vec'*Q_tilde_vec*B_tilde_vec +
@@ -321,7 +216,6 @@ for ii = 1 : num_DataPoints
 	@variable(mdlD, L_test[1:N*(nf+ng)])  	# decision variable; contains everything
 	@objective(mdlD, Max, -1/2 * L_test'*Qdual_tmp*L_test - (C_dual*(Q_dual\c_dual)+d_dual)'*L_test - 1/2*c_dual'*(Q_dual\c_dual) + const_dual)
 	@constraint(mdlD, -L_test .<= 0)
-	# @constraint(mdlD, L_test .== -dual_ineq)
 
 	statusD = solve(mdlD)
 	obj_dualOnline = getobjectivevalue(mdlD)
@@ -330,12 +224,12 @@ for ii = 1 : num_DataPoints
 	L_test_opt = getvalue(L_test)
 	outputParamDual_long[ii,:] = L_test_opt
 
-
 	dual_gap[ii] = (obj_primal - obj_dualOnline)
 	#########################################################################
 
 end
 
+println("===========================================")
 println("max a-residual:  $(maximum(a_res_all))")
 println("max dA-residual:  $(maximum(dA_res_all))")
 println("max solv-time (excl modelling time):  $(maximum(solv_time_all[3:end]))")
@@ -344,13 +238,14 @@ println("max dual_gap:  $(maximum(dual_gap))")
 println("min dual_gap:  $(minimum(dual_gap))")
 
 
-# save data
-# matwrite("NN_test_trainingDataLong_PrimalDual.mat", Dict(
-# 	"inputParam_long" => inputParam_long,
-# 	"outputParamAcc_long" => outputParamAcc_long,
-# 	"outputParamDacc_long" => outputParamDacc_long,
-# 	"outputParamDual_long" => outputParamDual_long,
-# ))
+##save data
+matwrite("NN_test_trainingDataLong_PrimalDual.mat", Dict(
+	"inputParam_long" => inputParam_long,
+	"outputParamAcc_long" => outputParamAcc_long,
+	"outputParamDacc_long" => outputParamDacc_long,
+	"outputParamDual_long" => outputParamDual_long,
+	"optVal_long" => optVal_long
+))
 
 
 println("---- done extracting and saving dual for LONG control ----")
