@@ -54,19 +54,7 @@ u_tilde_lb = kmpcLinLong.u_tilde_lb
 u_tilde_ub = kmpcLinLong.u_tilde_ub
 
 Q_tilde = kmpcLinLong.Q_tilde
-
 R_tilde = kmpcLinLong.R_tilde
-
-
-# # ================== Transformation 2 ======================
-# # bring into GUROBI format
-# # minimize_z    z' * H * z + f' * z
-# #	s.t.		A_eq * z = b_eq
-# #				A * z <= b
-# #				z_lb <= z <= z_ub
-
-# z := (u_tilde_0, x_tilde_1 , u_tilde_1 x_tilde_2 , ... u_tilde_{N-1}, x_tilde_N , )
-n_uxu = kmpcLinLong.n_uxu	# size of one block of (u_tilde, x_tilde) = (deltaU, x, u)
 
 
 # build equality matrix (most MALAKA task ever)
@@ -100,12 +88,14 @@ for ii = 0 : N-1
 end
 
 g_tilde_vec = repmat(g_tilde,N)
+
+
 u_ref_init = zeros(N,1)	# if not used, set cost to zeros
 
+# build constraints
 Fu_tilde = [eye(nu) ; -eye(nu)]
 fu_tilde = [u_tilde_ub; -u_tilde_lb]
 ng = length(fu_tilde)
-
 # Concatenate input (tilde) constraints
 Fu_tilde_vec = kron(eye(N), Fu_tilde)
 fu_tilde_vec = repmat(fu_tilde,N)
@@ -128,6 +118,7 @@ a_res_all = zeros(num_DataPoints)
 dA_res_all = zeros(num_DataPoints)
 dual_gap = zeros(num_DataPoints)
 optVal_long = zeros(num_DataPoints)
+
 outputParamDual_long = zeros(num_DataPoints, N*(nf+ng))
 
 dual_Fx = []
@@ -238,7 +229,7 @@ println("max dual_gap:  $(maximum(dual_gap))")
 println("min dual_gap:  $(minimum(dual_gap))")
 
 
-##save data
+## save data
 matwrite("NN_test_trainingDataLong_PrimalDual.mat", Dict(
 	"inputParam_long" => inputParam_long,
 	"outputParamAcc_long" => outputParamAcc_long,
