@@ -286,3 +286,35 @@ matwrite("NN_test_trainingData_PrimalDual.mat", Dict(
 
 
 println("---- done extracting and saving dual for LONG control ----")
+
+
+
+
+## Code for concatinating matrices 
+
+function [Ax_vec, Bx_vec, Ex_vec] = appendMat(N, nx, nu, nw, A, B, E)
+
+	Ax_vec = zeros(N*nx, nx)
+        for ii = 1 : N
+            Ax_vec[1+(ii-1)*nx:ii*nx,:] = A^ii
+        end
+
+	Bx_vec = zeros(N*nx, nu*N)
+
+        for ii = 0 : N-1
+            for jj = 0 : ii-1
+                Bx_vec[1+ii*nx:(ii+1)*nx, 1+jj*nu:  (jj+1)*nu] = A^(ii-jj)*B
+            end
+            Bx_vec[1+ii*nx:(ii+1)*nx, 1+ii*nu:(ii+1)*nu] = B
+        end
+
+    Ex_vec = zeros(N*nx, nw*N)
+
+        for ii = 0 : N-1
+            for jj = 0 : ii-1
+                Ex_vec[1+ii*nx:(ii+1)*nx, 1+jj*nw:  (jj+1)*nw] = A^(ii-jj)*E
+            end
+            Ex_vec[1+ii*nx:(ii+1)*nx, 1+ii*nw:(ii+1)*nw] = E
+        end
+
+end
