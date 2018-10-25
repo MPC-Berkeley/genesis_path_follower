@@ -342,8 +342,6 @@ println("min dual_gap:  $(minimum(dual_gap))")
 # 	"inputParam_lat" => inputParam_lat,
 # 	"outputParamDf_lat" => outputParamDf_lat,
 # 	"outputParamDdf_lat" => outputParamDdf_lat,
-# 	"outputParamDualEQ_lat" => outputParamDualEQ_lat,
-# 	"outputParamDualLB_lat" => outputParamDualLB_lat,
-# 	"outputParamDualUB_lat" => outputParamDualUB_lat
+# 	"outputParamDual_lat" => outputParamDual_lat
 # ))
 # println("---- done extracting and saving dual for LAT control ----")

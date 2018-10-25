@@ -230,16 +230,14 @@ println("min dual_gap:  $(minimum(dual_gap))")
 
 
 ## save data
-matwrite("NN_test_trainingDataLong_PrimalDual.mat", Dict(
-	"inputParam_long" => inputParam_long,
-	"outputParamAcc_long" => outputParamAcc_long,
-	"outputParamDacc_long" => outputParamDacc_long,
-	"outputParamDual_long" => outputParamDual_long,
-	"optVal_long" => optVal_long
-))
-
-
-println("---- done extracting and saving dual for LONG control ----")
+# matwrite("NN_test_trainingDataLong_PrimalDual.mat", Dict(
+# 	"inputParam_long" => inputParam_long,
+# 	"outputParamAcc_long" => outputParamAcc_long,
+# 	"outputParamDacc_long" => outputParamDacc_long,
+# 	"outputParamDual_long" => outputParamDual_long,
+# 	"optVal_long" => optVal_long
+# ))
+# println("---- done extracting and saving dual for LONG control ----")
 
 
 
