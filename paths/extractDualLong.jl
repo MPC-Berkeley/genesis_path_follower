@@ -194,7 +194,11 @@ for ii = 1 : num_DataPoints
 	end 
 	f_gurobi_updated = -2*H_gurobi*z_gurobi_ref
 
+	## Adding the dual inequality constraint matrices in Gz <= g format
+	G_gurobi = [eye(N*n_uxu); -eye(N*n_uxu)]
+	g_gurobi = [ub_gurobi; -lb_gurobi]
 
+	################################################################## 
 	# # OLD: formulate optimization problem
 	# GurobiEnv = Gurobi.Env()	# really necessary?
 	# setparam!(GurobiEnv, "Presolve", -1)		# -1: automatic; no big influence on solution time
@@ -249,9 +253,20 @@ for ii = 1 : num_DataPoints
 	dual_ub = getdual(constr_ub)
 	dual_lb = getdual(constr_lb)
 
+	dual_ineq = [dual_ub; dual_lb]
+
+
 	outputParamDualEQ_long[ii,:] = dual_eq
 	outputParamDualLB_long[ii,:] = dual_ub
 	outputParamDualUB_long[ii,:] = dual_ub
+
+
+	## Check the cost of the dual optimization problem and check if it matches 
+	H_gurobi_dual = 2*H_gurobi
+	z_opt_uc = -inv(H_gurobi_dual)*(f_gurobi_updated + G_gurobi'*dual_ineq + Aeq_gurobi'*dual_eq)
+	opt_val_dual = 0.5*z_opt_uc'*H_gurobi_dual*z_opt_uc + (f_gurobi_updated' + dual_ineq'*G_gurobi + dual_eq'*Aeq_gurobi)*z_opt_uc - dual_ineq'*g_gurobi- dual_eq'*beq_gurobi_updated
+
+	#########################################################################
 
 end
 
