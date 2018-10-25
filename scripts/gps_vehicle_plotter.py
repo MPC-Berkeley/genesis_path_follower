@@ -55,8 +55,7 @@ class PlotGPSTrajectory():
 
 		self.accel_pub = rospy.Publisher("/control/accel", Float32, queue_size =2)
 		self.steer_pub = rospy.Publisher("/control/steer_angle", Float32, queue_size = 2)
-		
-		
+	
 		self.enable_acc_pub   = rospy.Publisher("/control/enable_accel", UInt8, queue_size =2, latch=True)  ##Why queue_size = 10?
 		self.enable_steer_pub = rospy.Publisher("/control/enable_spas",  UInt8, queue_size =2, latch=True)
 
