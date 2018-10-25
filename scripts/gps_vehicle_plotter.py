@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from gps_utils import ref_gps_traj as r
 from genesis_path_follower.msg import state_est
+from genesis_path_follower.msg import display_state
 from genesis_path_follower.msg import mpc_path
 from plot_utils.getVehicleFrame import plotVehicle
 from mpl_toolkits.axes_grid1.inset_locator import zoomed_inset_axes
@@ -23,6 +24,9 @@ class PlotGPSTrajectory():
 	https://github.com/nkapania/Wolverine/blob/master/utils/sim_lib.py
 	'''
 	def __init__(self):		
+		
+
+		
 
 		# Load Global Trajectory
 		if rospy.has_param('mat_waypoints'):
@@ -46,10 +50,13 @@ class PlotGPSTrajectory():
 		#Initialize nodes, publishers, and subscribers
 		rospy.init_node('vehicle_plotter', anonymous=True)
 		rospy.Subscriber('state_est', state_est, self.parseStateEstMessage, queue_size=2)
+		rospy.Subscriber('display_state',display_state,self.parseDisplayStateMessage, queue_size=2)
+
 
 		self.accel_pub = rospy.Publisher("/control/accel", Float32, queue_size =2)
 		self.steer_pub = rospy.Publisher("/control/steer_angle", Float32, queue_size = 2)
-
+		
+		
 		self.enable_acc_pub   = rospy.Publisher("/control/enable_accel", UInt8, queue_size =2, latch=True)  ##Why queue_size = 10?
 		self.enable_steer_pub = rospy.Publisher("/control/enable_spas",  UInt8, queue_size =2, latch=True)
 
@@ -72,6 +79,9 @@ class PlotGPSTrajectory():
 		self.Ux = 0.
 		self.Ax = 0.
 		self.delta = 0.
+		self.deltapsi=0.
+		self.e=0.
+		self.s=0.
 
 		#Initialize vehicle
 		self.genesis = Vehicle('genesis')
@@ -81,9 +91,10 @@ class PlotGPSTrajectory():
 		self.f = plt.figure()
 		self.ax2=self.f.add_subplot(211)
 		self.ax1=self.f.add_subplot(212)
-		self.ax = plt.gca()		
+		self.ax = plt.gca()	
+                	
 		plt.ion()
-#Create speed profile - choose between constant velocity limit or track-varying velocity limit
+		#Create speed profile - choose between constant velocity limit or track-varying velocity limit
 		self.speedProfile  = BasicProfile(self.genesis, self.path, friction = 0.4, vMax = 15., AxMax = 2.0)
 		
 		#self.speedProfile = BasicProfile(self.genesis, self.path, self.path.friction, self.path.vMax, AxMax = 2.0)
@@ -94,6 +105,8 @@ class PlotGPSTrajectory():
 
 		self.ax1.set_ylabel('Speed (m/s)')
 		self.ax1.set_xlabel('Displacement (m)') 
+
+
 	
 		# Set up Data
 		self.edges_in = bounds["in"]
@@ -172,7 +185,10 @@ class PlotGPSTrajectory():
 
 	def loop(self):
 		# Main Plotting Loop.  Updates plot with info from subscriber callbacks.
+		
 		r  = rospy.Rate(10)
+		self.f2=plt.figure()
+		self.ax3=self.f2.add_subplot(211)
 		while not rospy.is_shutdown():
 			# Update MPC OL + Reference Trajectories.
 			self.l2.set_xdata(self.x_ref_traj); self.l2.set_ydata(self.y_ref_traj)
@@ -222,14 +238,21 @@ class PlotGPSTrajectory():
 			self.zvl7.set_ydata(LeftFrontTire[1,:])
 			self.zvl8.set_xdata(LeftRearTire[0,:])
 			self.zvl8.set_ydata(LeftRearTire[1,:])
-			
 			self.ax2_zoom.set_xlim(self.x_vehicle - self.window, self.x_vehicle + self.window)
-			self.ax2_zoom.set_ylim(self.y_vehicle - self.window, self.y_vehicle + self.window)
+			self.ax2_zoom.set_ylim(self.y_vehicle - self.window, self.y_vehicle + self.window)			
 			
 			self.f.canvas.draw()
 			plt.pause(0.001)
+			#self.f2=plt.figure()
+			#self.ax3=self.f2.add_subplot(211)
+			#self.ax3.plot(self.e)
+			#plt.show()
+			print("Error is " + str(self.e) )
 			r.sleep()
+			
 
+
+	
 	def parseStateEstMessage(self, msg):
 		self.X = msg.x
 		self.Y = msg.y
@@ -238,6 +261,11 @@ class PlotGPSTrajectory():
 		self.Ax = msg.a
 		self.delta =  msg.df
 
+	def parseDisplayStateMessage(self,msg):
+		self.deltapsi=msg.deltapsi
+		self.s=msg.s
+		self.e=msg.e
+	
 	def update_state(self, msg):
 		# Update vehicle's position.
 		self.x_vehicle   = msg.x

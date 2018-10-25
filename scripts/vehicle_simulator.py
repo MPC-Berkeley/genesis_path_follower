@@ -21,8 +21,7 @@ class VehicleSimulator():
 		self.acc = 0.0		# actual acceleration (m/s^2)
 		self.df = 0.0		# actual steering angle (rad)
 		self.acc_des = 0.0	# desired acceleration	(m/s^2)
-		self.df_des = 0.0	# desired steering_angle (rad)
-
+		self.df_des = 0.0	# desired steering_angle
 		self.dt_model = 0.01				# vehicle model update period (s) and frequency (Hz)
 		self.hz = int(1.0/self.dt_model)
 		self.r = rospy.Rate(self.hz)

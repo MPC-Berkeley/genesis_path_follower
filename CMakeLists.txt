@@ -40,6 +40,7 @@ add_message_files(
 	FILES
 	state_est.msg
 	mpc_path.msg
+	display_state.msgca
 )
 
 generate_messages(

@@ -33,6 +33,7 @@ class LanekeepingPublisher():
 
 		self.accel_pub = rospy.Publisher("/control/accel", Float32, queue_size =2)
 		self.steer_pub = rospy.Publisher("/control/steer_angle", Float32, queue_size = 2)
+		self.displaystate_pub = rospy.Publisher('display_state', state_est, queue_size=1)
 
 		self.enable_acc_pub   = rospy.Publisher("/control/enable_accel", UInt8, queue_size =2, latch=True)  ##Why queue_size = 10?
 		self.enable_steer_pub = rospy.Publisher("/control/enable_spas",  UInt8, queue_size =2, latch=True)
@@ -49,12 +50,14 @@ class LanekeepingPublisher():
 
 		#vehicle information needed - initialize to none
 		self.X = self.path.posE[0] 
-		self.Y = self.path.posN[0]
+		self.Y = self.path.posN[0] 
 		self.psi = self.path.roadPsi[0]
 		self.Ux = 0.
 		self.Ax = 0.
 		self.delta = 0.
-
+		self.e=0.
+		self.deltapsi=0.
+		self.s=0.		
 		#Initialize vehicle
 		self.genesis = Vehicle('genesis')
 
@@ -119,15 +122,34 @@ class LanekeepingPublisher():
 			# use F = m*a to get desired acceleration. Limit acceleration command to 2 m/s
 			accel = min( Fx / self.genesis.m , 2.0)
 			print("Accel Desired (mps2) is " + str(accel) )
+			
+			#if None in (deltapsi,s,e): 
+
+			#r.sleep() 
+			# If the vehicle state info has not been received.
+			#continue
+
+		curr_state = display_state()
+		curr_state.header.stamp = rospy.Time.now()
+		
+		# TODO: time validity check, only publish if data is fresh
+		#if time_check_on and not time_valid(curr_state.header.stamp,[tm_vel, tm_df, tm_imu, tm_gps]):
+		#	r.sleep()
+		#	continue
+
+		#curr_state.deltapsi = self.localState.deltapsi
+		curr_state.e=self.localState.e
+		#curr_state.s=self.localState.s
+		
+	
+		displaystate_pub.publish(curr_state)
 
 
+		#Publish control inputs
 
-			#Publish control inputs
-
-			self.steer_pub.publish(delta)
-			self.accel_pub.publish(accel)
-
-			self.r.sleep()
+		self.steer_pub.publish(delta)
+		self.accel_pub.publish(accel)
+		self.r.sleep()
 
 		#Disable inputs after test is ended
 		self.enable_steer_pub.publish(0) # disable steering control.
