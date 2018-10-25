@@ -145,6 +145,7 @@ num_DataPoints = length(s_curr_all)
 solv_time_all = zeros(num_DataPoints)
 a_res_all = zeros(num_DataPoints)
 dA_res_all = zeros(num_DataPoints)
+dual_gap = zeros(num_DataPoints)
 
 outputParamDualEQ_long = zeros(num_DataPoints, N*(nx+nu))
 outputParamDualLB_long = zeros(num_DataPoints, N*n_uxu)
@@ -153,6 +154,8 @@ outputParamDualUB_long = zeros(num_DataPoints, N*n_uxu)
 dual_eq = []
 dual_ub = []
 dual_lb = []
+z_opt_uc = []
+opt_val_dual = []
 
 for ii = 1 : num_DataPoints	
 	# extract appropriate parameters
@@ -234,6 +237,7 @@ for ii = 1 : num_DataPoints
 
 	tic()
 	status = solve(mdl)
+	obj_primal = getobjectivevalue(mdl)
 	solv_time_all[ii] = toq()
 
 	# extract solution
@@ -263,9 +267,11 @@ for ii = 1 : num_DataPoints
 
 	## Check the cost of the dual optimization problem and check if it matches 
 	H_gurobi_dual = 2*H_gurobi
-	z_opt_uc = -inv(H_gurobi_dual)*(f_gurobi_updated + G_gurobi'*dual_ineq + Aeq_gurobi'*dual_eq)
+	# inv(H_gurobi_dual)
+	z_opt_uc = - H_gurobi_dual \ (f_gurobi_updated + G_gurobi'*dual_ineq + Aeq_gurobi'*dual_eq)
 	opt_val_dual = 0.5*z_opt_uc'*H_gurobi_dual*z_opt_uc + (f_gurobi_updated' + dual_ineq'*G_gurobi + dual_eq'*Aeq_gurobi)*z_opt_uc - dual_ineq'*g_gurobi- dual_eq'*beq_gurobi_updated
 
+	# dual_gap[ii] = getobjectivevalue - opt_val_dual
 	#########################################################################
 
 end
@@ -275,14 +281,14 @@ println("max dA-residual:  $(maximum(dA_res_all))")
 println("max solv-time (excl modelling time):  $(maximum(solv_time_all[3:end]))")
 println("avg solv-time (excl modelling time):  $(mean(solv_time_all[3:end]))")
 
-matwrite("NN_test_trainingData_PrimalDual.mat", Dict(
-	"inputParam_long" => inputParam_long,
-	"outputParamAcc_long" => outputParamAcc_long,
-	"outputParamDacc_long" => outputParamDacc_long,
-	"outputParamDualEQ_long" => outputParamDualEQ_long,
-	"outputParamDualLB_long" => outputParamDualLB_long,
-	"outputParamDualUB_long" => outputParamDualUB_long
-))
+# matwrite("NN_test_trainingData_PrimalDual.mat", Dict(
+# 	"inputParam_long" => inputParam_long,
+# 	"outputParamAcc_long" => outputParamAcc_long,
+# 	"outputParamDacc_long" => outputParamDacc_long,
+# 	"outputParamDualEQ_long" => outputParamDualEQ_long,
+# 	"outputParamDualLB_long" => outputParamDualLB_long,
+# 	"outputParamDualUB_long" => outputParamDualUB_long
+# ))
 
 
 println("---- done extracting and saving dual for LONG control ----")
