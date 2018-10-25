@@ -98,7 +98,7 @@ module GPSKinMPCPathFollowerFrenetLinLongGurobi
 	# build references (should be passed on as arguments later on)
 	# get init x_ref for one initial solve (to speed up Julia)
     s_ref_init   = 1.0*collect(dt:dt:(N)*dt)		# target s(1), ..., s(N)
-	v_ref_init = ones(N,1)						# reference velocity 
+	v_ref_init = ones(N,1)						    # reference velocity 
 	x_ref_init = zeros(N*nx,1)
 	for i = 1 : N
 		x_ref_init[(i-1)*nx+1] = s_ref_init[i]		# set x_ref
