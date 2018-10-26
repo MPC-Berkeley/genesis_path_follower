@@ -25,16 +25,37 @@
 
 
 
+
 module GPSKinMPCPathFollowerFrenetLinLongNN
-	__precompile__()
+	# __precompile__()
 
 	using Gurobi
+	using MAT
+
 
 	import KinMPCParams 		# load basic parameters such as N, dt, L_a, L_b that is shared among the controllers
 
 	println("Creating longitudinal kinematic bicycle model in NN...")
+	# println(pwd())
 
- 
+	# push!(LOAD_PATH, scripts_dir * "mpc_utils")
+	# dualNN_Data 	= matread("../catkin_ws/src/genesis_path_follower/paths/dummyMatNN_DualLong.mat")
+	# primalNN_Data 	= matread("../catkin_ws/src/genesis_path_follower/paths/dummyMatNN_PrimLong.mat")
+	# read out NN primal weights
+	# Wi_PLong = primalNN_Data["Wi_PLong"]
+	# bi_PLong = primalNN_Data["bi_PLong"]
+	# W1_PLong = primalNN_Data["W1_PLong"]
+	# b1_PLong = primalNN_Data["b1_PLong"]
+	# Wout_PLong = primalNN_Data["Wout_PLong"]
+	# bout_PLong = primalNN_Data["bout_PLong"]
+
+	# Wi_DLong = dualNN_Data["Wi_DLong"]
+	# bi_DLong = dualNN_Data["bi_DLong"]
+	# W1_DLong = dualNN_Data["W1_DLong"]
+	# b1_DLong = dualNN_Data["b1_DLong"]
+	# Wout_DLong = dualNN_Data["Wout_DLong"]
+	# bout_DLong = dualNN_Data["bout_DLong"]
+
 	# ====================== general problem formulation is given by ======================
 	# x_{k+1} = A x_k + B u_k + g_k
 	# u_lb <= u_k <= u_ub
@@ -209,7 +230,7 @@ module GPSKinMPCPathFollowerFrenetLinLongNN
     			ub = squeeze(ub_gurobi,2)	)
     optimize(GurobiModel)
 	solv_time=toq()
-	println("1st solv time Gurobi:  $(solv_time*1000) ms")
+	println("1st solv time Gurobi LONG:  $(solv_time*1000) ms")
 
 	# # access results
 	# sol = get_solution(GurobiModel)
@@ -231,7 +252,55 @@ module GPSKinMPCPathFollowerFrenetLinLongNN
 	# results_osqp = OSQP.solve!(OSQPmdl)
 	# solv_time=toq()
 	# println("1st solv time OSQP:  $(solv_time*1000) ms")
+
 	
+	# function eval_PrimalNN (params::Array{Float64,1})
+	# 	# calls the NN with two Hidden Layers
+	# 	z1 = max.(Wi_PLong*params + bi_PLong, 0)
+	# 	z2 = max.(W1_PLong*z1 + b1_PLong, 0)
+	# 	dAcc_NN = Wout_PLong*z2 + bout_PLong
+
+
+
+	# 	return 0, 0
+	# end
+
+	
+	# function eval_DualNN (params::Array{Float64,1})
+
+	# 	return 0, 0
+	# end
+
+
+
+
+	# function get_NNsolution(s_0::Float64, v_0::Float64, u_0::Float64, s_ref::Array{Float64,1}, v_ref::Array{Float64,1})
+
+	# 	# do primal dual NN
+	# 	# np.hstack((s_curr.T, v_curr.T ,a_prev.T, s_ref, v_ref ))
+	# 	params = [s_0 ; v_0 ; u_0 ; s_ref ; v_ref] 	# stack to 19x1 matrix
+		
+	# 	# eval NN solution
+	# 	primalNN_obj, primalNN_dAcc = eval_PrimalNN(params)
+
+	# 	dualNN_obj, dualNN_dAcc = eval_PrimalNN(params)
+
+	# 	if primalNN_obj - dualNN_obj <= 0.1
+	# 		return a_opt_gurobi, a_pred_gurobi, s_pred_gurobi, v_pred_gurobi, dA_pred_gurobi, solv_time_long_gurobi1, is_opt_long
+
+	# 	else 
+	# 		a_opt_gurobi, a_pred_gurobi, s_pred_gurobi, v_pred_gurobi, dA_pred_gurobi, solv_time_long_gurobi1, is_opt_long = solve_gurobi(s_0, v_0, u_0, s_ref, v_ref)
+	# 	end 
+
+	# 	### building/constructing matrices should be streamlined
+
+
+	# 	################ BACKUP ################
+		
+
+	# end
+
+
 
 
 	# this function is called iteratively
@@ -239,6 +308,7 @@ module GPSKinMPCPathFollowerFrenetLinLongNN
 
 		tic()
 
+		println(u_tilde_ref_init')
 
 		# build problem
 		x0 = [s_0 ; v_0]
@@ -291,50 +361,6 @@ module GPSKinMPCPathFollowerFrenetLinLongNN
 		status = get_status(GurobiModel)
 
 
-###############################
-
-		# OSQP implementation (no equality constraints)
-		# min 1/2 * x' * P * x + q'*x
-		# lb <= Ax <= ub
-		
-		# tic()
-		# OSQPmdl = OSQP.Model() 	# needs SparseMatrixCSC,
-		# lb_osqp_updated = [ squeeze(beq_gurobi_updated,2) ; squeeze(lb_gurobi,2) ]
-		# ub_osqp_updated = [ squeeze(beq_gurobi_updated,2) ; squeeze(ub_gurobi,2) ]
-		# OSQP.setup!(OSQPmdl; P=P_osqp, q=f_gurobi_updated, A=A_osqp, l=lb_osqp_updated, u=ub_osqp_updated, verbose=0)
-		# # OSQP.update!(OSQPmdl; q=f_gurobi_updated, l=lb_osqp_updated, u=ub_osqp_updated)
-		# results_osqp = OSQP.solve!(OSQPmdl)
-		# solvTime_osqp = toq()
-
-		# optimizer_gurobi = results_osqp.x
-		# solvTimeGurobi1 = solvTime_osqp
-		# status = results_osqp.info.status
-
-
-###############################
-		# alternatively, call via MathProgBase interface
-		# http://mathprogbasejl.readthedocs.io/en/latest/quadprog.html
-		# tic()
-		# solution = quadprog(f_gurobi_updated, 2*H_gurobi, [Aeq_gurobi ; -Aeq_gurobi], '<', [squeeze(beq_gurobi_updated,2) ; -squeeze(beq_gurobi_updated,2)], squeeze(lb_gurobi,2), squeeze(ub_gurobi,2), GurobiSolver(Presolve=0, LogToConsole=0) )
-		# solution = quadprog(f_gurobi_updated, 2*H_gurobi, [Aeq_gurobi ; -Aeq_gurobi], '<', [squeeze(beq_gurobi_updated,2) ; -squeeze(beq_gurobi_updated,2)], squeeze(lb_gurobi,2), squeeze(ub_gurobi,2), MosekSolver(LOG=0) )
-		# solution = quadprog(f_gurobi_updated, 2*H_gurobi, [Aeq_gurobi ; -Aeq_gurobi], '<', [squeeze(beq_gurobi_updated,2) ; -squeeze(beq_gurobi_updated,2)], squeeze(lb_gurobi,2), squeeze(ub_gurobi,2), IpoptSolver(print_level=0) )
-		# solvTimeGurobi2 = toq()
-		# optimizer_gurobi = solution.sol
-
-		# if solvTime_osqp > 1e-3
-		# 	OSQPmdl = OSQP.Model() 	# needs SparseMatrixCSC,
-		# 	lb_osqp_updated = [ squeeze(beq_gurobi_updated,2) ; squeeze(lb_gurobi,2) ]
-		# 	ub_osqp_updated = [ squeeze(beq_gurobi_updated,2) ; squeeze(ub_gurobi,2) ]
-		# 	OSQP.setup!(OSQPmdl; P=P_osqp, q=f_gurobi_updated, A=A_osqp, l=lb_osqp_updated, u=ub_osqp_updated, verbose=0)
-		# 	# OSQP.update!(OSQPmdl; q=f_gurobi_updated, l=lb_osqp_updated, u=ub_osqp_updated)
-		# 	tic()
-		# 	results_osqp = OSQP.solve!(OSQPmdl)
-		# 	solvTime_osqp1 = toq()
-		# 	# pure solvTime very low; well under 5ms
-		# 	# setup time can cause lots of trouble
-		# 	println("*** old osqp pure solv time: $(solvTime_osqp) ***")		# 65ms (setup time)
-		# 	println("*** new osqp pure solv time: $(solvTime_osqp1) ***")		# 0.4ms (setup time)
-		# end
 
 		# structure of z = [ (dAcc,s,v,Acc) ; (dAcc, s, v, Acc) ; ... ]
 		a_pred_gurobi = optimizer_gurobi[4:n_uxu:end]

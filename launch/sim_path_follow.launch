@@ -25,7 +25,7 @@
   <!--...................................................................-->
 
   <!-- MPC, Simulation, and Plotting Nodes -->
-  <node ns="vehicle" pkg="genesis_path_follower" type="mpc_cmd_pub_Frenet_Lin.jl" name="mpc_node" output="screen"/>
+  <node ns="vehicle" pkg="genesis_path_follower" type="mpc_cmd_pub_Frenet_Lin_NN.jl" name="mpc_node" output="screen"/>
   <node ns="vehicle" pkg="genesis_path_follower" type="vehicle_simulator.py" name="sim_node" output="log"/>
   <node ns="vehicle" pkg="genesis_path_follower" type="gps_vehicle_plotter.py" name="plot_node" output="log"/>
 

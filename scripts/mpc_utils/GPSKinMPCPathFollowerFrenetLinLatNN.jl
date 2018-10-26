@@ -25,10 +25,12 @@
 
 
 
+
 module GPSKinMPCPathFollowerFrenetLinLatNN
-	__precompile__()
+	# __precompile__()
 
 	using Gurobi
+	using MAT
 
 	import KinMPCParams 		# load basic parameters such as N, dt, L_a, L_b that is shared among the controllers
 

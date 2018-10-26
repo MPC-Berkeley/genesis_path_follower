@@ -52,9 +52,17 @@ end
 #### Global Variables for Callbacks/Control Loop.
 ###########################################
 push!(LOAD_PATH, scripts_dir * "mpc_utils")
-import GPSKinMPCPathFollowerFrenetLinLongNN
-import GPSKinMPCPathFollowerFrenetLinLatNN
+
 import KinMPCParams
+
+import GPSKinMPCPathFollowerFrenetLinLatGurobi
+import GPSKinMPCPathFollowerFrenetLinLongGurobi
+
+import GPSKinMPCPathFollowerFrenetLinLatNN
+import GPSKinMPCPathFollowerFrenetLinLongNN
+
+
+
 
 # kmpcLinLongGurobi
 # kmpcLinLatGurobi
