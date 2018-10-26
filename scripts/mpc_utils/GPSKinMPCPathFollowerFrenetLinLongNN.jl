@@ -24,14 +24,15 @@
 =#
 
 
-module GPSKinMPCPathFollowerFrenetLinLongGurobi
+
+module GPSKinMPCPathFollowerFrenetLinLongNN
 	__precompile__()
 
 	using Gurobi
+
 	import KinMPCParams 		# load basic parameters such as N, dt, L_a, L_b that is shared among the controllers
 
-
-	println("Creating longitudinal kinematic bicycle model in Gurobi/OSQP ....")
+	println("Creating longitudinal kinematic bicycle model in NN...")
 
  
 	# ====================== general problem formulation is given by ======================
@@ -41,10 +42,8 @@ module GPSKinMPCPathFollowerFrenetLinLongGurobi
 	# dU_lb <= u_k - u_{k-1} <= dU_ub
 	# minimize (x_k - x_k_ref)' * Q * (x_k - x_k_ref) + (u_k - u_k_ref)' * R * (u_k - u_k_ref) + (u_k - u_{k-1})' * Rdelta * (u_k - u_{k-1}) 
 
-
 	# general control parameters
 	# some might be passed on as arguments
-	# general control parameters
 	dt      = KinMPCParams.dt		# model discretization time, td (s)
 	N       = KinMPCParams.N		# horizon, N=8 is standard
 	L_a 	= KinMPCParams.L_a		# from CoG to front axle (according to Jongsang)

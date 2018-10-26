@@ -25,15 +25,14 @@
 
 
 
-module GPSKinMPCPathFollowerFrenetLinLatGurobi
+module GPSKinMPCPathFollowerFrenetLinLatNN
 	__precompile__()
 
 	using Gurobi
+
 	import KinMPCParams 		# load basic parameters such as N, dt, L_a, L_b that is shared among the controllers
 
-
-	println("Creating lateral kinematic bicycle model in Gurobi/OSQP ....")
-
+	println("Creating lateral kinematic bicycle model in NN ....")
 
 	# ====================== general problem formulation is given by ======================
 	# x_{k+1} = A_k x_k + B_k u_k + g_k
@@ -41,7 +40,6 @@ module GPSKinMPCPathFollowerFrenetLinLatGurobi
 	# x_lb <= x_k <= x_ub
 	# dU_lb <= u_k - u_{k-1} <= dU_ub
 	# minimize (x_k - x_k_ref)' * Q * (x_k - x_k_ref) + (u_k - u_k_ref)' * R * (u_k - u_k_ref) + (u_k - u_{k-1})' * Rdelta * (u_k - u_{k-1}) 
-	#
 	# x = (ey, epsi), u = (df)
 
 	# general control parameters
@@ -71,7 +69,6 @@ module GPSKinMPCPathFollowerFrenetLinLatGurobi
 						-dt*v_pred_init[i]*(k_coeff_init[1]*s_pred_init[i]^3 + k_coeff_init[2]*s_pred_init[i]^2 + k_coeff_init[3]*s_pred_init[i] + k_coeff_init[4]) 	]
 	end
 
-
 	# define cost functions
     C_ey = 5.0				# lateral deviation
     C_epsi = 1.0			# heading deviation
@@ -82,7 +79,6 @@ module GPSKinMPCPathFollowerFrenetLinLatGurobi
 	Q = diagm([C_ey ; C_epsi])	# state cost
 	R = C_df 					# input cost
 	Rdelta = C_ddf				# deltaU cost
-
 
 	# define (box) constraints
 	largeNumber = 1e2;		# use this number for variables that are not upper/lower bounded
@@ -159,7 +155,6 @@ module GPSKinMPCPathFollowerFrenetLinLatGurobi
 	end
 
 	u_tilde_ref_init = zeros(N*nu) 	# goal is to minimize uTilde = (acc_k - acc_{k-1})
-
 
 	# ================== Transformation 2 ======================
 	# bring into GUROBI format
