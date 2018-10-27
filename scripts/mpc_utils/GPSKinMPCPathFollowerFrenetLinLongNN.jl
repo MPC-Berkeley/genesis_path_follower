@@ -70,8 +70,8 @@ module GPSKinMPCPathFollowerFrenetLinLongNN
 	L_a 	= KinMPCParams.L_a		# from CoG to front axle (according to Jongsang)
 	L_b 	= KinMPCParams.L_b				# from CoG to rear axle (according to Jongsang)
 
-	nx 		= 2				# dimension of x = (s,v)
-	nu 		= 1				# number of inputs u = a
+	nx 		= KinMPCParams.nx_long				# dimension of x = (s,v)
+	nu 		= KinMPCParams.nu_long				# number of inputs u = a
 
 	# define System matrices (all time-invariant)
 	A = [	1 	dt 		# can be made more exact using matrix exponential
@@ -81,10 +81,10 @@ module GPSKinMPCPathFollowerFrenetLinLongNN
 	g = zeros(nx)
 
 	# define cost functions
-    C_s = 20			# track progress
-	C_v = 10;			# ref velocity tracking weight			
-	C_acc = 0
-	C_dacc = 11;		# 20 too high; 10 OK for med speed; 10 a big jerky for high speed; 13 too high
+    C_s 	= KinMPCParams.C_s			# track progress
+	C_v 	= KinMPCParams.C_v;			# ref velocity tracking weight			
+	C_acc 	= KinMPCParams.C_acc
+	C_dacc 	= KinMPCParams.C_dacc;		# 20 too high; 10 OK for med speed; 10 a big jerky for high speed; 13 too high
 
 	Q = diagm([C_s ; C_v])	# create diagonal matrix
 	R = C_acc
@@ -92,10 +92,11 @@ module GPSKinMPCPathFollowerFrenetLinLongNN
 
 	# define (box) constraints
 	largeNumber = 1e5;		# use this number for variables that are not upper/lower bounded
-	v_min = 0.0				# vel bounds (m/s)
-	v_max = 20.0	
-	a_max = 2.0				# acceleration and deceleration bound, m/s^2
-	a_dmax = 1.5			# jerk bound, m/s^3
+
+	v_min = KinMPCParams.v_min		# vel bounds (m/s)
+	v_max = KinMPCParams.v_max
+	a_max = KinMPCParams.a_max 		# acceleration and deceleration bound, m/s^2
+	a_dmax = KinMPCParams.a_dmax 	# jerk bound, m/s^3
 
 	x_lb = [	-largeNumber	# make sure car doesnt travel more than largeNumber [m]
 				v_min		]

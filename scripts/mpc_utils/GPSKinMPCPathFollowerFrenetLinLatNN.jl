@@ -50,8 +50,8 @@ module GPSKinMPCPathFollowerFrenetLinLatNN
 	L_a 	= KinMPCParams.L_a		# from CoG to front axle (according to Jongsang)
 	L_b 	= KinMPCParams.L_b				# from CoG to rear axle (according to Jongsang)
 
-	nx 		= 2				# dimension of x = (ey,epsi)
-	nu 		= 1				# number of inputs u = df
+	nx 		= KinMPCParams.nx_lat				# dimension of x = (ey,epsi)
+	nu 		= KinMPCParams.nu_lat				# number of inputs u = df
 
 	# predicted (s,v); "init" for initial solve
     s_pred_init   = 1.0*collect(0:dt:(N)*dt)		# predicted s(0), s(1), ..., s(N)
@@ -72,11 +72,10 @@ module GPSKinMPCPathFollowerFrenetLinLatNN
 	end
 
 	# define cost functions
-    C_ey = 5.0				# lateral deviation
-    C_epsi = 1.0			# heading deviation
-    C_epsi = 0.0
-	C_df	 = 0.0	# 150			# tire angle input
-	C_ddf	 = 1000.0	# 3e4			# derivative of tire angle input
+    C_ey 	= KinMPCParams.C_ey				# lateral deviation
+    C_epsi 	= KinMPCParams.C_epsi			# heading deviation
+	C_df	= KinMPCParams.C_df				# 150	# tire angle input
+	C_ddf	= KinMPCParams.C_ddf			# 3e4			# derivative of tire angle input
 
 	Q = diagm([C_ey ; C_epsi])	# state cost
 	R = C_df 					# input cost
@@ -89,8 +88,8 @@ module GPSKinMPCPathFollowerFrenetLinLatNN
 	epsi_min = -largeNumber
 	epsi_max = largeNumber
 
-	df_max = 0.5	# steering
-	ddf_max = 0.5	# change in steering
+	df_max = KinMPCParams.df_max		# steering
+	ddf_max = KinMPCParams.ddf_max		# change in steering
 
 	# collect constraint
 	x_lb = [	ey_min

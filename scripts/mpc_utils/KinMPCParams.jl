@@ -23,4 +23,28 @@ module KinMPCParams
 	L_a 	= 1.5213		# from CoG to front axle (according to Jongsang)
 	L_b 	= 1.4987		# from CoG to rear axle (according to Jongsang)
 
+
+	# longitudinal parameters
+	nx_long	= 2				# dimension of x = (s,v)
+	nu_long = 1				# number of inputs u = a
+	C_s 	= 20			# track progress
+	C_v 	= 10;			# ref velocity tracking weight			
+	C_acc 	= 0
+	C_dacc 	= 11;		# 20 too high; 10 OK for med speed; 10 a big jerky for high speed; 13 too high
+	v_min = 0.0				# vel bounds (m/s)
+	v_max = 20.0	
+	a_max = 2.0				# acceleration and deceleration bound, m/s^2
+	a_dmax = 1.5			# jerk bound, m/s^3
+
+	# lateral parameters
+	nx_lat 		= 2				# dimension of x = (ey,epsi)
+	nu_lat 		= 1				# number of inputs u = df
+	C_ey 		= 5.0				# lateral deviation
+    C_epsi 		= 0.0
+	C_df	 	= 0.0	# 150			# tire angle input
+	C_ddf	 	= 1000.0	# 3e4			# derivative of tire angle input
+	df_max 		= 0.5	# steering
+	ddf_max 	= 0.5	# change in steering
+
+
 end
