@@ -332,6 +332,8 @@ module GPSKinMPCPathFollowerFrenetLinLongNN
 
 		global x_tilde_ref 	# not sure if needed
 
+		tic()
+
 		# calls the NN with two Hidden Layers
 		z1 = max.(Wi_PLong*params + bi_PLong, 0)
 		z2 = max.(W1_PLong*z1 + b1_PLong, 0)
@@ -353,7 +355,18 @@ module GPSKinMPCPathFollowerFrenetLinLongNN
 		primObj_NN = (x_tilde_NN_vec-x_tilde_ref)'*Q_tilde_vec*(x_tilde_NN_vec-x_tilde_ref) + u_tilde_NN_vec'*R_tilde_vec*u_tilde_NN_vec
 
 
-		return primObj_NN, u_tilde_NN_vec, xu_tilde_NN_res, flag_XUfeas
+		solvTime_NN = toq()
+		
+		# need to return those as well
+		# a_opt_gurobi, a_pred_gurobi, s_pred_gurobi, v_pred_gurobi, dA_pred_gurobi, solv_time_long_gurobi1, is_opt_long
+
+		a_opt_NN = x_tilde_NN_vec[3]
+		a_pred_NN = x_tilde_NN_vec[3:(nx+nu):end]
+		s_pred_NN = x_tilde_NN_vec[1:(nx+nu):end]
+		v_pred_NN = x_tilde_NN_vec[2:(nx+nu):end]
+		# dA_pred_NN = u_tilde_NN_vec
+
+		return primObj_NN, xu_tilde_NN_res, flag_XUfeas, a_opt_NN, a_pred_NN, s_pred_NN, v_pred_NN, u_tilde_NN_vec, solvTime_NN
 		
 		# return 0, 0, 0, 0
 	end
@@ -393,22 +406,30 @@ module GPSKinMPCPathFollowerFrenetLinLongNN
 
 
 		# eval NN solution
-		primNN_obj, u_tilde_NN_vec, xu_tilde_NN_res, flag_XUfeas = eval_PrimalNN(params)
-		dualObj_NN, lambda_tilde_NN_vec = eval_DualNN(params)
+		primNN_obj, xu_tilde_NN_res, flag_XUfeas, a_opt_NN, a_pred_NN, s_pred_NN, v_pred_NN, dA_pred_NN, solvTime_NN = eval_PrimalNN(params)
+		dualNN_obj, lambda_tilde_NN_vec = eval_DualNN(params)
 
-		# if primalNN_obj - dualNN_obj <= 0.1
-		# 	return a_opt_gurobi, a_pred_gurobi, s_pred_gurobi, v_pred_gurobi, dA_pred_gurobi, solv_time_long_gurobi1, is_opt_long
+		println("primal NN obj: $(primNN_obj)")
+		println("dual NN obj: $(dualNN_obj)")
 
-		# else 
-		# 	a_opt_gurobi, a_pred_gurobi, s_pred_gurobi, v_pred_gurobi, dA_pred_gurobi, solv_time_long_gurobi1, is_opt_long = solve_gurobi(s_0, v_0, u_0, s_ref, v_ref)
-		# end 
+		is_opt_NN = (flag_XUfeas==1) && (primNN_obj - dualNN_obj <= 0.1)
+		if is_opt_NN
+			solMode = "NN"
+			# needs a bit of work
+			a_opt_NN, a_pred_NN, s_pred_NN, v_pred_NN, dA_pred_NN, solvTime_NN, is_opt_NN = solve_gurobi(s_0, v_0, u_0, s_ref, v_ref)
+			return 	a_opt_NN, a_pred_NN, s_pred_NN, v_pred_NN, dA_pred_NN, solvTime_NN, is_opt_NN, solMode, primNN_obj, dualNN_obj,xu_tilde_NN_res
 
-		### building/constructing matrices should be streamlined
-
-		a_opt_gurobi, a_pred_gurobi, s_pred_gurobi, v_pred_gurobi, dA_pred_gurobi, solv_time_long_gurobi1, is_opt_long = solve_gurobi(s_0, v_0, u_0, s_ref, v_ref)
+		else  	## NN solution not good
+			solMode = "opt"
+			primNN_obj = []
+			dualNN_obj = []
+			xu_tilde_NN_res = []
+			a_opt_gurobi, a_pred_gurobi, s_pred_gurobi, v_pred_gurobi, dA_pred_gurobi, solv_time_long_gurobi1, is_opt_long = solve_gurobi(s_0, v_0, u_0, s_ref, v_ref)
+			return a_opt_gurobi, a_pred_gurobi, s_pred_gurobi, v_pred_gurobi, dA_pred_gurobi, solv_time_long_gurobi1, is_opt_long, solMode, primNN_obj, dualNN_obj,xu_tilde_NN_res
+		end 
 
 		################ BACKUP ################
-		return a_opt_gurobi, a_pred_gurobi, s_pred_gurobi, v_pred_gurobi, dA_pred_gurobi, solv_time_long_gurobi1, is_opt_long
+		# return a_opt_gurobi, a_pred_gurobi, s_pred_gurobi, v_pred_gurobi, dA_pred_gurobi, solv_time_long_gurobi1, is_opt_long
 	end
 
 
