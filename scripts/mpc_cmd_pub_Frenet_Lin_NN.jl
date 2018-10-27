@@ -55,7 +55,8 @@ push!(LOAD_PATH, scripts_dir * "mpc_utils")
 
 import KinMPCParams
 
-import GPSKinMPCPathFollowerFrenetLinLatGurobi
+
+import GPSKinMPCPathFollowerFrenetLinLatGurobi 	# don't really need them, only need them for 
 import GPSKinMPCPathFollowerFrenetLinLongGurobi
 
 import GPSKinMPCPathFollowerFrenetLinLatNN
@@ -269,7 +270,7 @@ function pub_loop(acc_pub_obj, steer_pub_obj, mpc_path_pub_obj)
 			# println("================  iteration $(it_num) =====================")
 
 			# a_opt=u0 ; a_pred = (u_0, u_1, ... u_{N-1})
-			a_opt_gurobi, a_pred_gurobi, s_pred_gurobi, v_pred_gurobi, dA_pred_gurobi, solv_time_long_gurobi1, is_opt_long = kmpcLinLongNN.solve_gurobi(s_curr, v_curr, a_opt, s_ref, v_ref)
+			a_opt_gurobi, a_pred_gurobi, s_pred_gurobi, v_pred_gurobi, dA_pred_gurobi, solv_time_long_gurobi1, is_opt_long = kmpcLinLongNN.get_NNsolution(s_curr, v_curr, a_opt, s_ref, v_ref)
 			solv_time_long_gurobi1_all[it_num+1] = solv_time_long_gurobi1
 
 			df_opt_gurobi, df_pred_gurobi, ddf_pred_gurobi, ey_pred_gurobi, epsi_pred_gurobi, solv_time_lat_gurobi1, is_opt_lat_gurobi = kmpcLinLatNN.solve_gurobi(ey_curr, epsi_curr, df_opt, s_pred_gurobi, v_pred_gurobi, K_coeff)

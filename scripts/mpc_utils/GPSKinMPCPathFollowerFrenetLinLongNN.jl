@@ -27,7 +27,7 @@
 
 
 module GPSKinMPCPathFollowerFrenetLinLongNN
-	# __precompile__()
+	__precompile__()
 
 	using Gurobi
 	using MAT
@@ -38,23 +38,23 @@ module GPSKinMPCPathFollowerFrenetLinLongNN
 	println("Creating longitudinal kinematic bicycle model in NN...")
 	# println(pwd())
 
-	# push!(LOAD_PATH, scripts_dir * "mpc_utils")
-	# dualNN_Data 	= matread("../catkin_ws/src/genesis_path_follower/paths/dummyMatNN_DualLong.mat")
-	# primalNN_Data 	= matread("../catkin_ws/src/genesis_path_follower/paths/dummyMatNN_PrimLong.mat")
-	# read out NN primal weights
-	# Wi_PLong = primalNN_Data["Wi_PLong"]
-	# bi_PLong = primalNN_Data["bi_PLong"]
-	# W1_PLong = primalNN_Data["W1_PLong"]
-	# b1_PLong = primalNN_Data["b1_PLong"]
-	# Wout_PLong = primalNN_Data["Wout_PLong"]
-	# bout_PLong = primalNN_Data["bout_PLong"]
+	dualNN_Data 	= matread("../catkin_ws/src/genesis_path_follower/paths/dummyMatNN_DualLong.mat")
+	primalNN_Data 	= matread("../catkin_ws/src/genesis_path_follower/paths/dummyMatNN_PrimLong.mat")
 
-	# Wi_DLong = dualNN_Data["Wi_DLong"]
-	# bi_DLong = dualNN_Data["bi_DLong"]
-	# W1_DLong = dualNN_Data["W1_DLong"]
-	# b1_DLong = dualNN_Data["b1_DLong"]
-	# Wout_DLong = dualNN_Data["Wout_DLong"]
-	# bout_DLong = dualNN_Data["bout_DLong"]
+	# read out NN primal weights
+	Wi_PLong = primalNN_Data["Wi_PLong"]
+	bi_PLong = primalNN_Data["bi_PLong"]
+	W1_PLong = primalNN_Data["W1_PLong"]
+	b1_PLong = primalNN_Data["b1_PLong"]
+	Wout_PLong = primalNN_Data["Wout_PLong"]
+	bout_PLong = primalNN_Data["bout_PLong"]
+
+	Wi_DLong = dualNN_Data["Wi_DLong"]
+	bi_DLong = dualNN_Data["bi_DLong"]
+	W1_DLong = dualNN_Data["W1_DLong"]
+	b1_DLong = dualNN_Data["b1_DLong"]
+	Wout_DLong = dualNN_Data["Wout_DLong"]
+	bout_DLong = dualNN_Data["bout_DLong"]
 
 	# ====================== general problem formulation is given by ======================
 	# x_{k+1} = A x_k + B u_k + g_k
@@ -239,87 +239,134 @@ module GPSKinMPCPathFollowerFrenetLinLongNN
 	# objv = get_objval(GurobiModel)
 	# println("objv = $(objv)")
 
+	# ================ Trafo 3 =================== 
+	# used for NN implementation
+	# notation: x_tilde = A_tilde_vec * x0 + B_tilde_vec * u_vec + E_tilde_vec * g_tilde 
+	Q_tilde_vec = kron(eye(N),Q_tilde)   # for x_tilde_vec
+	R_tilde_vec = kron(eye(N),R_tilde)	 # for u_tilde_vec
 
-	##### OSQP solver
-	    
-	# tic()
-	# OSQPmdl = OSQP.Model() 	# needs SparseMatrixCSC,
-	# A_osqp = sparse( [ Aeq_gurobi ; eye(N*n_uxu) ] )
-	# lb_osqp = [ squeeze(beq_gurobi,2) ; squeeze(lb_gurobi,2) ]
-	# ub_osqp = [ squeeze(beq_gurobi,2) ; squeeze(ub_gurobi,2) ]
-	# P_osqp = sparse(2*H_gurobi)
-	# OSQP.setup!(OSQPmdl; P=P_osqp, q=f_gurobi_init, A=A_osqp, l=lb_osqp, u=ub_osqp, verbose=0)
-	# results_osqp = OSQP.solve!(OSQPmdl)
-	# solv_time=toq()
-	# println("1st solv time OSQP:  $(solv_time*1000) ms")
+	A_tilde_vec = zeros(N*(nx+nu), (nx+nu))
+	for ii = 1 : N
+	    A_tilde_vec[1+(ii-1)*(nx+nu):ii*(nx+nu),:] = A_tilde^ii
+	end
+
+	B_tilde_vec = zeros(N*(nx+nu), nu*N)
+	for ii = 0 : N-1
+	    for jj = 0 : ii-1
+	        B_tilde_vec[1+ii*(nx+nu):(ii+1)*(nx+nu), 1+jj*nu:  (jj+1)*nu] = A_tilde^(ii-jj)*B_tilde
+	    end
+	    B_tilde_vec[1+ii*(nx+nu):(ii+1)*(nx+nu), 1+ii*nu:(ii+1)*nu] = B_tilde
+	end
+
+	nw=nx+nu
+	E_tilde_vec = zeros(N*(nx+nu), nw*N)
+
+	for ii = 0 : N-1
+	    for jj = 0 : ii-1
+	        E_tilde_vec[1+ii*(nx+nu):(ii+1)*(nx+nu), 1+jj*nw:  (jj+1)*nw] = A_tilde^(ii-jj)*eye(nx+nu)
+	    end
+	    E_tilde_vec[1+ii*(nx+nu):(ii+1)*(nx+nu), 1+ii*nw:(ii+1)*nw] = eye(nx+nu)
+	end
+	g_tilde_vec = repmat(g_tilde,N)
+
+	# build constraints
+	Fu_tilde = [eye(nu) ; -eye(nu)]
+	fu_tilde = [u_tilde_ub; -u_tilde_lb]
+	ng = length(fu_tilde)
+	# Concatenate input (tilde) constraints
+	Fu_tilde_vec = kron(eye(N), Fu_tilde)
+	fu_tilde_vec = repmat(fu_tilde,N)
+
+	# Appended State constraints (tilde)
+	F_tilde = [eye(nx+nu) ; -eye(nx+nu)]
+	f_tilde = [x_tilde_ub ; -x_tilde_lb]
+	nf = length(f_tilde);
+
+	# Concatenate appended state (tilde) constraints
+	F_tilde_vec = kron(eye(N), F_tilde)
+	f_tilde_vec = repmat(f_tilde,N)   
+
+	# these variables will be updated with current states
+	x_tilde_ref = []
+
+	Q_dual = 2*(B_tilde_vec'*Q_tilde_vec*B_tilde_vec + R_tilde_vec);
+    C_dual = [F_tilde_vec*B_tilde_vec; Fu_tilde_vec]		        # Adding state constraints 
+    Qdual_tmp = C_dual*(Q_dual\(C_dual'))
+    Qdual_tmp = 0.5*(Qdual_tmp+Qdual_tmp') + 0e-5*eye(N*(nf+ng))
+
+    
+
+##################################################################################
+##################################################################################
+##################################################################################
+	function eval_DualNN(params::Array{Float64,1})
+		global x_tilde_ref
+
+		x_tilde_0 = params[1:3]
+		
+		# some terms can be pre-computed
+		c_dual = (2*x_tilde_0'*A_tilde_vec'*Q_tilde_vec*B_tilde_vec + 2*g_tilde_vec'*E_tilde_vec'*Q_tilde_vec*B_tilde_vec +
+    	      - 2*x_tilde_ref'*Q_tilde_vec*B_tilde_vec)'
+
+		const_dual = x_tilde_0'*A_tilde_vec'*Q_tilde_vec*A_tilde_vec*x_tilde_0 + 2*x_tilde_0'*A_tilde_vec'*Q_tilde_vec*E_tilde_vec*g_tilde_vec +
+                  + g_tilde_vec'*E_tilde_vec'*Q_tilde_vec*E_tilde_vec*g_tilde_vec +
+                  - 2*x_tilde_0'*A_tilde_vec'*Q_tilde_vec*x_tilde_ref - 2*g_tilde_vec'*E_tilde_vec'*Q_tilde_vec*x_tilde_ref +
+                  + x_tilde_ref'*Q_tilde_vec*x_tilde_ref
+        
+	    d_dual = [f_tilde_vec - F_tilde_vec*A_tilde_vec*x_tilde_0 - F_tilde_vec*E_tilde_vec*g_tilde_vec;  fu_tilde_vec]
+
+   		# calls the NN with two Hidden Layers
+		z1 = max.(Wi_DLong*params + bi_DLong, 0)
+		z2 = max.(W1_DLong*z1 + b1_DLong, 0)
+		lambda_tilde_NN_orig = Wout_DLong*z2 + bout_DLong
+		lambda_tilde_NN_vec = max.(Wout_DLong*z2 + bout_DLong, 0)  	#Delta-Acceleration
+
+		dualObj_NN = -1/2 * lambda_tilde_NN_vec'*Qdual_tmp*lambda_tilde_NN_vec - (C_dual*(Q_dual\c_dual)+d_dual)'*lambda_tilde_NN_vec - 1/2*c_dual'*(Q_dual\c_dual) + const_dual
+
+
+		return dualObj_NN, lambda_tilde_NN_vec
+	end
+
+
+	function eval_PrimalNN(params::Array{Float64,1})
+
+		global x_tilde_ref 	# not sure if needed
+
+		# calls the NN with two Hidden Layers
+		z1 = max.(Wi_PLong*params + bi_PLong, 0)
+		z2 = max.(W1_PLong*z1 + b1_PLong, 0)
+		u_tilde_NN_vec = Wout_PLong*z2 + bout_PLong  	#Delta-Acceleration
+
+		# compute NN predicted state
+		x_tilde_0 = params[1:3] 	
+		x_tilde_NN_vec = A_tilde_vec*x_tilde_0 + B_tilde_vec*u_tilde_NN_vec + E_tilde_vec*g_tilde_vec
+
+		## verify feasibility
+		# xu_tilde_NN_res = [ maximum(F_tilde_vec*x_tilde_NN_vec - f_tilde_vec) ; maximum(Fu_tilde_vec*x_tilde_NN_vec - fu_tilde_vec) ]  # should be <= 0
+		xu_tilde_NN_res = [ maximum(F_tilde_vec*x_tilde_NN_vec - f_tilde_vec) ; maximum(Fu_tilde_vec*u_tilde_NN_vec - fu_tilde_vec) ]  # should be <= 0
+		flag_XUfeas = 0
+		if maximum(xu_tilde_NN_res) < 1e-3  	# infeasible if bigger than zero/threshold
+			flag_XUfeas = 1
+		end
+
+		## check optimality ##
+		primObj_NN = (x_tilde_NN_vec-x_tilde_ref)'*Q_tilde_vec*(x_tilde_NN_vec-x_tilde_ref) + u_tilde_NN_vec'*R_tilde_vec*u_tilde_NN_vec
+
+
+		return primObj_NN, u_tilde_NN_vec, xu_tilde_NN_res, flag_XUfeas
+		
+		# return 0, 0, 0, 0
+	end
 
 	
-	# function eval_PrimalNN (params::Array{Float64,1})
-	# 	# calls the NN with two Hidden Layers
-	# 	z1 = max.(Wi_PLong*params + bi_PLong, 0)
-	# 	z2 = max.(W1_PLong*z1 + b1_PLong, 0)
-	# 	dAcc_NN = Wout_PLong*z2 + bout_PLong
 
 
 
-	# 	return 0, 0
-	# end
+	# only reference functions need to be updated
+	function updateMatrices(s_ref::Array{Float64,1}, v_ref::Array{Float64,1})
 
-	
-	# function eval_DualNN (params::Array{Float64,1})
+		global x_tilde_ref
 
-	# 	return 0, 0
-	# end
-
-
-
-
-	# function get_NNsolution(s_0::Float64, v_0::Float64, u_0::Float64, s_ref::Array{Float64,1}, v_ref::Array{Float64,1})
-
-	# 	# do primal dual NN
-	# 	# np.hstack((s_curr.T, v_curr.T ,a_prev.T, s_ref, v_ref ))
-	# 	params = [s_0 ; v_0 ; u_0 ; s_ref ; v_ref] 	# stack to 19x1 matrix
-		
-	# 	# eval NN solution
-	# 	primalNN_obj, primalNN_dAcc = eval_PrimalNN(params)
-
-	# 	dualNN_obj, dualNN_dAcc = eval_PrimalNN(params)
-
-	# 	if primalNN_obj - dualNN_obj <= 0.1
-	# 		return a_opt_gurobi, a_pred_gurobi, s_pred_gurobi, v_pred_gurobi, dA_pred_gurobi, solv_time_long_gurobi1, is_opt_long
-
-	# 	else 
-	# 		a_opt_gurobi, a_pred_gurobi, s_pred_gurobi, v_pred_gurobi, dA_pred_gurobi, solv_time_long_gurobi1, is_opt_long = solve_gurobi(s_0, v_0, u_0, s_ref, v_ref)
-	# 	end 
-
-	# 	### building/constructing matrices should be streamlined
-
-
-	# 	################ BACKUP ################
-		
-
-	# end
-
-
-
-
-	# this function is called iteratively
-	function solve_gurobi(s_0::Float64, v_0::Float64, u_0::Float64, s_ref::Array{Float64,1}, v_ref::Array{Float64,1})
-
-		tic()
-
-		println(u_tilde_ref_init')
-
-		# build problem
-		x0 = [s_0 ; v_0]
-		u0 = u_0 				# it's really u_{-1}
-		x_tilde_0 = [x0 ; u0]	# initial state of system; PARAMETER
-
-		# update RHS of linear equality constraint
-		beq_gurobi_updated = repmat(g_tilde,N,1);
-		beq_gurobi_updated[1:nx_tilde] = beq_gurobi_updated[1:nx_tilde] + A_tilde*x_tilde_0 	# PARAMETER: depends on x0
-
-		# update reference trajectories
 		x_ref = zeros(N*nx,1)
 		for i = 1 : N
 			x_ref[(i-1)*nx+1] = s_ref[i+1]		# set x_ref, s_ref/v_ref is of dim N+1
@@ -331,6 +378,77 @@ module GPSKinMPCPathFollowerFrenetLinLongNN
 			x_tilde_ref[(i-1)*(nx+nu)+1 : (i-1)*(nx+nu)+nx] = x_ref[(i-1)*nx+1 : (i-1)*nx+nx]
 			x_tilde_ref[(i-1)*(nx+nu)+nx+1 : (i-1)*(nx+nu)+nx+nu] = u_ref_init[i]	# u_ref_init always 0, but no no weights
 		end
+
+	end
+
+
+	function get_NNsolution(s_0::Float64, v_0::Float64, u_0::Float64, s_ref::Array{Float64,1}, v_ref::Array{Float64,1})
+
+
+		updateMatrices(s_ref, v_ref)
+
+	
+		# stack everything together
+		params = [s_0 ; v_0 ; u_0 ; s_ref[2:end] ; v_ref[2:end]] 	# stack to 19x1 matrix
+
+
+		# eval NN solution
+		primNN_obj, u_tilde_NN_vec, xu_tilde_NN_res, flag_XUfeas = eval_PrimalNN(params)
+		dualObj_NN, lambda_tilde_NN_vec = eval_DualNN(params)
+
+		# if primalNN_obj - dualNN_obj <= 0.1
+		# 	return a_opt_gurobi, a_pred_gurobi, s_pred_gurobi, v_pred_gurobi, dA_pred_gurobi, solv_time_long_gurobi1, is_opt_long
+
+		# else 
+		# 	a_opt_gurobi, a_pred_gurobi, s_pred_gurobi, v_pred_gurobi, dA_pred_gurobi, solv_time_long_gurobi1, is_opt_long = solve_gurobi(s_0, v_0, u_0, s_ref, v_ref)
+		# end 
+
+		### building/constructing matrices should be streamlined
+
+		a_opt_gurobi, a_pred_gurobi, s_pred_gurobi, v_pred_gurobi, dA_pred_gurobi, solv_time_long_gurobi1, is_opt_long = solve_gurobi(s_0, v_0, u_0, s_ref, v_ref)
+
+		################ BACKUP ################
+		return a_opt_gurobi, a_pred_gurobi, s_pred_gurobi, v_pred_gurobi, dA_pred_gurobi, solv_time_long_gurobi1, is_opt_long
+	end
+
+
+
+	# this function is called iteratively
+	function solve_gurobi(s_0::Float64, v_0::Float64, u_0::Float64, s_ref::Array{Float64,1}, v_ref::Array{Float64,1})
+
+		global x_tilde_ref
+
+		tic()
+
+		# to modify variables, need global
+		# global v_max
+		# println(v_max)
+		# v_max = randn(1)
+		# println(v_max)
+		
+
+		# build problem
+		x0 = [s_0 ; v_0]
+		u0 = u_0 				# it's really u_{-1}
+		x_tilde_0 = [x0 ; u0]	# initial state of system; PARAMETER
+
+		# update RHS of linear equality constraint
+		beq_gurobi_updated = repmat(g_tilde,N,1);
+		beq_gurobi_updated[1:nx_tilde] = beq_gurobi_updated[1:nx_tilde] + A_tilde*x_tilde_0 	# PARAMETER: depends on x0
+
+		# # update reference trajectories
+		# x_ref = zeros(N*nx,1)
+		# for i = 1 : N
+		# 	x_ref[(i-1)*nx+1] = s_ref[i+1]		# set x_ref, s_ref/v_ref is of dim N+1
+		# 	x_ref[(i-1)*nx+2] = v_ref[i+1]		# set v_ref
+		# end
+		# # augment state with input for deltaU-formulation
+		# x_tilde_ref = zeros(N*(nx+nu))
+		# for i = 1 : N
+		# 	x_tilde_ref[(i-1)*(nx+nu)+1 : (i-1)*(nx+nu)+nx] = x_ref[(i-1)*nx+1 : (i-1)*nx+nx]
+		# 	x_tilde_ref[(i-1)*(nx+nu)+nx+1 : (i-1)*(nx+nu)+nx+nu] = u_ref_init[i]	# u_ref_init always 0, but no no weights
+		# end
+
 		u_tilde_ref = zeros(N*nu) 	# want to minimize deltaU = u_k - u_{k-1}
 
 		z_gurobi_ref = zeros(N*n_uxu) 	# reference point for z_gurobi ; PARAMETER!

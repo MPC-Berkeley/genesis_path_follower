@@ -27,7 +27,7 @@
 
 
 module GPSKinMPCPathFollowerFrenetLinLatNN
-	# __precompile__()
+	__precompile__()
 
 	using Gurobi
 	using MAT
