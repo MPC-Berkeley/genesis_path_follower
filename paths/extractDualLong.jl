@@ -17,8 +17,8 @@ const kmpcLinLong = GPSKinMPCPathFollowerFrenetLinLongGurobi  # short-hand-notat
 # Load as Many parameters as possible from MPC file to avoid parameter mis-match
 N 		= KinMPCParams.N
 dt 		= KinMPCParams.dt
-nx 		= 2				# dimension of x = (ey,epsi)
-nu 		= 1				# number of inputs u = df
+nx 		= 2								# dimension of x = (ey,epsi)
+nu 		= 1								# number of inputs u = df
 L_a 	= KinMPCParams.L_a				# from CoG to front axle (according to Jongsang)
 L_b 	= KinMPCParams.L_b				# from CoG to rear axle (according to Jongsang)
 
@@ -29,7 +29,7 @@ L_b 	= KinMPCParams.L_b				# from CoG to rear axle (according to Jongsang)
 # outputParamAcc_long = longData["outputParamAcc_long"]
 # outputParamDacc_long = longData["outputParamDacc_long"]
 
-## Append random data to input param long string 
+## Load Ranges of params 
 
  v_lb = KinMPCParams.v_min 
  v_ub = KinMPCParams.v_max

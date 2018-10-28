@@ -43,6 +43,15 @@ module KinMPCParams
     C_epsi 		= 0.0
 	C_df	 	= 0.0					# 150			# tire angle input
 	C_ddf	 	= 1000.0				# 3e4			# derivative of tire angle input
+	
+	ey_lb       = -1
+	ey_ub		=  1	
+	epsi_lb     = -1
+	epsi_ub		=  1	
+	
+	curv_lb  	= -0.1
+	curv_ub 	=  0.1
+
 	df_max 		= 0.5					# steering
 	ddf_max 	= 0.5					# change in steering
 
