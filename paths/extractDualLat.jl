@@ -359,6 +359,8 @@ while ii <= num_DataPoints
 	ii = ii+1 
 
 	@label label1
+
+	println("Index: $(ii)")
 end
 
 println("****************************")
