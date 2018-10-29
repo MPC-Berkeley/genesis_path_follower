@@ -6,12 +6,18 @@ import numpy as np
 import matplotlib.pyplot as plt
 import tensorflow as tf
 import scipy.io as sio
+import h5py
 
-#%% We have imported all dependencies
-df = sio.loadmat('NN_test_trainingDataLong10k_PrimalDual.mat',squeeze_me=True, struct_as_record=False) # read data set using pandas
-x_data = df['inputParam_long']
-y_data = df['outputParamDacc_long']
-y_dataDual = df['outputParamDual_long']
+# #%% We have imported all dependencies
+# df = sio.loadmat('NN_test_trainingDataLong10k_PrimalDual.mat',squeeze_me=True, struct_as_record=False) # read data set using pandas
+# x_data = df['inputParam_long']
+# y_data = df['outputParamDacc_long']
+# y_dataDual = df['outputParamDual_long']
+
+f = h5py.File('NN_test_trainingDataLong10k_PrimalDual.mat')
+x_data = np.array(f['inputParam_long'])
+y_data =  np.array(f['outputParamDacc_long'])
+y_dataDual =  np.array(f['outputParamDual_long'])
 
 data_length = x_data.shape[0]
 train_length = int(np.floor(data_length*4/5))                           # 80% data to train 
