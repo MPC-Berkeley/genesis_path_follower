@@ -94,7 +94,7 @@ f_tilde_vec = repmat(f_tilde,N)
 
 ######################## ITERATE OVER saved parameters ################
 # build problem
-num_DataPoints = 10								# Training data count 
+num_DataPoints = 100								# Training data count 
 solv_time_all = zeros(num_DataPoints)
 # df_res_all = zeros(num_DataPoints)
 # ddf_res_all = zeros(num_DataPoints)
@@ -123,9 +123,9 @@ dualStatusError = 0
 dual_Fx = []
 dual_Fu = []
 L_test_opt = []
-ii = 1
+iii = 1
 
-while ii <= num_DataPoints	
+while iii <= num_DataPoints	
 	
 	# Save only feasible points. 
 	# extract appropriate parameters	
@@ -262,36 +262,36 @@ while ii <= num_DataPoints
 		@goto label1
 	end
 
-	inputParam_lat[ii,:] = [ey_0 epsi_0 u_0 v_pred c_pred]
+	inputParam_lat[iii,:] = [ey_0 epsi_0 u_0 v_pred c_pred]
 
 	obj_primal = getobjectivevalue(mdl)
 	obj_primal1 = obj_primal
-	optVal_long[ii] = obj_primal
-	solv_time_all[ii] = toq()
+	optVal_long[iii] = obj_primal
+	solv_time_all[iii] = toq()
 
 	x_tilde_vec_opt = getvalue(x_tilde_vec)
 	ddf_pred_opt = getvalue(u_tilde_vec)
 	df_pred_opt = x_tilde_vec_opt[3:nx+nu:end]
 
 	## store the primal solution too as output gonna change now 
-	outputParamDf_lat[ii,:]   = df_pred_opt
-	outputParamDdf_lat[ii,:]  = ddf_pred_opt
+	outputParamDf_lat[iii,:]   = df_pred_opt
+	outputParamDdf_lat[iii,:]  = ddf_pred_opt
  	###########################################################	
 
 
 	# #### compare solution ####
-	# df_res_all[ii] = norm(df_pred_opt - df_stored)
-	# ddf_res_all[ii] = norm(ddf_pred_opt - ddf_stored)
+	# df_res_all[iii] = norm(df_pred_opt - df_stored)
+	# ddf_res_all[iii] = norm(ddf_pred_opt - ddf_stored)
 
 
 	obj_dualOnline = getobjectivevalue(mdlD)
 
 	# extract solution
 	L_test_opt = getvalue(L_test)
-	outputParamDual_lat[ii,:] = L_test_opt
+	outputParamDual_lat[iii,:] = L_test_opt
 
-	dual_gap[ii] = (obj_primal - obj_dualOnline)
-	dual_gapRel[ii] = (obj_primal-obj_dualOnline)/obj_primal
+	dual_gap[iii] = (obj_primal - obj_dualOnline)
+	dual_gapRel[iii] = (obj_primal-obj_dualOnline)/obj_primal
 	
 
 ###########################
@@ -356,11 +356,13 @@ while ii <= num_DataPoints
 	# outputParamDualLB_lat[ii,:] = dual_ub
 	# outputParamDualUB_lat[ii,:] = dual_ub
 
-	ii = ii+1 
+	println("Index before update: $(iii)")
+
+	iii = iii + 1 
 
 	@label label1
 
-	println("Index: $(ii)")
+	println("Index after update: $(iii)")
 end
 
 println("****************************")
