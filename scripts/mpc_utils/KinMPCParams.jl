@@ -23,7 +23,6 @@ module KinMPCParams
 	L_a 	= 1.5213		# from CoG to front axle (according to Jongsang)
 	L_b 	= 1.4987		# from CoG to rear axle (according to Jongsang)
 
-
 	# longitudinal parameters
 	nx_long	= 2				# dimension of x = (s,v)
 	nu_long = 1				# number of inputs u = a
@@ -45,6 +44,5 @@ module KinMPCParams
 	C_ddf	 	= 1000.0	# 3e4			# derivative of tire angle input
 	df_max 		= 0.5	# steering
 	ddf_max 	= 0.5	# change in steering
-
 
 end

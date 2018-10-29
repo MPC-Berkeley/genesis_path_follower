@@ -36,6 +36,21 @@ module GPSKinMPCPathFollowerFrenetLinLatNN
 
 	println("Creating lateral kinematic bicycle model in NN ....")
 
+	dualNN_Data 	= matread("../catkin_ws/src/genesis_path_follower/paths/dummyMatNN_DualLong.mat")
+	primalNN_Data 	= matread("../catkin_ws/src/genesis_path_follower/paths/dummyMatNN_PrimLong.mat")
+
+
+
+
+
+
+
+
+
+
+
+
+
 	# ====================== general problem formulation is given by ======================
 	# x_{k+1} = A_k x_k + B_k u_k + g_k
 	# u_lb <= u_k <= u_ub

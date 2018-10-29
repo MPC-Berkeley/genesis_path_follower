@@ -24,8 +24,6 @@
 =#
 
 
-
-
 module GPSKinMPCPathFollowerFrenetLinLongNN
 	__precompile__()
 
@@ -325,13 +323,16 @@ module GPSKinMPCPathFollowerFrenetLinLongNN
 		dualObj_NN = -1/2 * lambda_tilde_NN_vec'*Qdual_tmp*lambda_tilde_NN_vec - (C_dual*(Q_dual\c_dual)+d_dual)'*lambda_tilde_NN_vec - 1/2*c_dual'*(Q_dual\c_dual) + const_dual
 
 
-		return dualObj_NN, lambda_tilde_NN_vec
+		return dualObj_NN, lambda_tilde_NN_orig
 	end
 
 
 	function eval_PrimalNN(params::Array{Float64,1})
 
 		global x_tilde_ref 	# not sure if needed
+
+		s_0 = params[1]
+		v_0 = params[2]
 
 		tic()
 
@@ -363,8 +364,8 @@ module GPSKinMPCPathFollowerFrenetLinLongNN
 
 		a_opt_NN = x_tilde_NN_vec[3]
 		a_pred_NN = x_tilde_NN_vec[3:(nx+nu):end]
-		s_pred_NN = x_tilde_NN_vec[1:(nx+nu):end]
-		v_pred_NN = x_tilde_NN_vec[2:(nx+nu):end]
+		s_pred_NN = [ s_0 ; x_tilde_NN_vec[1:(nx+nu):end] ]
+		v_pred_NN = [ v_0 ; x_tilde_NN_vec[2:(nx+nu):end] ]
 		# dA_pred_NN = u_tilde_NN_vec
 
 		return primObj_NN, xu_tilde_NN_res, flag_XUfeas, a_opt_NN, a_pred_NN, s_pred_NN, v_pred_NN, u_tilde_NN_vec, solvTime_NN
@@ -398,13 +399,20 @@ module GPSKinMPCPathFollowerFrenetLinLongNN
 
 	function get_NNsolution(s_0::Float64, v_0::Float64, u_0::Float64, s_ref::Array{Float64,1}, v_ref::Array{Float64,1})
 
+		# try to make s_ref smaller
+		s_ref_true = s_ref
+		s_0_true = s_0
+
+		s_ref = s_ref - s_0
+		s_0 = 0.0
+
+		println("s_0: $(s_0)")
+		println(typeof(s_0))
 
 		updateMatrices(s_ref, v_ref)
 
-	
 		# stack everything together
 		params = [s_0 ; v_0 ; u_0 ; s_ref[2:end] ; v_ref[2:end]] 	# stack to 19x1 matrix
-
 
 		# eval NN solution
 		primNN_obj, xu_tilde_NN_res, flag_XUfeas, a_opt_NN, a_pred_NN, s_pred_NN, v_pred_NN, dA_pred_NN, solvTime_NN = eval_PrimalNN(params)
@@ -418,7 +426,7 @@ module GPSKinMPCPathFollowerFrenetLinLongNN
 			solMode = "NN"
 			# needs a bit of work
 			a_opt_NN, a_pred_NN, s_pred_NN, v_pred_NN, dA_pred_NN, solvTime_NN, is_opt_NN = solve_gurobi(s_0, v_0, u_0, s_ref, v_ref)
-			return 	a_opt_NN, a_pred_NN, s_pred_NN, v_pred_NN, dA_pred_NN, solvTime_NN, is_opt_NN, solMode, primNN_obj, dualNN_obj,xu_tilde_NN_res
+			return 	a_opt_NN, a_pred_NN, s_pred_NN+s_0_true, v_pred_NN, dA_pred_NN, solvTime_NN, is_opt_NN, solMode, primNN_obj, dualNN_obj,xu_tilde_NN_res
 
 		else  	## NN solution not good
 			solMode = "opt"
@@ -426,14 +434,12 @@ module GPSKinMPCPathFollowerFrenetLinLongNN
 			dualNN_obj = []
 			xu_tilde_NN_res = []
 			a_opt_gurobi, a_pred_gurobi, s_pred_gurobi, v_pred_gurobi, dA_pred_gurobi, solv_time_long_gurobi1, is_opt_long = solve_gurobi(s_0, v_0, u_0, s_ref, v_ref)
-			return a_opt_gurobi, a_pred_gurobi, s_pred_gurobi, v_pred_gurobi, dA_pred_gurobi, solv_time_long_gurobi1, is_opt_long, solMode, primNN_obj, dualNN_obj,xu_tilde_NN_res
+			return a_opt_gurobi, a_pred_gurobi, s_pred_gurobi+s_0_true, v_pred_gurobi, dA_pred_gurobi, solv_time_long_gurobi1, is_opt_long, solMode, primNN_obj, dualNN_obj,xu_tilde_NN_res
 		end 
 
 		################ BACKUP ################
 		# return a_opt_gurobi, a_pred_gurobi, s_pred_gurobi, v_pred_gurobi, dA_pred_gurobi, solv_time_long_gurobi1, is_opt_long
 	end
-
-
 
 	# this function is called iteratively
 	function solve_gurobi(s_0::Float64, v_0::Float64, u_0::Float64, s_ref::Array{Float64,1}, v_ref::Array{Float64,1})
@@ -450,6 +456,8 @@ module GPSKinMPCPathFollowerFrenetLinLongNN
 		
 
 		# build problem
+		# tmp fix to make s not go weird
+
 		x0 = [s_0 ; v_0]
 		u0 = u_0 				# it's really u_{-1}
 		x_tilde_0 = [x0 ; u0]	# initial state of system; PARAMETER
