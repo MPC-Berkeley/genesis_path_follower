@@ -352,16 +352,11 @@ module GPSKinMPCPathFollowerFrenetLinLongNN
 			flag_XUfeas = 1
 		end
 
-		## check optimality ##
+		## check optimality (compute objective value) ##
 		primObj_NN = (x_tilde_NN_vec-x_tilde_ref)'*Q_tilde_vec*(x_tilde_NN_vec-x_tilde_ref) + u_tilde_NN_vec'*R_tilde_vec*u_tilde_NN_vec
-
-
 		solvTime_NN = toq()
-		
-		# need to return those as well
-		# a_opt_gurobi, a_pred_gurobi, s_pred_gurobi, v_pred_gurobi, dA_pred_gurobi, solv_time_long_gurobi1, is_opt_long
 
-		a_opt_NN = x_tilde_NN_vec[3]
+		a_opt_NN = 	x_tilde_NN_vec[3]
 		a_pred_NN = x_tilde_NN_vec[3:(nx+nu):end]
 		s_pred_NN = x_tilde_NN_vec[1:(nx+nu):end]
 		v_pred_NN = x_tilde_NN_vec[2:(nx+nu):end]
@@ -369,7 +364,6 @@ module GPSKinMPCPathFollowerFrenetLinLongNN
 
 		return primObj_NN, xu_tilde_NN_res, flag_XUfeas, a_opt_NN, a_pred_NN, s_pred_NN, v_pred_NN, u_tilde_NN_vec, solvTime_NN
 		
-		# return 0, 0, 0, 0
 	end
 
 	
