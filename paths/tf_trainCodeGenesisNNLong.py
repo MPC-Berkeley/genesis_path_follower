@@ -6,18 +6,18 @@ import numpy as np
 import matplotlib.pyplot as plt
 import tensorflow as tf
 import scipy.io as sio
-import h5py
+#import h5py
 
 #%% We have imported all dependencies
-# df = sio.loadmat('NN_test_trainingDataLong10k_PrimalDual.mat',squeeze_me=True, struct_as_record=False) # read data set using pandas
-# x_data = df['inputParam_long']
-# y_data = df['outputParamDacc_long']
-# y_dataDual = df['outputParamDual_long']
+df = sio.loadmat('NN_test_trainingDataLong10k_PrimalDual2.mat',squeeze_me=True, struct_as_record=False) # read data set using pandas
+x_data = df['inputParam_long']
+y_data = df['outputParamDacc_long']
+y_dataDual = df['outputParamDual_long']
 
-f = h5py.File('/home/monimoy/Dropbox/PolicyLearning/GenesisPathFollowerNNTrain/PrimalNNParamsLong_10kData.mat')
-x_data = np.array(f['inputParam_long'])
-y_data =  np.array(f['outputParamDacc_long'])
-y_dataDual =  np.array(f['outputParamDual_long'])
+#f = h5py.File('NN_test_trainingDataLong10k_PrimalDual.mat')
+#x_data = np.array(f['inputParam_long'])
+#y_data =  np.array(f['outputParamDacc_long'])
+#y_dataDual =  np.array(f['outputParamDual_long'])
 
 data_length = x_data.shape[0]
 train_length = int(np.floor(data_length*4/5))                           # 80% data to train 
@@ -91,6 +91,16 @@ with tf.Session() as sess:
          c_t.append(sess.run(cost, feed_dict={xs:x_train,ys:y_train}))
          c_test.append(sess.run(cost, feed_dict={xs:x_test,ys:y_test}))
          print('Epoch :',i,'Cost Train :',c_t[i], 'Cost Test :',c_test[i])
+#%% Saving weight matrices 
+     vj={}
+     vj['W1'] = sess.run(W_1)
+     vj['W2'] = sess.run(W_2)
+     vj['W0'] = sess.run(W_O)
+     vj['b1'] = sess.run(b_1)
+     vj['b2'] = sess.run(b_2)
+     vj['b0'] = sess.run(b_O)
+     sio.savemat('trained_weightsPrimalLong.mat',vj)
+
 #%%         
 ################################ Plotting the Primal NN Train Quality
 plt.plot(range(len(c_t)),c_t, 'r')
@@ -142,8 +152,8 @@ with tf.Session() as sess:
      inds = np.arange(x_train.shape[0])
      train_count = len(x_train)
 
-     N_EPOCHS = 10000
-     BATCH_SIZE = 32
+     N_EPOCHS = 2000
+     BATCH_SIZE = 64
 
      for i in range(0, N_EPOCHS):
          for start, end in zip(range(0, train_count, BATCH_SIZE),
@@ -155,6 +165,18 @@ with tf.Session() as sess:
          c_tD.append(sess.run(costD, feed_dict={xs:x_train,ysD:y_trainDual}))
          c_testD.append(sess.run(costD, feed_dict={xs:x_test,ysD:y_testDual}))
          print('Epoch :',i,'Cost Train Dual :',c_tD[i], 'Cost Test Dual:',c_testD[i])
+
+#%%
+#  Getting the variables from the Neural Nets
+     vjD={}
+     vjD['W1D'] = sess.run(W_1D)
+     vj['W2D'] = sess.run(W_2D)
+     vj['W0D'] = sess.run(W_OD)
+     vj['b1D'] = sess.run(b_1D)
+     vj['b2D'] = sess.run(b_2D)
+     vj['b0D'] = sess.run(b_OD)
+     sio.savemat('trained_weightsDualLong.mat',vjD)
+
 #%%
 ################################## Plotting the Dual NN Train Quality
 plt.plot(range(len(c_tD)),c_tD, 'r')
@@ -168,23 +190,5 @@ plt.ylabel('Error in Testing Points')
 plt.xlabel('Epoch')
 plt.title('Fitting Testing Error')
 plt.show()
-#%%
-# #  Getting the variables from the Neural Nets
-#     vj={}
-#     vj['W1'] = sess.run(W_1)
-#     vj['W2'] = sess.run(W_2)
-#     vj['W0'] = sess.run(W_O)
-#     vj['b1'] = sess.run(b_1)
-#     vj['b2'] = sess.run(b_2)
-#     vj['b0'] = sess.run(b_O)
-#     sio.savemat('trained_weightsPrimalLong.mat',vj)
 
-#     vjD={}
-#     vjD['W1D'] = sess.run(W_1D)
-#     vj['W2D'] = sess.run(W_2D)
-#     vj['W0D'] = sess.run(W_OD)
-#     vj['b1D'] = sess.run(b_1D)
-#     vj['b2D'] = sess.run(b_2D)
-#     vj['b0D'] = sess.run(b_OD)
-#     sio.savemat('trained_weightsDualLong.mat',vjD)
 
