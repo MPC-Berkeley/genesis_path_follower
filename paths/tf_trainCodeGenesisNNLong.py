@@ -170,11 +170,11 @@ with tf.Session() as sess:
 #  Getting the variables from the Neural Nets
      vjD={}
      vjD['W1D'] = sess.run(W_1D)
-     vj['W2D'] = sess.run(W_2D)
-     vj['W0D'] = sess.run(W_OD)
-     vj['b1D'] = sess.run(b_1D)
-     vj['b2D'] = sess.run(b_2D)
-     vj['b0D'] = sess.run(b_OD)
+     vjD['W2D'] = sess.run(W_2D)
+     vjD['W0D'] = sess.run(W_OD)
+     vjD['b1D'] = sess.run(b_1D)
+     vjD['b2D'] = sess.run(b_2D)
+     vjD['b0D'] = sess.run(b_OD)
      sio.savemat('trained_weightsDualLong.mat',vjD)
 
 #%%
