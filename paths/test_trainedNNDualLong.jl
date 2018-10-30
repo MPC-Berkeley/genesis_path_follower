@@ -26,19 +26,19 @@ L_b 	= KinMPCParams.L_b				# from CoG to rear axle (according to Jongsang)
 dualNN_Data 	= matread("trained_weightsDualLong.mat")
 primalNN_Data 	= matread("trained_weightsPrimalLong.mat")
 # read out NN primal/Dual weights
-Wi_PLong = primalNN_Data["W1"]'
-bi_PLong = primalNN_Data["b1"]'
-W1_PLong = primalNN_Data["W2"]'
-b1_PLong = primalNN_Data["b2"]'
-Wout_PLong = primalNN_Data["W0"]'
-bout_PLong = primalNN_Data["b0"]'
+Wi_PLong = primalNN_Data["W1"]
+bi_PLong = primalNN_Data["b1"]
+W1_PLong = primalNN_Data["W2"]
+b1_PLong = primalNN_Data["b2"]
+Wout_PLong = primalNN_Data["W0"]
+bout_PLong = primalNN_Data["b0"]
 
-Wi_DLong = dualNN_Data["W1D"]'
-bi_DLong = dualNN_Data["b1D"]'
-W1_DLong = dualNN_Data["W2D"]'
-b1_DLong = dualNN_Data["b2D"]'
-Wout_DLong = dualNN_Data["W0D"]'
-bout_DLong = dualNN_Data["b0D"]'
+Wi_DLong = dualNN_Data["W1D"]
+bi_DLong = dualNN_Data["b1D"]
+W1_DLong = dualNN_Data["W2D"]
+b1_DLong = dualNN_Data["b2D"]
+Wout_DLong = dualNN_Data["W0D"]
+bout_DLong = dualNN_Data["b0D"]
 ############################################################################
 
 ## Load Ranges of params 
