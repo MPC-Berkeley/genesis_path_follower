@@ -8,13 +8,13 @@ import tensorflow as tf
 import scipy.io as sio
 import h5py
 
-# #%% We have imported all dependencies
+#%% We have imported all dependencies
 # df = sio.loadmat('NN_test_trainingDataLong10k_PrimalDual.mat',squeeze_me=True, struct_as_record=False) # read data set using pandas
 # x_data = df['inputParam_long']
 # y_data = df['outputParamDacc_long']
 # y_dataDual = df['outputParamDual_long']
 
-f = h5py.File('NN_test_trainingDataLong10k_PrimalDual.mat')
+f = h5py.File('/home/monimoy/Dropbox/PolicyLearning/GenesisPathFollowerNNTrain/PrimalNNParamsLong_10kData.mat')
 x_data = np.array(f['inputParam_long'])
 y_data =  np.array(f['outputParamDacc_long'])
 y_dataDual =  np.array(f['outputParamDual_long'])

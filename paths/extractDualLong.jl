@@ -277,7 +277,7 @@ println("min Rel dual_gap:  $(minimum(Reldual_gap))")
 
 
 
-# save data
+# #save data
 # matwrite("NN_test_trainingDataLong10k_PrimalDual.mat", Dict(
 # 	"inputParam_long" => inputParam_long,
 # 	"outputParamAcc_long" => outputParamAcc_long,
