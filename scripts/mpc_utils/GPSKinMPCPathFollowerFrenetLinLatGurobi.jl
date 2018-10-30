@@ -112,7 +112,7 @@ module GPSKinMPCPathFollowerFrenetLinLatGurobi
 	epsi_ref_init = zeros(N)	# regulate epsi to zero
 	x_ref_init = zeros(N*nx)
 	for i = 1 : N
-		x_ref_init[(i-1)*nx+1] = ey_ref_init[i]		# set x_ref
+		x_ref_init[(i-1)*nx+1] = ey_ref_init[i]			# set x_ref
 		x_ref_init[(i-1)*nx+2] = epsi_ref_init[i]		# set v_ref
 	end	
 

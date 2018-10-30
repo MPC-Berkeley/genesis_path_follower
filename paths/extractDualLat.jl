@@ -1,4 +1,4 @@
-# code to test and extract dual multipliers from primal solution
+# code to test and extract dual multipliers from primal solution Lateral 
 # GXZ + MB
 
 using MAT
@@ -94,7 +94,7 @@ f_tilde_vec = repmat(f_tilde,N)
 
 ######################## ITERATE OVER saved parameters ################
 # build problem
-num_DataPoints = 100								# Training data count 
+num_DataPoints = 10000								# Training data count 
 solv_time_all = zeros(num_DataPoints)
 # df_res_all = zeros(num_DataPoints)
 # ddf_res_all = zeros(num_DataPoints)
@@ -109,12 +109,6 @@ outputParamDdf_lat  = zeros(num_DataPoints, N*(nu))
 
 status = []
 statusD = []
-
-# used to debug
-# obj_diff = zeros(num_DataPoints)
-# obj_diffRel = zeros(num_DataPoints)
-# df_res_all2 = zeros(num_DataPoints)
-# ddf_res_all2 = zeros(num_DataPoints)
 
 # counts number of errors when solving the optimization problems
 primStatusError = 0
@@ -207,6 +201,7 @@ while iii <= num_DataPoints
 	end
 
 	x_tilde_ref = x_tilde_ref_init
+	
 	mdl = Model(solver=GurobiSolver(Presolve=0, LogToConsole=0))
 	@variable(mdl, x_tilde_vec[1:N*(nx+nu)])  	# decision variable; contains everything
 	@variable(mdl, u_tilde_vec[1:N*nu] )
@@ -223,14 +218,6 @@ while iii <= num_DataPoints
 		primStatusError = primStatusError+1
 		@goto label1
 	end
-
-	#### extract dual variables ####
-	### seems to be wrong 
-	# dual_eq = getdual(constr_eq)
-	# dual_Fx = getdual(constr_Fx)
-	# dual_Fu = getdual(constr_Fu)
-	# dual_ineq = [dual_Fx; dual_Fu]
-
 
 	#### get dual variables ###
 	Q_dual = 2*(B_tilde_vec'*Q_tilde_vec*B_tilde_vec + R_tilde_vec);
@@ -347,22 +334,9 @@ while iii <= num_DataPoints
 	# ddf_res_all2[ii] = norm(ddf_pred_opt2 - ddf_stored)
 
 
-	# #### extract dual variables ####
-	# dual_eq = getdual(constr_eq)
-	# dual_ub = getdual(constr_ub)
-	# dual_lb = getdual(constr_lb)
-
-	# outputParamDualEQ_lat[ii,:] = dual_eq
-	# outputParamDualLB_lat[ii,:] = dual_ub
-	# outputParamDualUB_lat[ii,:] = dual_ub
-
-	println("Index before update: $(iii)")
-
 	iii = iii + 1 
 
 	@label label1
-
-	println("Index after update: $(iii)")
 end
 
 println("****************************")
@@ -383,7 +357,7 @@ println("min dual_gap:  $(minimum(dual_gap))")
 println("max Rel dual_gap:  $(maximum(dual_gapRel))")
 println("min Rel dual_gap:  $(minimum(dual_gapRel))")
 
-# matwrite("NN_test_trainingDataLat_PrimalDual.mat", Dict(
+# matwrite("NN_test_trainingDataLat10k_PrimalDual.mat", Dict(
 # 	"inputParam_lat" => inputParam_lat,
 # 	"outputParamDf_lat" => outputParamDf_lat,
 # 	"outputParamDdf_lat" => outputParamDdf_lat,
