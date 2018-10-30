@@ -6,6 +6,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import tensorflow as tf
 import scipy.io as sio
+from sklearn.utils import shuffle
+
 #import h5py
 
 #%% We have imported all dependencies
@@ -13,6 +15,8 @@ df = sio.loadmat('NN_test_trainingDataLat10k_PrimalDual2.mat',squeeze_me=True, s
 x_data = df['inputParam_lat']
 y_data = df['outputParamDdf_lat']
 y_dataDual = df['outputParamDual_lat']
+
+x_data, y_data, y_dataDual = shuffle(x_data, y_data, y_dataDual)
 
 #f = h5py.File('NN_test_trainingDataLat10k_PrimalDual2.mat')
 #x_data = np.array(f['inputParam_lat'])

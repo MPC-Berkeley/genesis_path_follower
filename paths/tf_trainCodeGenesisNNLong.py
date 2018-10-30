@@ -6,13 +6,18 @@ import numpy as np
 import matplotlib.pyplot as plt
 import tensorflow as tf
 import scipy.io as sio
+from sklearn.utils import shuffle
 #import h5py
 
 #%% We have imported all dependencies
 df = sio.loadmat('NN_test_trainingDataLong10k_PrimalDual2.mat',squeeze_me=True, struct_as_record=False) # read data set using pandas
+
 x_data = df['inputParam_long']
 y_data = df['outputParamDacc_long']
 y_dataDual = df['outputParamDual_long']
+x_data, y_data, y_dataDual = shuffle(x_data, y_data, y_dataDual)
+
+
 
 #f = h5py.File('NN_test_trainingDataLong10k_PrimalDual.mat')
 #x_data = np.array(f['inputParam_long'])
@@ -35,9 +40,9 @@ insize =  x_data.shape[1]
 outsize = y_data.shape[1]                               # Dimension of primal output data 
 outsizeD = y_dataDual.shape[1]                          # Dimension of dual output data 
 
-xs = tf.placeholder("float")
-ys = tf.placeholder("float")
-ysD = tf.placeholder("float")
+xs = tf.placeholder(tf.float32, [insize, None])
+ys = tf.placeholder(tf.float32, [outsize, None])
+ysD = tf.placeholder(tf.float32, [outsizeD, None])
 #%%
 
 ################## PRIMAL NN TRAINING ##############################
@@ -76,7 +81,7 @@ with tf.Session() as sess:
      sess.run(tf.global_variables_initializer())
      saver = tf.train.Saver()
 
-     inds = np.arange(x_train.shape[0])
+     # inds = np.arange(x_train.shape[0])
      train_count = len(x_train)
 
      N_EPOCHS = 200
@@ -100,7 +105,7 @@ with tf.Session() as sess:
      vj['b1'] = sess.run(b_1)
      vj['b2'] = sess.run(b_2)
      vj['b0'] = sess.run(b_O)
-     sio.savemat('trained_weightsPrimalLong.mat',vj)
+     # sio.savemat('trained_weightsPrimalLong.mat',vj)
 
 #%%         
 ################################ Plotting the Primal NN Train Quality
