@@ -126,9 +126,6 @@ C_dual = [F_tilde_vec*B_tilde_vec; Fu_tilde_vec]					# Adding state constraints
 Qdual_tmp = C_dual*(Q_dual\(C_dual'))
 Qdual_tmp = 0.5*(Qdual_tmp+Qdual_tmp') + 0e-5*eye(N*(nf+ng))
     
-
-
-	
 ######################## ITERATE OVER parameters ################
 # build problem
 num_DataPoints = 1000						# Number of test data points
@@ -144,11 +141,12 @@ RelDualOnline_gap = zeros(num_DataPoints)
 dual_Fx = []
 dual_Fu = []
 L_test_opt = []
-s_ub_ref = zeros(N)
+s_ub_ref = zeros(1,N)
+
 ii = 1
 
 for refC = 1:N
-	s_ub_ref[refC] = 3 + 2*(refC-1) 					# Increments of 2 along horizon 
+	s_ub_ref[1,refC] = 3 + 2*(refC-1) 							# Increments of 2 along horizon 
 end
 
 while ii <= num_DataPoints
@@ -162,34 +160,26 @@ while ii <= num_DataPoints
  	s_0 = -1 + 2*rand(1)										# Normalized to 0 now apparently  
  	v_0 = v_lb + (v_ub-v_lb)*rand(1) 
  	u_0 = aprev_lb + (aprev_ub-aprev_lb)*rand(1) 		
-	s_ref = s_ub_ref .* rand(1)									# Vary along horizon 
- 	v_ref = v_lb + (v_ub-v_lb)*rand(N)				
-
- 	# x_tilde_ref = updateMatrices(s_ref,v_ref)
+	s_ref = rand(1)*s_ub_ref 									# Vary along horizon 
+ 	v_ref = v_lb + (v_ub-v_lb)*rand(1,N)				
 
  	x_ref = zeros(N*nx,1)
+
 	for i = 1 : N
 		x_ref[(i-1)*nx+1] = s_ref[i]		# set x_ref, s_ref/v_ref is of dim N+1; index of s_ref changed
 		x_ref[(i-1)*nx+2] = v_ref[i]		# set v_ref
 	end
+
 	x_tilde_ref = zeros(N*(nx+nu))
+
 	for i = 1 : N
 		x_tilde_ref[(i-1)*(nx+nu)+1 : (i-1)*(nx+nu)+nx] = x_ref[(i-1)*nx+1 : (i-1)*nx+nx]
 		x_tilde_ref[(i-1)*(nx+nu)+nx+1 : (i-1)*(nx+nu)+nx+nu] = u_ref_init[i]	# u_ref_init always 0, but no no weights
 	end
 
-	x0 = [s_0 ; v_0]
-	u0 = u_0 				# it's really u_{-1}
-	x_tilde_0 = [x0 ; u0]	# initial state of system; PARAMETER
-
- 
  	# stack everything together
-	params = [s_0 ; v_0 ; u_0 ; s_ref ; v_ref] 	# stack to 19x1 matrix
+	params = [s_0  v_0  u_0  s_ref  v_ref]' 	# stack to 19x1 matrix
 
-	# println(size(Wi_PLong))
-	# println(size(params))
-	# println(size(bi_PLong))
-	# primNN_obj, xu_tilde_NN_res, flag_XUfeas, a_opt_NN, a_pred_NN, s_pred_NN, v_pred_NN, dA_pred_NN, solvTime_NN = eval_PrimalNN(params)
 	################## BEGIN extract Primal NN solution ##################
 	tic()
 	# calls the NN with two Hidden Layers
@@ -205,6 +195,7 @@ while ii <= num_DataPoints
 	# xu_tilde_NN_res = [ maximum(F_tilde_vec*x_tilde_NN_vec - f_tilde_vec) ; maximum(Fu_tilde_vec*x_tilde_NN_vec - fu_tilde_vec) ]  # should be <= 0
 	xu_tilde_NN_res = [ maximum(F_tilde_vec*x_tilde_NN_vec - f_tilde_vec) ; maximum(Fu_tilde_vec*u_tilde_NN_vec - fu_tilde_vec) ]  # should be <= 0
 	flag_XUfeas = 0
+
 	if maximum(xu_tilde_NN_res) < 1e-3  	# infeasible if bigger than zero/threshold
 		flag_XUfeas = 1
 	end
@@ -217,14 +208,13 @@ while ii <= num_DataPoints
 	a_pred_NN = x_tilde_NN_vec[3:(nx+nu):end]
 	s_pred_NN = x_tilde_NN_vec[1:(nx+nu):end]
 	v_pred_NN = x_tilde_NN_vec[2:(nx+nu):end]
+	
 	# dA_pred_NN = u_tilde_NN_vec
 	################## END extract Primal NN solution ##################
 
-
 	# dualNN_obj, lambda_tilde_NN_vec = eval_DualNN(params)
+	
 	################## BEGIN extract Dual NN solution ##################
-
-	x_tilde_0 = params[1:3]
 	
 	# some terms can be pre-computed
 	c_dual = (2*x_tilde_0'*A_tilde_vec'*Q_tilde_vec*B_tilde_vec + 2*g_tilde_vec'*E_tilde_vec'*Q_tilde_vec*B_tilde_vec +
@@ -237,18 +227,15 @@ while ii <= num_DataPoints
     
     d_dual = [f_tilde_vec - F_tilde_vec*A_tilde_vec*x_tilde_0 - F_tilde_vec*E_tilde_vec*g_tilde_vec;  fu_tilde_vec]
 
-		# calls the NN with two Hidden Layers
-	z1 = max.(Wi_DLong*params + bi_DLong, 0)
-	z2 = max.(W1_DLong*z1 + b1_DLong, 0)
-	lambda_tilde_NN_orig = Wout_DLong*z2 + bout_DLong
-	lambda_tilde_NN_vec = max.(Wout_DLong*z2 + bout_DLong, 0)  	#Delta-Acceleration
+	# calls the NN with two Hidden Layers
+	z1D = max.(Wi_DLong*params + bi_DLong, 0)
+	z2D = max.(W1_DLong*z1D + b1_DLong, 0)
+	lambda_tilde_NN_orig = Wout_DLong*z2D + bout_DLong
+	lambda_tilde_NN_vec = max.(Wout_DLong*z2D + bout_DLong, 0)  	#Delta-Acceleration
 
 	dualObj_NN = -1/2 * lambda_tilde_NN_vec'*Qdual_tmp*lambda_tilde_NN_vec - (C_dual*(Q_dual\c_dual)+d_dual)'*lambda_tilde_NN_vec - 1/2*c_dual'*(Q_dual\c_dual) + const_dual
 	################## BEGIN extract Dual NN solution ##################
 
-
-
-	
 	# solve primal problem
 	# use it to test consistency
 	mdl = Model(solver=GurobiSolver(Presolve=0, LogToConsole=0))
@@ -270,20 +257,16 @@ while ii <= num_DataPoints
 	optVal_long[ii] = obj_primal
 	solv_time_all[ii] = toq()
 	
-	# println(primObj_NN)
-	# println(obj_primal)
 	PrimandOnline_gap[ii] = primObj_NN[1] - obj_primal
-	RelPrimandOnline_gap[ii] = PrimandOnline_gap[ii]/obj_primal
+	RelPrimandOnline_gap[ii] = (primObj_NN[1] - obj_primal)/obj_primal
  # 	###########################################################	
 
 	DualOnline_gap[ii] = obj_primal - dualObj_NN[1]
-	RelDualOnline_gap[ii] = DualOnline_gap[ii]/obj_primal
+	RelDualOnline_gap[ii] = (obj_primal - dualObj_NN[1])/obj_primal
  # 	###########################################################	
 
 	dual_gap[ii] = primObj_NN[1] - dualObj_NN[1]
-	Reldual_gap[ii] = dual_gap[ii]/obj_primal
-
-	##
+	Reldual_gap[ii] = (primObj_NN[1] - dualObj_NN[1])/obj_primal
 
  	ii = ii + 1 
 
@@ -294,109 +277,116 @@ end
 println("===========================================")
 # println("max dual_gap:  $(maximum(dual_gap))")
 # println("min dual_gap:  $(minimum(dual_gap))")
+# println("max Rel dual_gap:  $(maximum(Reldual_gap))")
+# println("min Rel dual_gap:  $(minimum(Reldual_gap))")
+# println("avg Rel dual_gap:  $(mean(Reldual_gap))")
 
-println("max Rel dual_gap:  $(maximum(Reldual_gap))")
-println("min Rel dual_gap:  $(minimum(Reldual_gap))")
-println("avg Rel dual_gap:  $(mean(Reldual_gap))")
-
-# println("max onlineNN_gap:  $(maximum(PrimandOnline_gap))")
-# println("min onlineNN_gap:  $(minimum(PrimandOnline_gap))")
+println("max onlineNN_gap:  $(maximum(PrimandOnline_gap))")
+println("min onlineNN_gap:  $(minimum(PrimandOnline_gap))")
+println("avr onlineNN_gap:  $(mean(PrimandOnline_gap))")
 
 println("max Rel onlineNN_gap:  $(maximum(RelPrimandOnline_gap))")
 println("min Rel onlineNN_gap:  $(minimum(RelPrimandOnline_gap))")
 println("avg Rel onlineNN_gap:  $(mean(RelPrimandOnline_gap))")
 
-# println("max onlineDualNN_gap:  $(maximum(DualOnline_gap))")
-# println("min onlineDualNN_gap:  $(minimum(DualOnline_gap))")
+println("max onlineDualNN_gap:  $(maximum(DualOnline_gap))")
+println("min onlineDualNN_gap:  $(minimum(DualOnline_gap))")
+println("avg onlineDualNN_gap:  $(mean(DualOnline_gap))")
+
 
 println("max Rel onlineDualNN_gap:  $(maximum(RelDualOnline_gap))")
 println("min Rel onlineDualNN_gap:  $(minimum(RelDualOnline_gap))")
 println("avg Rel onlineDualNN_gap:  $(mean(RelDualOnline_gap))")
 
 
+
+
+
+
+
 ######################## Functions to Evaluate the NNs now ########################################
 
-function eval_DualNN(params::Array{Float64,1}, x_tilde_ref::Array{Float64,1})
+# function eval_DualNN(params::Array{Float64,1}, x_tilde_ref::Array{Float64,1})
 
-	x_tilde_0 = params[1:3]
+# 	x_tilde_0 = params[1:3]
 	
-	# some terms can be pre-computed
-	c_dual = (2*x_tilde_0'*A_tilde_vec'*Q_tilde_vec*B_tilde_vec + 2*g_tilde_vec'*E_tilde_vec'*Q_tilde_vec*B_tilde_vec +
-	      - 2*x_tilde_ref'*Q_tilde_vec*B_tilde_vec)'
+# 	# some terms can be pre-computed
+# 	c_dual = (2*x_tilde_0'*A_tilde_vec'*Q_tilde_vec*B_tilde_vec + 2*g_tilde_vec'*E_tilde_vec'*Q_tilde_vec*B_tilde_vec +
+# 	      - 2*x_tilde_ref'*Q_tilde_vec*B_tilde_vec)'
 
-	const_dual = x_tilde_0'*A_tilde_vec'*Q_tilde_vec*A_tilde_vec*x_tilde_0 + 2*x_tilde_0'*A_tilde_vec'*Q_tilde_vec*E_tilde_vec*g_tilde_vec +
-              + g_tilde_vec'*E_tilde_vec'*Q_tilde_vec*E_tilde_vec*g_tilde_vec +
-              - 2*x_tilde_0'*A_tilde_vec'*Q_tilde_vec*x_tilde_ref - 2*g_tilde_vec'*E_tilde_vec'*Q_tilde_vec*x_tilde_ref +
-              + x_tilde_ref'*Q_tilde_vec*x_tilde_ref
+# 	const_dual = x_tilde_0'*A_tilde_vec'*Q_tilde_vec*A_tilde_vec*x_tilde_0 + 2*x_tilde_0'*A_tilde_vec'*Q_tilde_vec*E_tilde_vec*g_tilde_vec +
+#               + g_tilde_vec'*E_tilde_vec'*Q_tilde_vec*E_tilde_vec*g_tilde_vec +
+#               - 2*x_tilde_0'*A_tilde_vec'*Q_tilde_vec*x_tilde_ref - 2*g_tilde_vec'*E_tilde_vec'*Q_tilde_vec*x_tilde_ref +
+#               + x_tilde_ref'*Q_tilde_vec*x_tilde_ref
     
-    d_dual = [f_tilde_vec - F_tilde_vec*A_tilde_vec*x_tilde_0 - F_tilde_vec*E_tilde_vec*g_tilde_vec;  fu_tilde_vec]
+#     d_dual = [f_tilde_vec - F_tilde_vec*A_tilde_vec*x_tilde_0 - F_tilde_vec*E_tilde_vec*g_tilde_vec;  fu_tilde_vec]
 
-		# calls the NN with two Hidden Layers
-	z1 = max.(Wi_DLong*params + bi_DLong, 0)
-	z2 = max.(W1_DLong*z1 + b1_DLong, 0)
-	lambda_tilde_NN_orig = Wout_DLong*z2 + bout_DLong
-	lambda_tilde_NN_vec = max.(Wout_DLong*z2 + bout_DLong, 0)  	#Delta-Acceleration
+# 		# calls the NN with two Hidden Layers
+# 	z1 = max.(Wi_DLong*params + bi_DLong, 0)
+# 	z2 = max.(W1_DLong*z1 + b1_DLong, 0)
+# 	lambda_tilde_NN_orig = Wout_DLong*z2 + bout_DLong
+# 	lambda_tilde_NN_vec = max.(Wout_DLong*z2 + bout_DLong, 0)  	#Delta-Acceleration
 
-	dualObj_NN = -1/2 * lambda_tilde_NN_vec'*Qdual_tmp*lambda_tilde_NN_vec - (C_dual*(Q_dual\c_dual)+d_dual)'*lambda_tilde_NN_vec - 1/2*c_dual'*(Q_dual\c_dual) + const_dual
-
-
-	return dualObj_NN, lambda_tilde_NN_vec
-end
+# 	dualObj_NN = -1/2 * lambda_tilde_NN_vec'*Qdual_tmp*lambda_tilde_NN_vec - (C_dual*(Q_dual\c_dual)+d_dual)'*lambda_tilde_NN_vec - 1/2*c_dual'*(Q_dual\c_dual) + const_dual
 
 
-function eval_PrimalNN(params::Array{Float64,1}, x_tilde_ref::Array{Float64,1})
+# 	return dualObj_NN, lambda_tilde_NN_vec
+# end
 
-	tic()
 
-	# calls the NN with two Hidden Layers
-	z1 = max.(Wi_PLong*params + bi_PLong, 0)
-	z2 = max.(W1_PLong*z1 + b1_PLong, 0)
-	u_tilde_NN_vec = Wout_PLong*z2 + bout_PLong  	#Delta-Acceleration
+# function eval_PrimalNN(params::Array{Float64,1}, x_tilde_ref::Array{Float64,1})
 
-	# compute NN predicted state
-	x_tilde_0 = params[1:3] 	
-	x_tilde_NN_vec = A_tilde_vec*x_tilde_0 + B_tilde_vec*u_tilde_NN_vec + E_tilde_vec*g_tilde_vec
+# 	tic()
 
-	## verify feasibility
-	# xu_tilde_NN_res = [ maximum(F_tilde_vec*x_tilde_NN_vec - f_tilde_vec) ; maximum(Fu_tilde_vec*x_tilde_NN_vec - fu_tilde_vec) ]  # should be <= 0
-	xu_tilde_NN_res = [ maximum(F_tilde_vec*x_tilde_NN_vec - f_tilde_vec) ; maximum(Fu_tilde_vec*u_tilde_NN_vec - fu_tilde_vec) ]  # should be <= 0
-	flag_XUfeas = 0
-	if maximum(xu_tilde_NN_res) < 1e-3  	# infeasible if bigger than zero/threshold
-		flag_XUfeas = 1
-	end
+# 	# calls the NN with two Hidden Layers
+# 	z1 = max.(Wi_PLong*params + bi_PLong, 0)
+# 	z2 = max.(W1_PLong*z1 + b1_PLong, 0)
+# 	u_tilde_NN_vec = Wout_PLong*z2 + bout_PLong  	#Delta-Acceleration
 
-	## check optimality ##
-	primObj_NN = (x_tilde_NN_vec-x_tilde_ref)'*Q_tilde_vec*(x_tilde_NN_vec-x_tilde_ref) + u_tilde_NN_vec'*R_tilde_vec*u_tilde_NN_vec
-	solvTime_NN = toq()
+# 	# compute NN predicted state
+# 	x_tilde_0 = params[1:3] 	
+# 	x_tilde_NN_vec = A_tilde_vec*x_tilde_0 + B_tilde_vec*u_tilde_NN_vec + E_tilde_vec*g_tilde_vec
 
-	a_opt_NN = x_tilde_NN_vec[3]
-	a_pred_NN = x_tilde_NN_vec[3:(nx+nu):end]
-	s_pred_NN = x_tilde_NN_vec[1:(nx+nu):end]
-	v_pred_NN = x_tilde_NN_vec[2:(nx+nu):end]
-	# dA_pred_NN = u_tilde_NN_vec
+# 	## verify feasibility
+# 	# xu_tilde_NN_res = [ maximum(F_tilde_vec*x_tilde_NN_vec - f_tilde_vec) ; maximum(Fu_tilde_vec*x_tilde_NN_vec - fu_tilde_vec) ]  # should be <= 0
+# 	xu_tilde_NN_res = [ maximum(F_tilde_vec*x_tilde_NN_vec - f_tilde_vec) ; maximum(Fu_tilde_vec*u_tilde_NN_vec - fu_tilde_vec) ]  # should be <= 0
+# 	flag_XUfeas = 0
+# 	if maximum(xu_tilde_NN_res) < 1e-3  	# infeasible if bigger than zero/threshold
+# 		flag_XUfeas = 1
+# 	end
 
-	return primObj_NN, xu_tilde_NN_res, flag_XUfeas, a_opt_NN, a_pred_NN, s_pred_NN, v_pred_NN, u_tilde_NN_vec, solvTime_NN
+# 	## check optimality ##
+# 	primObj_NN = (x_tilde_NN_vec-x_tilde_ref)'*Q_tilde_vec*(x_tilde_NN_vec-x_tilde_ref) + u_tilde_NN_vec'*R_tilde_vec*u_tilde_NN_vec
+# 	solvTime_NN = toq()
+
+# 	a_opt_NN = x_tilde_NN_vec[3]
+# 	a_pred_NN = x_tilde_NN_vec[3:(nx+nu):end]
+# 	s_pred_NN = x_tilde_NN_vec[1:(nx+nu):end]
+# 	v_pred_NN = x_tilde_NN_vec[2:(nx+nu):end]
+# 	# dA_pred_NN = u_tilde_NN_vec
+
+# 	return primObj_NN, xu_tilde_NN_res, flag_XUfeas, a_opt_NN, a_pred_NN, s_pred_NN, v_pred_NN, u_tilde_NN_vec, solvTime_NN
 	
-end
+# end
 
 
 
-# only reference functions need to be updated
-function updateMatrices(s_ref::Array{Float64,1}, v_ref::Array{Float64,1})
+# # only reference functions need to be updated
+# function updateMatrices(s_ref::Array{Float64,1}, v_ref::Array{Float64,1})
 
-	global x_tilde_ref
+# 	global x_tilde_ref
 
-	x_ref = zeros(N*nx,1)
-	for i = 1 : N
-		x_ref[(i-1)*nx+1] = s_ref[i]		# set x_ref, s_ref/v_ref is of dim N+1
-		x_ref[(i-1)*nx+2] = v_ref[i]		# set v_ref
-	end
-	# augment state with input for deltaU-formulation
-	x_tilde_ref = zeros(N*(nx+nu))
-	for i = 1 : N
-		x_tilde_ref[(i-1)*(nx+nu)+1 : (i-1)*(nx+nu)+nx] = x_ref[(i-1)*nx+1 : (i-1)*nx+nx]
-		x_tilde_ref[(i-1)*(nx+nu)+nx+1 : (i-1)*(nx+nu)+nx+nu] = u_ref_init[i]	# u_ref_init always 0, but no no weights
-	end
+# 	x_ref = zeros(N*nx,1)
+# 	for i = 1 : N
+# 		x_ref[(i-1)*nx+1] = s_ref[i]		# set x_ref, s_ref/v_ref is of dim N+1
+# 		x_ref[(i-1)*nx+2] = v_ref[i]		# set v_ref
+# 	end
+# 	# augment state with input for deltaU-formulation
+# 	x_tilde_ref = zeros(N*(nx+nu))
+# 	for i = 1 : N
+# 		x_tilde_ref[(i-1)*(nx+nu)+1 : (i-1)*(nx+nu)+nx] = x_ref[(i-1)*nx+1 : (i-1)*nx+nx]
+# 		x_tilde_ref[(i-1)*(nx+nu)+nx+1 : (i-1)*(nx+nu)+nx+nu] = u_ref_init[i]	# u_ref_init always 0, but no no weights
+# 	end
 
-	return x_tilde_ref
-end
+# 	return x_tilde_ref
+# end

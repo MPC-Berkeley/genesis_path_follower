@@ -121,7 +121,7 @@ f_tilde_vec = repmat(f_tilde,N)
 
 ######################## ITERATE OVER parameters ################
 # build problem
-num_DataPoints = 10000
+num_DataPoints = 1000
 solv_time_all = zeros(num_DataPoints)
 a_res_all = zeros(num_DataPoints)
 dA_res_all = zeros(num_DataPoints)
