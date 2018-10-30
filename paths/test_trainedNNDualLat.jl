@@ -221,11 +221,6 @@ while iii <= num_DataPoints
 	primObj_NN = (x_tilde_NN_vec-x_tilde_ref)'*Q_tilde_vec*(x_tilde_NN_vec-x_tilde_ref) + u_tilde_NN_vec'*R_tilde_vec*u_tilde_NN_vec
 	solvTime_NN = toq()
 
-	u_opt_NN =  x_tilde_NN_vec[3]
-	u_pred_NN = x_tilde_NN_vec[3:(nx+nu):end]
-	# s_pred_NN = x_tilde_NN_vec[1:(nx+nu):end]
-	# v_pred_NN = x_tilde_NN_vec[2:(nx+nu):end]
-	
 	################## END extract Primal NN solution ##################
 
 	# dualNN_obj, lambda_tilde_NN_vec = eval_DualNN(params)

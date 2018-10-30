@@ -145,6 +145,7 @@ plt.show()
 
 # c_tD = []
 # c_testD = []
+
 # #%%
 # with tf.Session() as sess:
 #      # Initiate session and initialize all vaiables
@@ -154,7 +155,7 @@ plt.show()
 #      inds = np.arange(x_train.shape[0])
 #      train_count = len(x_train)
 
-#      N_EPOCHS = 2000
+#      N_EPOCHS = 100
 #      BATCH_SIZE = 32
 
 #      for i in range(0, N_EPOCHS):
