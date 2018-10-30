@@ -26,19 +26,19 @@ L_b 	= KinMPCParams.L_b				# from CoG to rear axle (according to Jongsang)
 dualNN_Data 	= matread("trained_weightsDualLong.mat")
 primalNN_Data 	= matread("trained_weightsPrimalLong.mat")
 # read out NN primal/Dual weights
-Wi_PLong = primalNN_Data["W1"]
-bi_PLong = primalNN_Data["b1"]
-W1_PLong = primalNN_Data["W2"]
-b1_PLong = primalNN_Data["b2"]
-Wout_PLong = primalNN_Data["W0"]
-bout_PLong = primalNN_Data["b0"]
+Wi_PLong = primalNN_Data["W1"]'
+bi_PLong = primalNN_Data["b1"]'
+W1_PLong = primalNN_Data["W2"]'
+b1_PLong = primalNN_Data["b2"]'
+Wout_PLong = primalNN_Data["W0"]'
+bout_PLong = primalNN_Data["b0"]'
 
-Wi_DLong = dualNN_Data["W1D"]
-bi_DLong = dualNN_Data["b1D"]
-W1_DLong = dualNN_Data["W2D"]
-b1_DLong = dualNN_Data["b2D"]
-Wout_DLong = dualNN_Data["W0D"]
-bout_DLong = dualNN_Data["b0D"]
+Wi_DLong = dualNN_Data["W1D"]'
+bi_DLong = dualNN_Data["b1D"]'
+W1_DLong = dualNN_Data["W2D"]'
+b1_DLong = dualNN_Data["b2D"]'
+Wout_DLong = dualNN_Data["W0D"]'
+bout_DLong = dualNN_Data["b0D"]'
 ############################################################################
 
 ## Load Ranges of params 
@@ -186,7 +186,9 @@ while ii <= num_DataPoints
  	# stack everything together
 	params = [s_0 ; v_0 ; u_0 ; s_ref ; v_ref] 	# stack to 19x1 matrix
 
-
+	# println(size(Wi_PLong))
+	# println(size(params))
+	# println(size(bi_PLong))
 	# primNN_obj, xu_tilde_NN_res, flag_XUfeas, a_opt_NN, a_pred_NN, s_pred_NN, v_pred_NN, dA_pred_NN, solvTime_NN = eval_PrimalNN(params)
 	################## BEGIN extract Primal NN solution ##################
 	tic()

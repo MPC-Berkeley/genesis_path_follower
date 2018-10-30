@@ -47,13 +47,13 @@ neuron_sizeML = neuron_size                             # Can vary size of the i
 W_1 = tf.Variable(tf.random_uniform([insize,neuron_size]))
 b_1 = tf.Variable(tf.random_uniform([neuron_size]))
 layer_1 = tf.add(tf.matmul(xs,W_1), b_1)
-layer_1 = tf.nn.sigmoid(layer_1)
+layer_1 = tf.nn.relu(layer_1)
 
 # layer 1 multiplying and adding bias then activation function
 W_2 = tf.Variable(tf.random_uniform([neuron_size,neuron_sizeML]))
 b_2 = tf.Variable(tf.random_uniform([neuron_sizeML]))
 layer_2 = tf.add(tf.matmul(layer_1,W_2), b_2)
-layer_2 = tf.nn.sigmoid(layer_2)
+layer_2 = tf.nn.relu(layer_2)
 
 
 # layer 2 multiplying and adding bias then activation function
@@ -108,7 +108,7 @@ plt.ylabel('Error in Training')
 plt.xlabel('Epoch')
 plt.title('Fitting Error Training')
 plt.show()
-plt.hold(True)                                          # hold is on
+# plt.hold(True)                                          # hold is on
 plt.plot(range(len(c_test)),c_test, 'b')
 plt.ylabel('Error in Testing Points')
 plt.xlabel('Epoch')
@@ -116,79 +116,79 @@ plt.title('Fitting Testing Error')
 plt.show()
 #%%
 ########################## PRIMAL TRAIN ENDS. DUAL TRAIN START 
-neuron_sizeD = 30
-neuron_sizeMLD = neuron_sizeD                             # Can vary size of the intermediate layer as well
+# neuron_sizeD = 30
+# neuron_sizeMLD = neuron_sizeD                             # Can vary size of the intermediate layer as well
 
-W_1D = tf.Variable(tf.random_uniform([insize,neuron_sizeD]))
-b_1D = tf.Variable(tf.random_uniform([neuron_sizeD]))
-layer_1D = tf.add(tf.matmul(xs,W_1D), b_1D)
-layer_1D = tf.nn.relu(layer_1D)
+# W_1D = tf.Variable(tf.random_uniform([insize,neuron_sizeD]))
+# b_1D = tf.Variable(tf.random_uniform([neuron_sizeD]))
+# layer_1D = tf.add(tf.matmul(xs,W_1D), b_1D)
+# layer_1D = tf.nn.relu(layer_1D)
 
-# layer 1 multiplying and adding bias then activation function
-W_2D = tf.Variable(tf.random_uniform([neuron_sizeD,neuron_sizeMLD]))
-b_2D = tf.Variable(tf.random_uniform([neuron_sizeMLD]))
-layer_2D = tf.add(tf.matmul(layer_1D,W_2D), b_2D)
-layer_2D = tf.nn.relu(layer_2D)
+# # layer 1 multiplying and adding bias then activation function
+# W_2D = tf.Variable(tf.random_uniform([neuron_sizeD,neuron_sizeMLD]))
+# b_2D = tf.Variable(tf.random_uniform([neuron_sizeMLD]))
+# layer_2D = tf.add(tf.matmul(layer_1D,W_2D), b_2D)
+# layer_2D = tf.nn.relu(layer_2D)
 
-# layer 2 multiplying and adding bias then activation function
-W_OD = tf.Variable(tf.random_uniform([neuron_sizeMLD,outsizeD]))
-b_OD = tf.Variable(tf.random_uniform([outsizeD]))
-outputD = tf.add(tf.matmul(layer_2D,W_OD), b_OD)
+# # layer 2 multiplying and adding bias then activation function
+# W_OD = tf.Variable(tf.random_uniform([neuron_sizeMLD,outsizeD]))
+# b_OD = tf.Variable(tf.random_uniform([outsizeD]))
+# outputD = tf.add(tf.matmul(layer_2D,W_OD), b_OD)
 
-#  O/p layer multiplying and adding bias then activation function
-#  notice output layer has one node only since performing #regression
+# #  O/p layer multiplying and adding bias then activation function
+# #  notice output layer has one node only since performing #regression
 
-costD = tf.reduce_mean(tf.square(outputD-ysD))           # our mean squared error cost function
-trainD = tf.train.AdamOptimizer(0.0001).minimize(costD)  # GD and proximal GD working bad! Adam and RMS well.
+# costD = tf.reduce_mean(tf.square(outputD-ysD))           # our mean squared error cost function
+# trainD = tf.train.AdamOptimizer(0.0001).minimize(costD)  # GD and proximal GD working bad! Adam and RMS well.
 
-c_tD = []
-c_testD = []
-#%%
-with tf.Session() as sess:
-     # Initiate session and initialize all vaiables
-     sess.run(tf.global_variables_initializer())
-     saver = tf.train.Saver()
+# c_tD = []
+# c_testD = []
+# #%%
+# with tf.Session() as sess:
+#      # Initiate session and initialize all vaiables
+#      sess.run(tf.global_variables_initializer())
+#      saver = tf.train.Saver()
 
-     inds = np.arange(x_train.shape[0])
-     train_count = len(x_train)
+#      inds = np.arange(x_train.shape[0])
+#      train_count = len(x_train)
 
-     N_EPOCHS = 2000
-     BATCH_SIZE = 64
+#      N_EPOCHS = 2000
+#      BATCH_SIZE = 64
 
-     for i in range(0, N_EPOCHS):
-         for start, end in zip(range(0, train_count, BATCH_SIZE),
-                               range(BATCH_SIZE, train_count + 1,BATCH_SIZE)):
+#      for i in range(0, N_EPOCHS):
+#          for start, end in zip(range(0, train_count, BATCH_SIZE),
+#                                range(BATCH_SIZE, train_count + 1,BATCH_SIZE)):
 
-             sess.run([costD,trainD], feed_dict={xs: x_train[start:end],
-                                            ysD: y_trainDual[start:end]})
+#              sess.run([costD,trainD], feed_dict={xs: x_train[start:end],
+#                                             ysD: y_trainDual[start:end]})
     
-         c_tD.append(sess.run(costD, feed_dict={xs:x_train,ysD:y_trainDual}))
-         c_testD.append(sess.run(costD, feed_dict={xs:x_test,ysD:y_testDual}))
-         print('Epoch :',i,'Cost Train Dual :',c_tD[i], 'Cost Test Dual:',c_testD[i])
+#          c_tD.append(sess.run(costD, feed_dict={xs:x_train,ysD:y_trainDual}))
+#          c_testD.append(sess.run(costD, feed_dict={xs:x_test,ysD:y_testDual}))
+#          print('Epoch :',i,'Cost Train Dual :',c_tD[i], 'Cost Test Dual:',c_testD[i])
 
-#%%
-#  Getting the variables from the Neural Nets
-     vjD={}
-     vjD['W1D'] = sess.run(W_1D)
-     vjD['W2D'] = sess.run(W_2D)
-     vjD['W0D'] = sess.run(W_OD)
-     vjD['b1D'] = sess.run(b_1D)
-     vjD['b2D'] = sess.run(b_2D)
-     vjD['b0D'] = sess.run(b_OD)
-     sio.savemat('trained_weightsDualLong.mat',vjD)
+# #%%
+# #  Getting the variables from the Neural Nets
+#      vjD={}
+#      vjD['W1D'] = sess.run(W_1D)
+#      vjD['W2D'] = sess.run(W_2D)
+#      vjD['W0D'] = sess.run(W_OD)
+#      vjD['b1D'] = sess.run(b_1D)
+#      vjD['b2D'] = sess.run(b_2D)
+#      vjD['b0D'] = sess.run(b_OD)
+#      sio.savemat('trained_weightsDualLong.mat',vjD)
 
-#%%
-################################## Plotting the Dual NN Train Quality
-plt.plot(range(len(c_tD)),c_tD, 'r')
-plt.ylabel('Error in Training')
-plt.xlabel('Epoch')
-plt.title('Fitting Error Training')
-plt.show()
-plt.hold(True)                                          # hold is on
-plt.plot(range(len(c_testD)),c_testD, 'b')
-plt.ylabel('Error in Testing Points')
-plt.xlabel('Epoch')
-plt.title('Fitting Testing Error')
-plt.show()
+# #%%
+# ################################## Plotting the Dual NN Train Quality
+# plt.plot(range(len(c_tD)),c_tD, 'r')
+# plt.ylabel('Error in Training')
+# plt.xlabel('Epoch')
+# plt.title('Fitting Error Training')
+# plt.show()
+# # plt.hold(True)                                          # hold is on
+# plt.plot(range(len(c_testD)),c_testD, 'b')
+# plt.ylabel('Error in Testing Points')
+# plt.xlabel('Epoch')
+# plt.title('Fitting Testing Error')
+# plt.show()
 
 
