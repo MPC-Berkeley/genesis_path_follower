@@ -102,6 +102,18 @@ with tf.Session() as sess:
      vj['b0'] = sess.run(b_O)
      sio.savemat('trained_weightsPrimalLong.mat',vj)
 
+
+### debugging 
+x_train = x_data[:train_length, :]                      # Training data
+y_train = y_data[:train_length,:]                       # Training data
+
+
+
+
+
+
+     
+
 #%%         
 ################################ Plotting the Primal NN Train Quality
 plt.plot(range(len(c_t)),c_t, 'r')
@@ -116,6 +128,19 @@ plt.xlabel('Epoch')
 plt.title('Fitting Testing Error')
 plt.show()
 #%%
+
+
+### debugging 
+x_train = x_data[:train_length, :]                      # Training data
+y_train = y_data[:train_length,:]                       # Training data
+
+
+
+
+
+
+
+
 
 ########################## PRIMAL TRAIN ENDS. DUAL TRAIN START 
 # neuron_sizeD = 90

@@ -25,6 +25,7 @@ L_b 	= KinMPCParams.L_b				# from CoG to rear axle (according to Jongsang)
 ############## load all NN Matrices ##############
 dualNN_Data 	= matread("trained_weightsDualLong.mat")
 primalNN_Data 	= matread("trained_weightsPrimalLong.mat")
+
 # read out NN primal/Dual weights
 Wi_PLong = primalNN_Data["W1"]
 bi_PLong = primalNN_Data["b1"]
@@ -39,6 +40,14 @@ W1_DLong = dualNN_Data["W2D"]
 b1_DLong = dualNN_Data["b2D"]
 Wout_DLong = dualNN_Data["W0D"]
 bout_DLong = dualNN_Data["b0D"]
+
+
+
+####################### debugging code ###################################
+test_Data = matread("NN_test_trainingDataLong10k_PrimalDual2.mat")
+test_inputParams = test_Data["inputParam_long"]
+test_inputParams = test_inputParams[1:7999,:]
+
 ############################################################################
 
 ## Load Ranges of params 
@@ -49,7 +58,7 @@ bout_DLong = dualNN_Data["b0D"]
  aprev_ub =  KinMPCParams.a_max
 
 # input reference
-u_ref_init = kmpcLinLong.u_ref_init									# if not used, set cost to zeros
+u_ref_init = kmpcLinLong.u_ref_init		# if not used, set cost to zeros
 
 # ================== Transformation 1 =======================
 # augment state and redefine system dynamics (A,B,g) and constraints
@@ -129,6 +138,9 @@ Qdual_tmp = 0.5*(Qdual_tmp+Qdual_tmp') + 0e-5*eye(N*(nf+ng))
 ######################## ITERATE OVER parameters ################
 # build problem
 num_DataPoints = 1000						# Number of test data points
+num_DataPoints = size(test_inputParams,1)
+
+
 solv_time_all = zeros(num_DataPoints)
 dual_gap = zeros(num_DataPoints)
 Reldual_gap = zeros(num_DataPoints)
@@ -138,10 +150,23 @@ optVal_long = zeros(num_DataPoints)
 DualOnline_gap = zeros(num_DataPoints)
 RelDualOnline_gap = zeros(num_DataPoints)
 
+
+#### vectors for debugging ####
+dualDiff = zeros(num_DataPoints)
+primalDiff = zeros(num_DataPoints)
+primalDiff0 = zeros(num_DataPoints)
+extact_dualGap = zeros(num_DataPoints)
+extact_ReldualGap = zeros(num_DataPoints)
+
 dual_Fx = []
 dual_Fu = []
 L_test_opt = []
 s_ub_ref = zeros(1,N)
+numbSkipped = 0
+
+# dualObj_NN = -1/2 * lambda_tilde_NN_vec'*Qdual_tmp*lambda_tilde_NN_vec - (C_dual*(Q_dual\c_dual)+d_dual)'*lambda_tilde_NN_vec - 1/2*c_dual'*(Q_dual\c_dual) + const_dual
+
+
 
 ii = 1
 
@@ -152,16 +177,24 @@ end
 while ii <= num_DataPoints
 	
 	if mod(ii,100) == 0
-		println("iteration: $(ii)")
+		println("****************** iteration: $(ii) ***********************")
 	end
 
 	# Save only feasible points. 
 	# extract appropriate parameters	
- 	s_0 = -1 + 2*rand(1)										# Normalized to 0 now apparently  
- 	v_0 = v_lb + (v_ub-v_lb)*rand(1) 
- 	u_0 = aprev_lb + (aprev_ub-aprev_lb)*rand(1) 		
-	s_ref = rand(1)*s_ub_ref 									# Vary along horizon 
- 	v_ref = v_lb + (v_ub-v_lb)*rand(1,N)				
+ # 	s_0 = -1 + 2*rand(1)										# Normalized to 0 now apparently  
+ # 	v_0 = v_lb + (v_ub-v_lb)*rand(1) 
+ # 	u_0 = aprev_lb + (aprev_ub-aprev_lb)*rand(1) 		
+	# s_ref = rand(1)*s_ub_ref 									# Vary along horizon 
+ # 	v_ref = v_lb + (v_ub-v_lb)*rand(1,N)				
+ # 	# stack everything together
+	# params = [s_0  v_0  u_0  s_ref  v_ref]' 	# stack to 19x1 matrix
+
+############# for debugging ###############
+	params = test_inputParams[ii,:]
+	s_ref = params[4:4+N-1]
+	v_ref = params[12:end]
+
 
  	x_ref = zeros(N*nx,1)
 
@@ -177,8 +210,6 @@ while ii <= num_DataPoints
 		x_tilde_ref[(i-1)*(nx+nu)+nx+1 : (i-1)*(nx+nu)+nx+nu] = u_ref_init[i]	# u_ref_init always 0, but no no weights
 	end
 
- 	# stack everything together
-	params = [s_0  v_0  u_0  s_ref  v_ref]' 	# stack to 19x1 matrix
 
 	################## BEGIN extract Primal NN solution ##################
 	tic()
@@ -197,6 +228,7 @@ while ii <= num_DataPoints
 	flag_XUfeas = 0
 
 	if maximum(xu_tilde_NN_res) < 1e-3  	# infeasible if bigger than zero/threshold
+		numbSkipped = numbSkipped + 1
 		flag_XUfeas = 1
 	end
 
@@ -232,8 +264,10 @@ while ii <= num_DataPoints
 	z2D = max.(W1_DLong*z1D + b1_DLong, 0)
 	lambda_tilde_NN_orig = Wout_DLong*z2D + bout_DLong
 	lambda_tilde_NN_vec = max.(Wout_DLong*z2D + bout_DLong, 0)  	#Delta-Acceleration
-
+	lambda_tilde_NN_vec = lambda_tilde_NN_orig
+	
 	dualObj_NN = -1/2 * lambda_tilde_NN_vec'*Qdual_tmp*lambda_tilde_NN_vec - (C_dual*(Q_dual\c_dual)+d_dual)'*lambda_tilde_NN_vec - 1/2*c_dual'*(Q_dual\c_dual) + const_dual
+	# dualObj_NN = -1/2 * lambda_tilde_NN_vec'*Qdual_tmp*lambda_tilde_NN_vec - (C_dual*(Q_dual\c_dual)+d_dual)'*lambda_tilde_NN_vec - 1/2*c_dual'*(Q_dual\c_dual) + const_dual
 	################## BEGIN extract Dual NN solution ##################
 
 	# solve primal problem
@@ -249,10 +283,47 @@ while ii <= num_DataPoints
 	tic()
 	status = solve(mdl)
 	obj_primal = getobjectivevalue(mdl)
+	U_test_opt = getvalue(u_tilde_vec)
+	primalDiff[ii] = norm(U_test_opt - u_tilde_NN_vec)
+	primalDiff0[ii] = norm(U_test_opt[1] - u_tilde_NN_vec[1])
+
 
  	if !(status == :Optimal)
+ 		ii = ii + 1
+ 		numbSkipped = numbSkipped+1
  		@goto label1 
  	end
+
+
+
+ 	### for debugging purposes; 
+ 	# reg 1e-8: 
+ 	# reg 1e-7: 800 out of 8000 skipped, max dual gap 2.6; max rel gap 0.0001
+ 	# reg 1e-6: 800 out of 8000 skipped, max dual gap: 28; max rel gap: 0.001
+ 	# reg 1e-5: 
+	# Solve the dual problem online to match cost 
+    mdlD = Model(solver=GurobiSolver(Presolve=0, LogToConsole=0))
+	@variable(mdlD, L_test[1:N*(nf+ng)])  	# decision variable; contains everything
+	@objective(mdlD, Max, -1/2 * L_test'*Qdual_tmp*L_test - (C_dual*(Q_dual\c_dual)+d_dual)'*L_test - 1/2*c_dual'*(Q_dual\c_dual) + const_dual - 1e-8*L_test'eye(N*(nf+ng))*L_test )
+	@constraint(mdlD, -L_test .<= 0)
+	statusD = solve(mdlD)
+	obj_dualOnline = getobjectivevalue(mdlD)
+	L_test_opt = getvalue(L_test)
+
+ 	if !(statusD == :Optimal)
+ 		ii = ii + 1
+ 		@goto label1 
+ 	end
+
+	dualDiff[ii] = norm(L_test_opt - lambda_tilde_NN_vec)
+	extact_dualGap[ii] = obj_primal - obj_dualOnline
+	extact_ReldualGap[ii] = (obj_primal - obj_dualOnline)/obj_primal
+
+
+
+
+ ############################################################	
+
 
 	optVal_long[ii] = obj_primal
 	solv_time_all[ii] = toq()
@@ -285,19 +356,57 @@ println("max onlineNN_gap:  $(maximum(PrimandOnline_gap))")
 println("min onlineNN_gap:  $(minimum(PrimandOnline_gap))")
 println("avr onlineNN_gap:  $(mean(PrimandOnline_gap))")
 
+println(" ")
+
 println("max Rel onlineNN_gap:  $(maximum(RelPrimandOnline_gap))")
 println("min Rel onlineNN_gap:  $(minimum(RelPrimandOnline_gap))")
 println("avg Rel onlineNN_gap:  $(mean(RelPrimandOnline_gap))")
+
+println(" ")
 
 println("max onlineDualNN_gap:  $(maximum(DualOnline_gap))")
 println("min onlineDualNN_gap:  $(minimum(DualOnline_gap))")
 println("avg onlineDualNN_gap:  $(mean(DualOnline_gap))")
 
+println(" ")
 
 println("max Rel onlineDualNN_gap:  $(maximum(RelDualOnline_gap))")
 println("min Rel onlineDualNN_gap:  $(minimum(RelDualOnline_gap))")
 println("avg Rel onlineDualNN_gap:  $(mean(RelDualOnline_gap))")
 
+println(" ")
+
+println("skipped problems: $(numbSkipped)")
+
+println(" ")
+
+println("exact dual Gap MAX:  $(maximum(extact_dualGap)) " )
+println("exact dual Gap Min:  $(minimum(extact_dualGap)) " )
+println("exact dual Gap Avg:  $(mean(extact_dualGap)) " )
+
+println(" ")
+
+println("exact rel dual Gap MAX:  $(maximum(extact_ReldualGap)) " )
+println("exact rel dual Gap Min:  $(minimum(extact_ReldualGap)) " )
+println("exact rel dual Gap Avg:  $(mean(extact_ReldualGap)) " )
+
+println(" ")
+
+println("difference dual variable MAX: $(maximum(dualDiff)) ")
+println("difference dual variable MIN: $(minimum(dualDiff)) ")
+println("difference dual variable AVG: $(mean(dualDiff)) ")
+
+println(" ")
+
+println("difference primal variable MAX: $(maximum(primalDiff)) ")
+println("difference primal variable MIN: $(minimum(primalDiff)) ")
+println("difference primal variable AVG: $(mean(primalDiff)) ")
+
+println(" ")
+
+println("difference first primal variable MAX: $(maximum(primalDiff0)) ")
+println("difference first primal variable MIN: $(minimum(primalDiff0)) ")
+println("difference first primal variable AVG: $(mean(primalDiff0)) ")
 
 
 
