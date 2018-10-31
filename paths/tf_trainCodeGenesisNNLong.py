@@ -7,6 +7,8 @@ import matplotlib.pyplot as plt
 import tensorflow as tf
 import scipy.io as sio
 from sklearn.utils import shuffle
+import IPython
+from sklearn.preprocessing import normalize
 #import h5py
 
 #%% We have imported all dependencies
@@ -16,7 +18,6 @@ x_data = df['inputParam_long']
 y_data = df['outputParamDacc_long']
 y_dataDual = df['outputParamDual_long']
 x_data, y_data, y_dataDual = shuffle(x_data, y_data, y_dataDual)
-
 
 
 #f = h5py.File('NN_test_trainingDataLong10k_PrimalDual.mat')
@@ -44,7 +45,6 @@ xs = tf.placeholder(tf.float32, [insize, None])
 ys = tf.placeholder(tf.float32, [outsize, None])
 ysD = tf.placeholder(tf.float32, [outsizeD, None])
 #%%
-
 ################## PRIMAL NN TRAINING ##############################
 # neuron_size = 30
 # neuron_sizeML = neuron_size                             # Can vary size of the intermediate layer as well
@@ -105,7 +105,7 @@ ysD = tf.placeholder(tf.float32, [outsizeD, None])
 #      vj['b1'] = sess.run(b_1)
 #      vj['b2'] = sess.run(b_2)
 #      vj['b0'] = sess.run(b_O)
-#      # sio.savemat('trained_weightsPrimalLong.mat',vj)
+#      sio.savemat('trained_weightsPrimalLong.mat',vj)
 
 
 # ### debugging 
@@ -126,7 +126,7 @@ ysD = tf.placeholder(tf.float32, [outsizeD, None])
 # plt.xlabel('Epoch')
 # plt.title('Fitting Testing Error')
 # plt.show()
-# #%%
+#%%
 
 
 # ### debugging 
@@ -171,12 +171,15 @@ with tf.Session() as sess:
      inds = np.arange(x_train.shape[0])
      train_count = len(x_train)
 
-     N_EPOCHS = 800
+     N_EPOCHS = 180
      BATCH_SIZE = 32
 
      for i in range(0, N_EPOCHS):
          for start, end in zip(range(0, train_count, BATCH_SIZE),
                                range(BATCH_SIZE, train_count + 1,BATCH_SIZE)):
+
+             #IPython.embed()
+
 
              sess.run([costD,trainD], feed_dict={xs: np.transpose(x_train[start:end]),
                                             ysD: np.transpose(y_trainDual[start:end])})

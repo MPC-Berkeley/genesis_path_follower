@@ -121,7 +121,7 @@ f_tilde_vec = repmat(f_tilde,N)
 
 ######################## ITERATE OVER parameters ################
 # build problem
-num_DataPoints = 10000
+num_DataPoints = 1000
 solv_time_all = zeros(num_DataPoints)
 a_res_all = zeros(num_DataPoints)
 dA_res_all = zeros(num_DataPoints)
@@ -278,14 +278,14 @@ println("min Rel dual_gap:  $(minimum(Reldual_gap))")
 
 
 #save data
-matwrite("NN_test_trainingDataLong10k_RegDual1e-7.mat", Dict(
-	"inputParam_long" => inputParam_long,
-	"outputParamAcc_long" => outputParamAcc_long,
-	"outputParamDacc_long" => outputParamDacc_long,
-	"outputParamDual_long" => outputParamDual_long,
-	"optVal_long" => optVal_long
-))
-println("---- done extracting and saving dual for LONG control ----")
+# matwrite("NN_test_trainingDataLong10k_RegDual1e-7.mat", Dict(
+# 	"inputParam_long" => inputParam_long,
+# 	"outputParamAcc_long" => outputParamAcc_long,
+# 	"outputParamDacc_long" => outputParamDacc_long,
+# 	"outputParamDual_long" => outputParamDual_long,
+# 	"optVal_long" => optVal_long
+# ))
+# println("---- done extracting and saving dual for LONG control ----")
 
 
 

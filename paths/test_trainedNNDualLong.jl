@@ -46,7 +46,7 @@ bout_DLong = dualNN_Data["b0D"]
 ####################### debugging code ###################################
 test_Data = matread("NN_test_trainingDataLong10k_RegDual2_1e-7.mat")
 test_inputParams = test_Data["inputParam_long"]
-test_inputParams = test_inputParams[1:7999,:]
+test_inputParams = test_inputParams[1:1000,:]
 
 ############################################################################
 
@@ -165,8 +165,6 @@ s_ub_ref = zeros(1,N)
 numbSkipped = 0
 
 # dualObj_NN = -1/2 * lambda_tilde_NN_vec'*Qdual_tmp*lambda_tilde_NN_vec - (C_dual*(Q_dual\c_dual)+d_dual)'*lambda_tilde_NN_vec - 1/2*c_dual'*(Q_dual\c_dual) + const_dual
-
-
 
 ii = 1
 
