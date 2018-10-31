@@ -36,16 +36,8 @@ module GPSKinMPCPathFollowerFrenetLinLatNN
 
 	println("Creating lateral kinematic bicycle model in NN ....")
 
-	dualNN_Data 	= matread("../catkin_ws/src/genesis_path_follower/paths/dummyMatNN_DualLong.mat")
-	primalNN_Data 	= matread("../catkin_ws/src/genesis_path_follower/paths/dummyMatNN_PrimLong.mat")
-
-
-
-
-
-
-
-
+	dualNN_Data 	= matread("../catkin_ws/src/genesis_path_follower/paths/trained_weightsPrimalLong.mat")
+	primalNN_Data 	= matread("../catkin_ws/src/genesis_path_follower/paths/trained_weightsDualLongRegDual1e-7.mat")
 
 
 
