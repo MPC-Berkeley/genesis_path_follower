@@ -137,7 +137,7 @@ Qdual_tmp = 0.5*(Qdual_tmp+Qdual_tmp') + 0e-5*eye(N*(nf+ng))
     
 ######################## ITERATE OVER parameters ################
 # build problem
-num_DataPoints = 1000						# Number of test data points
+num_DataPoints = 100						# Number of test data points
 num_DataPoints = size(test_inputParams,1)
 
 
@@ -304,7 +304,7 @@ while ii <= num_DataPoints
 	# Solve the dual problem online to match cost 
     mdlD = Model(solver=GurobiSolver(Presolve=0, LogToConsole=0))
 	@variable(mdlD, L_test[1:N*(nf+ng)])  	# decision variable; contains everything
-	@objective(mdlD, Max, -1/2 * L_test'*Qdual_tmp*L_test - (C_dual*(Q_dual\c_dual)+d_dual)'*L_test - 1/2*c_dual'*(Q_dual\c_dual) + const_dual - 1e-8*L_test'eye(N*(nf+ng))*L_test )
+	@objective(mdlD, Max, -1/2 * L_test'*Qdual_tmp*L_test - (C_dual*(Q_dual\c_dual)+d_dual)'*L_test - 1/2*c_dual'*(Q_dual\c_dual) + const_dual - 1e-7*L_test'eye(N*(nf+ng))*L_test )
 	@constraint(mdlD, -L_test .<= 0)
 	statusD = solve(mdlD)
 	obj_dualOnline = getobjectivevalue(mdlD)
@@ -407,10 +407,6 @@ println(" ")
 println("difference first primal variable MAX: $(maximum(primalDiff0)) ")
 println("difference first primal variable MIN: $(minimum(primalDiff0)) ")
 println("difference first primal variable AVG: $(mean(primalDiff0)) ")
-
-
-
-
 
 
 ######################## Functions to Evaluate the NNs now ########################################
