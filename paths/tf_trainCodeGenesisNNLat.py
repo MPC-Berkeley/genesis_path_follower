@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import tensorflow as tf
 import scipy.io as sio
 from sklearn.utils import shuffle
+import IPython
 
 #import h5py
 

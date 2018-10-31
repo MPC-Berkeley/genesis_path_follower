@@ -161,6 +161,7 @@ dual_Fu = []
 L_test_opt = []
 s_ub_ref = zeros(1,N)
 numbSkipped = 0
+flag_XUfeas = 0
 
 # dualObj_NN = -1/2 * lambda_tilde_NN_vec'*Qdual_tmp*lambda_tilde_NN_vec - (C_dual*(Q_dual\c_dual)+d_dual)'*lambda_tilde_NN_vec - 1/2*c_dual'*(Q_dual\c_dual) + const_dual
 
@@ -220,11 +221,11 @@ while ii <= num_DataPoints
 	## verify feasibility
 	# xu_tilde_NN_res = [ maximum(F_tilde_vec*x_tilde_NN_vec - f_tilde_vec) ; maximum(Fu_tilde_vec*x_tilde_NN_vec - fu_tilde_vec) ]  # should be <= 0
 	xu_tilde_NN_res = [ maximum(F_tilde_vec*x_tilde_NN_vec - f_tilde_vec) ; maximum(Fu_tilde_vec*u_tilde_NN_vec - fu_tilde_vec) ]  # should be <= 0
-	flag_XUfeas = 0
+	# flag_XUfeas = 0
 
 	if maximum(xu_tilde_NN_res) < 1e-3  	# infeasible if bigger than zero/threshold
 		numbSkipped = numbSkipped + 1
-		flag_XUfeas = 1
+		flag_XUfeas = flag_XUfeas + 1
 	end
 
 	## check optimality ##
@@ -334,6 +335,7 @@ while ii <= num_DataPoints
  	@label label1
 end
 
+println("$(flag_XUfeas)")
 
 println("===========================================")
 # println("max dual_gap:  $(maximum(dual_gap))")
