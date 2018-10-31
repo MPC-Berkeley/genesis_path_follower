@@ -30,7 +30,7 @@ primalNN_Data 	= matread("trained_weightsPrimalLong.mat")
 Wi_PLong = primalNN_Data["W1"]
 bi_PLong = primalNN_Data["b1"]
 W1_PLong = primalNN_Data["W2"]
-b1_PLong = primalNN_Data["b2"]
+b1_PLong = 	primalNN_Data["b2"]
 Wout_PLong = primalNN_Data["W0"]
 bout_PLong = primalNN_Data["b0"]
 
@@ -40,8 +40,6 @@ W1_DLong = dualNN_Data["W2D"]
 b1_DLong = dualNN_Data["b2D"]
 Wout_DLong = dualNN_Data["W0D"]
 bout_DLong = dualNN_Data["b0D"]
-
-
 
 ####################### debugging code ###################################
 test_Data = matread("NN_test_trainingDataLong10k_RegDual2_1e-7.mat")
@@ -124,7 +122,7 @@ fu_tilde_vec = repmat(fu_tilde,N)
 # Appended State constraints (tilde)
 F_tilde = [eye(nx+nu) ; -eye(nx+nu)]
 f_tilde = [x_tilde_ub ; -x_tilde_lb]
-nf = length(f_tilde);
+nf = length(f_tilde)
  
 # Concatenate appended state (tilde) constraints
 F_tilde_vec = kron(eye(N), F_tilde)
@@ -207,7 +205,6 @@ while ii <= num_DataPoints
 		x_tilde_ref[(i-1)*(nx+nu)+1 : (i-1)*(nx+nu)+nx] = x_ref[(i-1)*nx+1 : (i-1)*nx+nx]
 		x_tilde_ref[(i-1)*(nx+nu)+nx+1 : (i-1)*(nx+nu)+nx+nu] = u_ref_init[i]	# u_ref_init always 0, but no no weights
 	end
-
 
 	################## BEGIN extract Primal NN solution ##################
 	tic()
@@ -293,7 +290,6 @@ while ii <= num_DataPoints
  	end
 
 
-
  	### for debugging purposes; 
  	# reg 1e-8: 
  	# reg 1e-7: 800 out of 8000 skipped, max dual gap 2.6; max rel gap 0.0001
@@ -317,11 +313,7 @@ while ii <= num_DataPoints
 	extact_dualGap[ii] = obj_primal - obj_dualOnline
 	extact_ReldualGap[ii] = (obj_primal - obj_dualOnline)/obj_primal
 
-
-
-
  ############################################################	
-
 
 	optVal_long[ii] = obj_primal
 	solv_time_all[ii] = toq()

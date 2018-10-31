@@ -212,5 +212,3 @@ plt.ylabel('Error in Testing Points')
 plt.xlabel('Epoch')
 plt.title('Fitting Testing Error')
 plt.show()
-
-
