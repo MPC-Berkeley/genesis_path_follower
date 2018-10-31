@@ -23,7 +23,7 @@ L_a 	= KinMPCParams.L_a				# from CoG to front axle (according to Jongsang)
 L_b 	= KinMPCParams.L_b				# from CoG to rear axle (according to Jongsang)
 
 ############## load all NN Matrices ##############
-dualNN_Data 	= matread("trained_weightsDualLong.mat")
+dualNN_Data 	= matread("trained_weightsDualLongRegDual1e-7.mat")
 primalNN_Data 	= matread("trained_weightsPrimalLong.mat")
 
 # read out NN primal/Dual weights
@@ -44,7 +44,7 @@ bout_DLong = dualNN_Data["b0D"]
 
 
 ####################### debugging code ###################################
-test_Data = matread("NN_test_trainingDataLong10k_PrimalDual2.mat")
+test_Data = matread("NN_test_trainingDataLong10k_RegDual2_1e-7.mat")
 test_inputParams = test_Data["inputParam_long"]
 test_inputParams = test_inputParams[1:7999,:]
 

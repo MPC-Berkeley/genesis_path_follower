@@ -121,7 +121,7 @@ f_tilde_vec = repmat(f_tilde,N)
 
 ######################## ITERATE OVER parameters ################
 # build problem
-num_DataPoints = 1000
+num_DataPoints = 10000
 solv_time_all = zeros(num_DataPoints)
 a_res_all = zeros(num_DataPoints)
 dA_res_all = zeros(num_DataPoints)
@@ -225,7 +225,7 @@ while ii <= num_DataPoints
 	# Solve the dual problem online to match cost 
     mdlD = Model(solver=GurobiSolver(Presolve=0, LogToConsole=0))
 	@variable(mdlD, L_test[1:N*(nf+ng)])  	# decision variable; contains everything
-	@objective(mdlD, Max, -1/2 * L_test'*Qdual_tmp*L_test - (C_dual*(Q_dual\c_dual)+d_dual)'*L_test - 1/2*c_dual'*(Q_dual\c_dual) + const_dual)
+	@objective(mdlD, Max, -1/2 * L_test'*Qdual_tmp*L_test - (C_dual*(Q_dual\c_dual)+d_dual)'*L_test - 1/2*c_dual'*(Q_dual\c_dual) + const_dual - 1e-7*L_test'*eye(N*(nf+ng))*L_test)
 	@constraint(mdlD, -L_test .<= 0)
 
 	statusD = solve(mdlD)
@@ -277,15 +277,15 @@ println("min Rel dual_gap:  $(minimum(Reldual_gap))")
 
 
 
-# #save data
-# matwrite("NN_test_trainingDataLong10k_PrimalDual.mat", Dict(
-# 	"inputParam_long" => inputParam_long,
-# 	"outputParamAcc_long" => outputParamAcc_long,
-# 	"outputParamDacc_long" => outputParamDacc_long,
-# 	"outputParamDual_long" => outputParamDual_long,
-# 	"optVal_long" => optVal_long
-# ))
-# println("---- done extracting and saving dual for LONG control ----")
+#save data
+matwrite("NN_test_trainingDataLong10k_RegDual1e-7.mat", Dict(
+	"inputParam_long" => inputParam_long,
+	"outputParamAcc_long" => outputParamAcc_long,
+	"outputParamDacc_long" => outputParamDacc_long,
+	"outputParamDual_long" => outputParamDual_long,
+	"optVal_long" => optVal_long
+))
+println("---- done extracting and saving dual for LONG control ----")
 
 
 
