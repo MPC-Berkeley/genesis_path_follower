@@ -54,7 +54,6 @@ v_ub = KinMPCParams.v_max
 curv_lb = KinMPCParams.curv_lb
 curv_ub = KinMPCParams.curv_ub
 
-
 # ================== Transformation 1 =======================
 # augment state and redefine system dynamics (A,B,g) and constraints
 # x_tilde_k := (x_k , u_{k-1})
