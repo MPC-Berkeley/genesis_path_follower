@@ -108,12 +108,20 @@ optVal_lat = zeros(num_DataPoints)
 DualOnline_gap = zeros(num_DataPoints)
 RelDualOnline_gap = zeros(num_DataPoints)
 
+
+#### vectors for debugging ####
+dualDiff = zeros(num_DataPoints)
+primalDiff = zeros(num_DataPoints)
+primalDiff0 = zeros(num_DataPoints)
+
+
 dual_Fx = []
 dual_Fu = []
 L_test_opt = []
 
 iii = 1
 
+x_tilde_ref = x_tilde_ref_init
 
 while iii <= num_DataPoints
 	
@@ -195,7 +203,6 @@ while iii <= num_DataPoints
 		g_tilde_vec[1+(ii-1)*(nx+nu) : ii*(nx+nu)] = g_tilde_updated[:,ii]
 	end
 
-	x_tilde_ref = x_tilde_ref_init
 
 	################## BEGIN extract Primal NN solution ##################
 	tic()
@@ -218,7 +225,8 @@ while iii <= num_DataPoints
 	end
 
 	## check optimality ##
-	primObj_NN = (x_tilde_NN_vec-x_tilde_ref)'*Q_tilde_vec*(x_tilde_NN_vec-x_tilde_ref) + u_tilde_NN_vec'*R_tilde_vec*u_tilde_NN_vec
+	# primObj_NN = (x_tilde_NN_vec-x_tilde_ref)'*Q_tilde_vec*(x_tilde_NN_vec-x_tilde_ref) + u_tilde_NN_vec'*R_tilde_vec*u_tilde_NN_vec
+	primObj_NN = x_tilde_NN_vec'*Q_tilde_vec*x_tilde_NN_vec + u_tilde_NN_vec'*R_tilde_vec*u_tilde_NN_vec
 	solvTime_NN = toq()
 
 	################## END extract Primal NN solution ##################
@@ -264,6 +272,9 @@ while iii <= num_DataPoints
 	tic()
 	status = solve(mdl)
 	obj_primal = getobjectivevalue(mdl)
+	U_test_opt = getvalue(u_tilde_vec)
+	primalDiff[iii] = norm(U_test_opt - u_tilde_NN_vec)
+	primalDiff0[iii] = norm(U_test_opt[1] - u_tilde_NN_vec[1])
 
 	
 	if !(status == :Optimal)
@@ -303,15 +314,32 @@ println("max onlineNN_gap:  $(maximum(PrimandOnline_gap))")
 println("min onlineNN_gap:  $(minimum(PrimandOnline_gap))")
 println("avr onlineNN_gap:  $(mean(PrimandOnline_gap))")
 
+println(" ")
+
 println("max Rel onlineNN_gap:  $(maximum(RelPrimandOnline_gap))")
 println("min Rel onlineNN_gap:  $(minimum(RelPrimandOnline_gap))")
 println("avg Rel onlineNN_gap:  $(mean(RelPrimandOnline_gap))")
+
+println(" ")
 
 println("max onlineDualNN_gap:  $(maximum(DualOnline_gap))")
 println("min onlineDualNN_gap:  $(minimum(DualOnline_gap))")
 println("avg onlineDualNN_gap:  $(mean(DualOnline_gap))")
 
+println(" ")
 
 println("max Rel onlineDualNN_gap:  $(maximum(RelDualOnline_gap))")
 println("min Rel onlineDualNN_gap:  $(minimum(RelDualOnline_gap))")
 println("avg Rel onlineDualNN_gap:  $(mean(RelDualOnline_gap))")
+
+println(" ")
+
+println("difference primal variable MAX: $(maximum(primalDiff)) ")
+println("difference primal variable MIN: $(minimum(primalDiff)) ")
+println("difference primal variable AVG: $(mean(primalDiff)) ")
+
+println(" ")
+
+println("difference first primal variable MAX: $(maximum(primalDiff0)) ")
+println("difference first primal variable MIN: $(minimum(primalDiff0)) ")
+println("difference first primal variable AVG: $(mean(primalDiff0)) ")

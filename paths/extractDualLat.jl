@@ -357,10 +357,10 @@ println("min dual_gap:  $(minimum(dual_gap))")
 println("max Rel dual_gap:  $(maximum(dual_gapRel))")
 println("min Rel dual_gap:  $(minimum(dual_gapRel))")
 
-# matwrite("NN_test_trainingDataLat10k_PrimalDual.mat", Dict(
-# 	"inputParam_lat" => inputParam_lat,
-# 	"outputParamDf_lat" => outputParamDf_lat,
-# 	"outputParamDdf_lat" => outputParamDdf_lat,
-# 	"outputParamDual_lat" => outputParamDual_lat
-# ))
-# println("---- done extracting and saving dual for LAT control ----")
+matwrite("NN_test_trainingDataLat10k_PrimalDual.mat", Dict(
+	"inputParam_lat" => inputParam_lat,
+	"outputParamDf_lat" => outputParamDf_lat,
+	"outputParamDdf_lat" => outputParamDdf_lat,
+	"outputParamDual_lat" => outputParamDual_lat
+))
+println("---- done extracting and saving dual for LAT control ----")
