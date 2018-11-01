@@ -36,23 +36,23 @@ module GPSKinMPCPathFollowerFrenetLinLongNN
 	println("Creating longitudinal kinematic bicycle model in NN...")
 	# println(pwd())
 
-	dualNN_Data 	= matread("../catkin_ws/src/genesis_path_follower/paths/dummyMatNN_DualLong.mat")
-	primalNN_Data 	= matread("../catkin_ws/src/genesis_path_follower/paths/dummyMatNN_PrimLong.mat")
+	primalNN_Data 	= matread("../catkin_ws/src/genesis_path_follower/paths/trained_weightsPrimalLong.mat")
+	dualNN_Data 	= matread("../catkin_ws/src/genesis_path_follower/paths/trained_weightsDualLongRegDual1e-7.mat")
 
 	# read out NN primal weights
-	Wi_PLong = primalNN_Data["Wi_PLong"]
-	bi_PLong = primalNN_Data["bi_PLong"]
-	W1_PLong = primalNN_Data["W1_PLong"]
-	b1_PLong = primalNN_Data["b1_PLong"]
-	Wout_PLong = primalNN_Data["Wout_PLong"]
-	bout_PLong = primalNN_Data["bout_PLong"]
+	Wi_PLong = primalNN_Data["W1"]
+	bi_PLong = primalNN_Data["b1"]
+	W1_PLong = primalNN_Data["W2"]
+	b1_PLong = primalNN_Data["b2"]
+	Wout_PLong = primalNN_Data["W0"]
+	bout_PLong = primalNN_Data["b0"]
 
-	Wi_DLong = dualNN_Data["Wi_DLong"]
-	bi_DLong = dualNN_Data["bi_DLong"]
-	W1_DLong = dualNN_Data["W1_DLong"]
-	b1_DLong = dualNN_Data["b1_DLong"]
-	Wout_DLong = dualNN_Data["Wout_DLong"]
-	bout_DLong = dualNN_Data["bout_DLong"]
+	Wi_DLong = dualNN_Data["W1D"]
+	bi_DLong = dualNN_Data["b1D"]
+	W1_DLong = dualNN_Data["W2D"]
+	b1_DLong = dualNN_Data["b2D"]
+	Wout_DLong = dualNN_Data["W0D"]
+	bout_DLong = dualNN_Data["b0D"]
 
 	# ====================== general problem formulation is given by ======================
 	# x_{k+1} = A x_k + B u_k + g_k
@@ -349,12 +349,16 @@ module GPSKinMPCPathFollowerFrenetLinLongNN
 		# xu_tilde_NN_res = [ maximum(F_tilde_vec*x_tilde_NN_vec - f_tilde_vec) ; maximum(Fu_tilde_vec*x_tilde_NN_vec - fu_tilde_vec) ]  # should be <= 0
 		xu_tilde_NN_res = [ maximum(F_tilde_vec*x_tilde_NN_vec - f_tilde_vec) ; maximum(Fu_tilde_vec*u_tilde_NN_vec - fu_tilde_vec) ]  # should be <= 0
 		flag_XUfeas = 0
-		if maximum(xu_tilde_NN_res) < 1e-3  	# infeasible if bigger than zero/threshold
+		if maximum(xu_tilde_NN_res) <= 0  	# infeasible if bigger than zero/threshold
 			flag_XUfeas = 1
 		end
 
 		## check optimality (compute objective value) ##
+		# println("11111111")
 		primObj_NN = (x_tilde_NN_vec-x_tilde_ref)'*Q_tilde_vec*(x_tilde_NN_vec-x_tilde_ref) + u_tilde_NN_vec'*R_tilde_vec*u_tilde_NN_vec
+		# println("primObj_NN: $(primObj_NN)")
+		# println("primObj_NN: $(size(primObj_NN)")
+
 		solvTime_NN = toq()
 
 		a_opt_NN = 	x_tilde_NN_vec[3]
@@ -400,8 +404,8 @@ module GPSKinMPCPathFollowerFrenetLinLongNN
 		s_ref = s_ref - s_0
 		s_0 = 0.0
 
-		println("s_0: $(s_0)")
-		println(typeof(s_0))
+		# println("s_0: $(s_0)")
+		# println(typeof(s_0))
 
 		updateMatrices(s_ref, v_ref)
 
@@ -412,14 +416,20 @@ module GPSKinMPCPathFollowerFrenetLinLongNN
 		primNN_obj, xu_tilde_NN_res, flag_XUfeas, a_opt_NN, a_pred_NN, s_pred_NN, v_pred_NN, dA_pred_NN, solvTime_NN = eval_PrimalNN(params)
 		dualNN_obj, lambda_tilde_NN_vec = eval_DualNN(params)
 
-		println("primal NN obj: $(primNN_obj)")
-		println("dual NN obj: $(dualNN_obj)")
+		# println("primal NN obj: $(primNN_obj)")
+		# println("dual NN obj: $(dualNN_obj)")
 
-		is_opt_NN = (flag_XUfeas==1) && (primNN_obj - dualNN_obj <= 0.1)
+
+		is_opt_NN = (flag_XUfeas==1) && (primNN_obj[1] - dualNN_obj[1] <= 0.1)
+		is_opt_NN = (flag_XUfeas==1)
+
+		
+
 		if is_opt_NN
+			println("****** IS FEASIBLE: $(is_opt_NN) ******")
 			solMode = "NN"
 			# needs a bit of work
-			a_opt_NN, a_pred_NN, s_pred_NN, v_pred_NN, dA_pred_NN, solvTime_NN, is_opt_NN = solve_gurobi(s_0, v_0, u_0, s_ref, v_ref)
+			# a_opt_NN, a_pred_NN, s_pred_NN, v_pred_NN, dA_pred_NN, solvTime_NN, is_opt_NN = solve_gurobi(s_0, v_0, u_0, s_ref, v_ref)
 			return 	a_opt_NN, a_pred_NN, s_pred_NN+s_0_true, v_pred_NN, dA_pred_NN, solvTime_NN, is_opt_NN, solMode, primNN_obj, dualNN_obj,xu_tilde_NN_res
 
 		else  	## NN solution not good

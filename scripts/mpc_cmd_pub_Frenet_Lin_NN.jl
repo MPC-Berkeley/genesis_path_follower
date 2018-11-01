@@ -213,6 +213,8 @@ function pub_loop(acc_pub_obj, steer_pub_obj, mpc_path_pub_obj)
 	solv_time_lat_gurobi1_all = zeros(control_rate/10*6000)		# over Gurobi.jl interface; mean: 2ms, max 4ms
 	solv_time_gurobi_tot_all = zeros(control_rate/10*6000)
 
+	num_NN_long = 0		# counter for how often NN was called
+
     num_warmStarts = 2	# number of warmstarts - no control applied during these steps
     it_num = 0	# iteration_count
 
@@ -271,6 +273,10 @@ function pub_loop(acc_pub_obj, steer_pub_obj, mpc_path_pub_obj)
 
 			# a_opt=u0 ; a_pred = (u_0, u_1, ... u_{N-1})
 			a_opt_gurobi, a_pred_gurobi, s_pred_gurobi, v_pred_gurobi, dA_pred_gurobi, solv_time_long_gurobi1, is_opt_long, solMode_long, primNN_obj, dualNN_obj, xu_tilde_NN_res = kmpcLinLongNN.get_NNsolution(s_curr, v_curr, a_opt, s_ref, v_ref)
+			if (is_opt_long==1) && (solMode_long=="NN")
+				num_NN_long = num_NN_long + 1
+			end
+
 			solv_time_long_gurobi1_all[it_num+1] = solv_time_long_gurobi1
 
 			df_opt_gurobi, df_pred_gurobi, ddf_pred_gurobi, ey_pred_gurobi, epsi_pred_gurobi, solv_time_lat_gurobi1, is_opt_lat_gurobi = kmpcLinLatNN.solve_gurobi(ey_curr, epsi_curr, df_opt, s_pred_gurobi, v_pred_gurobi, K_coeff)
@@ -308,6 +314,8 @@ function pub_loop(acc_pub_obj, steer_pub_obj, mpc_path_pub_obj)
 			# compute the predicted x,y 
 			x_mpc, y_mpc, v_mpc, psi_mpc = convertS2XY(a_pred_gurobi, df_pred_gurobi)	# this function converts the (s,c(s)) to (X,Y)
 
+			println("start saving bags")
+
 			# save relevant messages
 			mpc_path_msg = mpc_path()
 			mpc_path_msg.header.stamp = rostm
@@ -344,12 +352,19 @@ function pub_loop(acc_pub_obj, steer_pub_obj, mpc_path_pub_obj)
 			mpc_path_msg.yr_recon   = y_ref_recon 	# y_ref
 			mpc_path_msg.vr_recon   = v_ref	# v_ref
 			mpc_path_msg.psir_recon = psi_ref_recon 	# psi_ref
-			# store current and predicted inputs
-			mpc_path_msg.acc   = a_pred_gurobi	# d_f
-			mpc_path_msg.df  = df_pred_gurobi	# acc
-			mpc_path_msg.ddf = ddf_pred_gurobi   # delta df; for policy-learning
-			mpc_path_msg.dacc = dA_pred_gurobi	# delta ACC; for policy-learning
+			# # store current and predicted inputs
+			# mpc_path_msg.acc   = a_pred_gurobi	# d_f
+			# mpc_path_msg.df  = df_pred_gurobi	# acc
+			# mpc_path_msg.ddf = ddf_pred_gurobi   # delta df; for policy-learning
+			# mpc_path_msg.dacc = dA_pred_gurobi	# delta ACC; for policy-learning
+
+			println("end saving bags")
+
+
 			publish(mpc_path_pub_obj, mpc_path_msg)
+
+
+
 
 	    	it_num = it_num + 1		# iteration_count
 
@@ -357,7 +372,7 @@ function pub_loop(acc_pub_obj, steer_pub_obj, mpc_path_pub_obj)
 			# println("avg comput time Long IPOPT: $(mean(solv_time_long_ipopt_all[5:it_num-1])*1000) ms")
 			# println("solv times Long IPOPT more than 15ms: $(sum(solv_time_long_ipopt_all[5:end] .> 15e-3*ones(1000-4) ))")
 
-			if mod(it_num,100)==0
+			if mod(it_num,50)==0
 				println("================  iteration $(it_num) =====================")
 				println("--- max comput time Long GUROBI: $(maximum(solv_time_long_gurobi1_all[5:end])*1000) ms ---")
 				println("avg comput time Long GUROBI: $(mean(solv_time_long_gurobi1_all[5:it_num-1])*1000) ms")
@@ -368,6 +383,8 @@ function pub_loop(acc_pub_obj, steer_pub_obj, mpc_path_pub_obj)
 				# println("avg comput time Lat Ipopt: $(mean(solv_time_lat_ipopt_all[5:it_num-1])*1000) ms")
 				println("--- max comput time tot GUROBI: $(maximum(solv_time_gurobi_tot_all[5:end])*1000) ms ---")
 				println(" avg comput time tot GUROBI: $(mean(solv_time_gurobi_tot_all[5:end])*1000) ms")
+
+				println("--- percentage of NN long called: $(num_NN_long/it_num*100) %---")
 
 			end
 			
