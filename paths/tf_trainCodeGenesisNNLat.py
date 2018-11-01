@@ -12,7 +12,7 @@ import IPython
 #import h5py
 
 #%% We have imported all dependencies
-df = sio.loadmat('NN_test_trainingDataLat10k_PrimalDual2.mat',squeeze_me=True, struct_as_record=False) # read data set using pandas
+df = sio.loadmat('NN_test_trainingDataLat100k_PrimalDual2.mat',squeeze_me=True, struct_as_record=False) # read data set using pandas
 x_data = df['inputParam_lat']
 y_data = df['outputParamDdf_lat']
 y_dataDual = df['outputParamDual_lat']
@@ -47,7 +47,7 @@ ysD = tf.placeholder("float")
 #%%
 
 ################## PRIMAL NN TRAINING ##############################
-neuron_size = 30
+neuron_size = 50
 neuron_sizeML = neuron_size                             # Can vary size of the intermediate layer as well
 
 W_1 = tf.Variable(tf.random_uniform([neuron_size,insize]))
@@ -96,7 +96,7 @@ with tf.Session() as sess:
      inds = np.arange(x_train.shape[0])
      train_count = len(x_train)
 
-     N_EPOCHS = 500
+     N_EPOCHS = 50
      BATCH_SIZE = 32
 
      for i in range(0, N_EPOCHS):
