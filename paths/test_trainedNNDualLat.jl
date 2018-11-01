@@ -368,7 +368,7 @@ println("difference first primal variable MIN: $(minimum(primalDiff0)) ")
 println("difference first primal variable AVG: $(mean(primalDiff0)) ")
 
 println(" ")
-
+# 
 println("difference Optimal primal variable MAX: $(maximum(primalDiffOrigSol)) ")
 println("difference optimal primal variable MIN: $(minimum(primalDiffOrigSol)) ")
 println("difference optimal primal variable AVG: $(mean(primalDiffOrigSol)) ")

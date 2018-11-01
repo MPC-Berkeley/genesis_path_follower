@@ -353,10 +353,14 @@ function pub_loop(acc_pub_obj, steer_pub_obj, mpc_path_pub_obj)
 			mpc_path_msg.vr_recon   = v_ref	# v_ref
 			mpc_path_msg.psir_recon = psi_ref_recon 	# psi_ref
 			# # store current and predicted inputs
-			# mpc_path_msg.acc   = a_pred_gurobi	# d_f
-			# mpc_path_msg.df  = df_pred_gurobi	# acc
-			# mpc_path_msg.ddf = ddf_pred_gurobi   # delta df; for policy-learning
-			# mpc_path_msg.dacc = dA_pred_gurobi	# delta ACC; for policy-learning
+			# println(size(a_pred_gurobi))
+			mpc_path_msg.acc   = a_pred_gurobi	# d_f
+			# println(size(df_pred_gurobi))
+			mpc_path_msg.df  = df_pred_gurobi	# acc
+			# println(size(ddf_pred_gurobi))
+			mpc_path_msg.ddf = ddf_pred_gurobi   # delta df; for policy-learning
+			println(size(dA_pred_gurobi))
+			mpc_path_msg.dacc = dA_pred_gurobi	# delta ACC; for policy-learning
 
 			println("end saving bags")
 
