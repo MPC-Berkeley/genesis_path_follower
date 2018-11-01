@@ -48,7 +48,7 @@ module KinMPCParams
 	epsi_lb     = -1
 	epsi_ub		=  1	
 	
-	curv_lb  	= -0.1
+	curv_lb  	=  0
 	curv_ub 	=  0.1
 
 	df_max 		= 0.5					# steering

@@ -84,7 +84,7 @@ with tf.Session() as sess:
      inds = np.arange(x_train.shape[0])
      train_count = len(x_train)
 
-     N_EPOCHS = 200
+     N_EPOCHS = 500
      BATCH_SIZE = 32
 
      for i in range(0, N_EPOCHS):
