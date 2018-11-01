@@ -17,6 +17,7 @@ x_data = df['inputParam_lat']
 y_data = df['outputParamDdf_lat']
 y_dataDual = df['outputParamDual_lat']
 
+###### TRY REMOVING #######
 x_data, y_data, y_dataDual = shuffle(x_data, y_data, y_dataDual)
 
 #f = h5py.File('NN_test_trainingDataLat10k_PrimalDual2.mat')
@@ -69,6 +70,17 @@ output = tf.add(tf.matmul(W_O,layer_2), b_O)
 #  O/p layer multiplying and adding bias then activation function
 #  notice output layer has one node only since performing #regression
 
+
+########### DOES THIS COMPUTE NORM OR ELEMENTWISE SQUARE???? #############  
+# https://stackoverflow.com/questions/41338509/tensorflow-mean-squared-error-loss-function
+# loss = tf.reduce_sum(tf.pow(prediction - Y,2))/(n_instances)
+# loss = tf.reduce_mean(tf.squared_difference(prediction, Y))
+# loss = tf.nn.l2_loss(prediction - Y)   # does not normalize w.r.t. #samples
+
+# WHAT IF WE USE A ONE-NORM INSTEAD OF 2-NORM?
+# loss = tf.reduce_mean(tf.abs(y - y_data)) 
+# optimizer = tf.train.GradientDescentOptimizer(0.05) TO REDUCE OSCILLATION?
+
 cost = tf.reduce_mean(tf.square(output-ys))            # our mean squared error cost function
 train = tf.train.AdamOptimizer(0.01).minimize(cost)   # GD and proximal GD working bad! Adam and RMS well.
 
@@ -106,6 +118,11 @@ with tf.Session() as sess:
      vj['b2'] = sess.run(b_2)
      vj['b0'] = sess.run(b_O)
      sio.savemat('trained_weightsPrimalLat.mat',vj)
+
+     ########### CAN WE LOOP OVER ALL TRAINING DATA TO SEE WHAT THE MIN/MAX/AVG ERROR IS ????????  ###########
+
+
+
 
 #%%         
 ################################ Plotting the Primal NN Train Quality

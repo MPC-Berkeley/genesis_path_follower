@@ -23,8 +23,9 @@ L_a 	= KinMPCParams.L_a				# from CoG to front axle (according to Jongsang)
 L_b 	= KinMPCParams.L_b				# from CoG to rear axle (according to Jongsang)
 
 ############## load all NN Matrices ##############
-dualNN_Data 	= matread("trained_weightsDualLat.mat")
 primalNN_Data 	= matread("trained_weightsPrimalLat.mat")
+dualNN_Data 	= matread("trained_weightsDualLat.mat")
+
 # read out NN primal/Dual weights
 Wi_PLat = primalNN_Data["W1"]
 bi_PLat = primalNN_Data["b1"]
@@ -39,6 +40,15 @@ W1_DLat = dualNN_Data["W2D"]
 b1_DLat = dualNN_Data["b2D"]
 Wout_DLat = dualNN_Data["W0D"]
 bout_DLat = dualNN_Data["b0D"]
+
+####################### debugging code ###################################
+test_Data = matread("NN_test_trainingDataLat10k_PrimalDual2.mat")
+test_inputParams = test_Data["inputParam_lat"]
+test_outputParamDdf = test_Data["outputParamDdf_lat"]
+# test_inputParams = test_inputParams[1:1000,:]
+
+
+
 ############################################################################
 
 ## Load Ranges of params 
@@ -98,6 +108,8 @@ f_tilde_vec = repmat(f_tilde,N)
 ######################## ITERATE OVER parameters ################
 # build problem
 num_DataPoints = 1000						# Number of test data points
+num_DataPoints = size(test_inputParams,1)
+
 solv_time_all = zeros(num_DataPoints)
 dual_gap = zeros(num_DataPoints)
 Reldual_gap = zeros(num_DataPoints)
@@ -112,6 +124,7 @@ RelDualOnline_gap = zeros(num_DataPoints)
 dualDiff = zeros(num_DataPoints)
 primalDiff = zeros(num_DataPoints)
 primalDiff0 = zeros(num_DataPoints)
+primalDiffOrigSol = zeros(num_DataPoints)
 
 
 dual_Fx = []
@@ -138,6 +151,12 @@ while iii <= num_DataPoints
 
  	# stack everything together
 	params = [ey_0  epsi_0  u_0  v_pred  c_pred]' 				# stack to 19x1 matrix
+
+	# load stuff
+	params = test_inputParams[iii,:]
+	v_pred = params[4:4+N-1]
+	c_pred = params[12:end]
+
 
 	# system dynamics A, B, g
 	A_updated = zeros(nx, nx, N)
@@ -270,10 +289,14 @@ while iii <= num_DataPoints
 
 	tic()
 	status = solve(mdl)
+
 	obj_primal = getobjectivevalue(mdl)
 	U_test_opt = getvalue(u_tilde_vec)
 	primalDiff[iii] = norm(U_test_opt - u_tilde_NN_vec)
-	primalDiff0[iii] = norm(U_test_opt[1] - u_tilde_NN_vec[1])
+	primalDiff0[iii] = norm(U_test_opt[1] - u_tilde_NN_vec[1]) 
+	primalDiffOrigSol[iii] = norm(U_test_opt - test_outputParamDdf[iii,:])
+
+
 
 	
 	if !(status == :Optimal)
@@ -342,3 +365,9 @@ println(" ")
 println("difference first primal variable MAX: $(maximum(primalDiff0)) ")
 println("difference first primal variable MIN: $(minimum(primalDiff0)) ")
 println("difference first primal variable AVG: $(mean(primalDiff0)) ")
+
+println(" ")
+# 
+println("difference Optimal primal variable MAX: $(maximum(primalDiffOrigSol)) ")
+println("difference optimal primal variable MIN: $(minimum(primalDiffOrigSol)) ")
+println("difference optimal primal variable AVG: $(mean(primalDiffOrigSol)) ")
