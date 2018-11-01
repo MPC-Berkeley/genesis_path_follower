@@ -264,6 +264,8 @@ class PlotGPSTrajectory():
 		self.deltapsi=msg.deltapsi
 		self.s=msg.s
 		self.e=msg.e
+
+		print(self.e)
 	
 	def update_state(self, msg):
 		# Update vehicle's position.

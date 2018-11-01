@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import rospy  ##TODO: Cannot find rospy
 from genesis_path_follower.msg import state_est
+from genesis_path_follower.msg import display_state
 from std_msgs.msg import Float32
 from std_msgs.msg import UInt8
 from lk_utils.controllers import *
@@ -33,7 +34,7 @@ class LanekeepingPublisher():
 
 		self.accel_pub = rospy.Publisher("/control/accel", Float32, queue_size =2)
 		self.steer_pub = rospy.Publisher("/control/steer_angle", Float32, queue_size = 2)
-		self.displaystate_pub = rospy.Publisher('display_state', state_est, queue_size=1)
+		self.displaystate_pub = rospy.Publisher('display_state', display_state, queue_size=1)
 
 		self.enable_acc_pub   = rospy.Publisher("/control/enable_accel", UInt8, queue_size =2, latch=True)  ##Why queue_size = 10?
 		self.enable_steer_pub = rospy.Publisher("/control/enable_spas",  UInt8, queue_size =2, latch=True)
@@ -138,9 +139,8 @@ class LanekeepingPublisher():
 
 			#curr_state.deltapsi = self.localState.deltapsi
 			curr_state.e=self.localState.e
-			print(curr_state.e);
 			#curr_state.s=self.localState.s
-			displaystate_pub.publish(curr_state.e)
+			self.displaystate_pub.publish(curr_state)
 			#Publish control inputs
 			self.steer_pub.publish(delta)
 			self.accel_pub.publish(accel)

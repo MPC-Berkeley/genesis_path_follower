@@ -2,6 +2,7 @@
 import rospy
 import numpy as np
 import matplotlib.pyplot as plt
+from genesis_path_follower.msg import display_state 
 from gps_utils import ref_gps_traj as r
 from genesis_path_follower.msg import state_est
 from genesis_path_follower.msg import mpc_path
