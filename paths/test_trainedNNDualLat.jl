@@ -23,7 +23,7 @@ L_a 	= KinMPCParams.L_a				# from CoG to front axle (according to Jongsang)
 L_b 	= KinMPCParams.L_b				# from CoG to rear axle (according to Jongsang)
 
 ############## load all NN Matrices ##############
-primalNN_Data 	= matread("trained_weightsPrimalLat.mat")
+primalNN_Data 	= matread("trained_weightsPrimalLatTrajData.mat")
 dualNN_Data 	= matread("trained_weightsDualLat.mat")
 
 # read out NN primal/Dual weights
@@ -57,7 +57,7 @@ test_Data = matread("NN_test_trainingData.mat")
 # test_Data = matread("NN_test_trainingDataLat10k_PrimalDual2.mat")
 test_inputParams = test_Data["inputParam_lat"]
 test_outputParamDdf = test_Data["outputParamDdf_lat"]
-test_inputParams = test_inputParams[1:10,:]
+# test_inputParams = test_inputParams[1:100,:]
 
 ############################################################################
 
@@ -306,11 +306,11 @@ while iii <= num_DataPoints
 
 	obj_primal = getobjectivevalue(mdl)
 	U_test_opt = getvalue(u_tilde_vec)
-	primalDiff[iii] = norm(U_test_opt - u_tilde_NN_vec)
-	primalDiff0[iii] = norm(U_test_opt[1] - u_tilde_NN_vec[1]) 
-	# primalDiff[iii] = norm(test_outputParamDdf[iii,:] - u_tilde_NN_vec)
-	# primalDiff0[iii] = norm(test_outputParamDdf[iii,1] - u_tilde_NN_vec[1]) 
-	# primalDiffOrigSol[iii] = norm(U_test_opt - test_outputParamDdf[iii,:])
+	# primalDiff[iii] = norm(U_test_opt - u_tilde_NN_vec)
+	# primalDiff0[iii] = norm(U_test_opt[1] - u_tilde_NN_vec[1]) 
+	primalDiff[iii] = norm(test_outputParamDdf[iii,:] - u_tilde_NN_vec)
+	primalDiff0[iii] = norm(test_outputParamDdf[iii,1] - u_tilde_NN_vec[1]) 
+	primalDiffOrigSol[iii] = norm(U_test_opt - test_outputParamDdf[iii,:])
 
 
 
@@ -382,8 +382,8 @@ println("difference first primal variable MAX: $(maximum(primalDiff0)) ")
 println("difference first primal variable MIN: $(minimum(primalDiff0)) ")
 println("difference first primal variable AVG: $(mean(primalDiff0)) ")
 
-# println(" ")
-# # 
-# println("difference Optimal primal variable MAX: $(maximum(primalDiffOrigSol)) ")
-# println("difference optimal primal variable MIN: $(minimum(primalDiffOrigSol)) ")
-# println("difference optimal primal variable AVG: $(mean(primalDiffOrigSol)) ")
+println(" ")
+# 
+println("difference Optimal primal variable MAX: $(maximum(primalDiffOrigSol)) ")
+println("difference optimal primal variable MIN: $(minimum(primalDiffOrigSol)) ")
+println("difference optimal primal variable AVG: $(mean(primalDiffOrigSol)) ")

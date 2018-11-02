@@ -94,7 +94,7 @@ f_tilde_vec = repmat(f_tilde,N)
 
 ######################## ITERATE OVER saved parameters ################
 # build problem
-num_DataPoints = 100000								# Training data count 
+num_DataPoints = 10000								# Training data count 
 solv_time_all = zeros(num_DataPoints)
 # df_res_all = zeros(num_DataPoints)
 # ddf_res_all = zeros(num_DataPoints)
