@@ -37,8 +37,18 @@ module GPSKinMPCPathFollowerFrenetLinLatNN
 	println("Creating lateral kinematic bicycle model in NN ....")
 	println(pwd())
 
-	primalNN_Data 	= matread("../catkin_ws/src/genesis_path_follower/paths/trained_weightsPrimalLat.mat")
-	dualNN_Data 	= matread("../catkin_ws/src/genesis_path_follower/paths/trained_weightsDualLat.mat")
+	# saved place is different
+	if KinMPCParams.platform == "nuvo"
+		primalNN_Data 	= matread("../GenesisAutoware/ros/src/genesis_path_follower/paths/trained_weightsPrimalLat.mat")
+		dualNN_Data 	= matread("../GenesisAutoware/ros/src/genesis_path_follower/paths/trained_weightsDualLat.mat")
+
+	elseif KinMPCParams.platform == "abby"
+		primalNN_Data 	= matread("../catkin_ws/src/genesis_path_follower/paths/trained_weightsPrimalLat.mat")
+		dualNN_Data 	= matread("../catkin_ws/src/genesis_path_follower/paths/trained_weightsDualLat.mat")
+	
+	else
+		println("Long NN Data not found!")
+	end
 
 	# read out NN primal weights
 	Wi_PLat = primalNN_Data["W1"]
@@ -412,21 +422,20 @@ module GPSKinMPCPathFollowerFrenetLinLatNN
 
 		# println("isze of params: $(size(params))")
 
-		primNN_obj, xu_tilde_NN_res, flag_XUfeas, df_opt_NN, df_pred_NN, ey_pred_NN, epsi_pred_NN, ddf_pred_NN, solvTime_NN = eval_PrimalNN(params)
+		primNN_obj, xu_tilde_NN_res, flag_XUfeas, df_opt_NN, df_pred_NN, ey_pred_NN, epsi_pred_NN, ddf_pred_NN, solvTime_primNN = eval_PrimalNN(params)
 
-		solvTime_dualNN = []
-		dualNN_obj = []
+		solvTime_dualNN = 0
+		dualNN_obj = 0
 
 		# is_opt_NN = (flag_XUfeas==1) && (primNN_obj[1] - dualNN_obj[1] <= 0.1)
 		is_opt_NN = (flag_XUfeas==1)
 
 		if is_opt_NN
-			println("****** IS FEASIBLE: $(is_opt_NN) ******")
+			println("****** LAT IS FEASIBLE: $(is_opt_NN) ******")
 			solMode = "NN"
 			# needs a bit of work
-			df_opt_NN, df_pred_NN, ddf_pred_NN, ey_pred_NN, epsi_pred_NN, solvTime_primNN, is_opt_NN = solve_gurobi(ey_0, epsi_0, u_0, s_pred, v_pred, k_coeffs)
+			# df_opt_NN, df_pred_NN, ddf_pred_NN, ey_pred_NN, epsi_pred_NN, solvTime_primNN, is_opt_NN = solve_gurobi(ey_0, epsi_0, u_0, s_pred, v_pred, k_coeffs)
 			return 	df_opt_NN, df_pred_NN, ey_pred_NN, epsi_pred_NN, ddf_pred_NN, solvTime_primNN + solvTime_dualNN, is_opt_NN, solMode, primNN_obj, dualNN_obj,xu_tilde_NN_res
-
 		else  	## NN solution not good
 			solMode = "opt"
 			primNN_obj = []

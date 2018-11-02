@@ -214,6 +214,7 @@ function pub_loop(acc_pub_obj, steer_pub_obj, mpc_path_pub_obj)
 	solv_time_gurobi_tot_all = zeros(control_rate/10*6000)
 
 	num_NN_long = 0		# counter for how often NN was called
+	num_NN_lat = 0
 
     num_warmStarts = 2	# number of warmstarts - no control applied during these steps
     it_num = 0	# iteration_count
@@ -276,14 +277,15 @@ function pub_loop(acc_pub_obj, steer_pub_obj, mpc_path_pub_obj)
 			if (is_opt_long==1) && (solMode_long=="NN")
 				num_NN_long = num_NN_long + 1
 			end
-
 			solv_time_long_gurobi1_all[it_num+1] = solv_time_long_gurobi1
 
 
-			# df_opt_gurobi, df_pred_gurobi, ddf_pred_gurobi, ey_pred_gurobi, epsi_pred_gurobi, solv_time_lat_gurobi1, is_opt_lat_gurobi = kmpcLinLatNN.get_NNsolution(ey_curr, epsi_curr, df_opt, s_pred_gurobi, v_pred_gurobi, K_coeff)
-			# df_opt_gurobi, df_pred_gurobi, ey_pred_gurobi, epsi_pred_gurobi, ddf_pred_gurobi, solv_time_lat_gurobi1, is_opt_lat, solMode_lat, primNN_Lat_obj, dualNN_lat_obj, xu_tilde_lat_NN_res = kmpcLinLatNN.get_NNsolution(ey_curr, epsi_curr, df_opt, s_pred_gurobi, v_pred_gurobi, K_coeff)
-			df_opt_gurobi, df_pred_gurobi, ddf_pred_gurobi, ey_pred_gurobi, epsi_pred_gurobi, solv_time_lat_gurobi1, is_opt_lat = kmpcLinLatNN.solve_gurobi(ey_curr, epsi_curr, df_opt, s_pred_gurobi, v_pred_gurobi, K_coeff)
-
+			df_opt_gurobi, df_pred_gurobi, ey_pred_gurobi, epsi_pred_gurobi, ddf_pred_gurobi, solv_time_lat_gurobi1, is_opt_lat, solMode_lat, primNN_Lat_obj, dualNN_lat_obj, xu_tilde_lat_NN_res = kmpcLinLatNN.get_NNsolution(ey_curr, epsi_curr, df_opt, s_pred_gurobi, v_pred_gurobi, K_coeff)
+			# df_opt_gurobi, df_pred_gurobi, ddf_pred_gurobi, ey_pred_gurobi, epsi_pred_gurobi, solv_time_lat_gurobi1, is_opt_lat = kmpcLinLatNN.solve_gurobi(ey_curr, epsi_curr, df_opt, s_pred_gurobi, v_pred_gurobi, K_coeff)
+			if (is_opt_lat==1) && (solMode_lat=="NN")
+				num_NN_lat = num_NN_lat + 1
+			end
+			num_NN_lat
 			solv_time_lat_gurobi1_all[it_num+1] = solv_time_lat_gurobi1
 
 
@@ -389,6 +391,7 @@ function pub_loop(acc_pub_obj, steer_pub_obj, mpc_path_pub_obj)
 				println(" avg comput time tot GUROBI: $(mean(solv_time_gurobi_tot_all[5:end])*1000) ms")
 
 				println("--- percentage of NN long called: $(num_NN_long/it_num*100) %---")
+				println("--- percentage of NN lat called: $(num_NN_lat/it_num*100) %---")
 
 			end
 			
