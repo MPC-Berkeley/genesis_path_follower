@@ -37,8 +37,18 @@ module GPSKinMPCPathFollowerFrenetLinLatNN
 	println("Creating lateral kinematic bicycle model in NN ....")
 	println(pwd())
 
-	primalNN_Data 	= matread("../catkin_ws/src/genesis_path_follower/paths/trained_weightsPrimalLat.mat")
-	dualNN_Data 	= matread("../catkin_ws/src/genesis_path_follower/paths/trained_weightsDualLat.mat")
+	# saved place is different
+	if KinMPCParams.platform == "nuvo"
+		primalNN_Data 	= matread("../GenesisAutoware/ros/src/genesis_path_follower/paths/trained_weightsPrimalLat.mat")
+		dualNN_Data 	= matread("../GenesisAutoware/ros/src/genesis_path_follower/paths/trained_weightsDualLat.mat")
+
+	elseif KinMPCParams.platform == "abby"
+		primalNN_Data 	= matread("../catkin_ws/src/genesis_path_follower/paths/trained_weightsPrimalLat.mat")
+		dualNN_Data 	= matread("../catkin_ws/src/genesis_path_follower/paths/trained_weightsDualLat.mat")
+	
+	else
+		println("Long NN Data not found!")
+	end
 
 	# read out NN primal weights
 	Wi_PLat = primalNN_Data["W1"]
