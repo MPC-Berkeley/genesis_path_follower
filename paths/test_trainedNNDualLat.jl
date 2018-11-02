@@ -34,6 +34,17 @@ b1_PLat = primalNN_Data["b2"]
 Wout_PLat = primalNN_Data["W0"]
 bout_PLat = primalNN_Data["b0"]
 
+## Noob stuff (Doing the map-min-max thing to see MATLAB quality)
+xinoff = primalNN_Data["xinoff"]
+xingain = primalNN_Data["xingain"]
+xinymin = primalNN_Data["xinymin"]
+
+xoutoff = primalNN_Data["xoutoff"]
+xoutgain = primalNN_Data["xoutgain"]
+xoutymin = primalNN_Data["xoutymin"]
+
+##
+
 Wi_DLat = dualNN_Data["W1D"]
 bi_DLat = dualNN_Data["b1D"]
 W1_DLat = dualNN_Data["W2D"]
@@ -153,7 +164,7 @@ while iii <= num_DataPoints
 	params = [ey_0  epsi_0  u_0  v_pred  c_pred]' 				# stack to 19x1 matrix
 
 	# load stuff
-	params = test_inputParams[iii,:]
+	# params = test_inputParams[iii,:]
 	v_pred = params[4:4+N-1]
 	c_pred = params[12:end]
 
@@ -225,10 +236,14 @@ while iii <= num_DataPoints
 	################## BEGIN extract Primal NN solution ##################
 	tic()
 	# calls the NN with two Hidden Layers
-	z1 = max.(Wi_PLat*params + bi_PLat, 0)
+	# z0 = params
+	z0 = (params - xinoff).*xingain + xinymin
+	z1 = max.(Wi_PLat*z0 + bi_PLat, 0)
 	z2 = max.(W1_PLat*z1 + b1_PLat, 0)
-	u_tilde_NN_vec = Wout_PLat*z2 + bout_PLat  					# Delta-Acceleration
-
+	u_tilde_NN_vec = Wout_PLat*z2 + bout_PLat  								# Delta-Acceleration
+	u_tilde_NN_vec = (u_tilde_NN_vec - xoutymin)./xoutgain + xoutoff
+	println("out julia net $(u_tilde_NN_vec)")
+	
 	# compute NN predicted state
 	x_tilde_0 = params[1:3] 	
 	x_tilde_NN_vec = A_tilde_vec*x_tilde_0 + B_tilde_vec*u_tilde_NN_vec + E_tilde_vec*g_tilde_vec
@@ -294,6 +309,8 @@ while iii <= num_DataPoints
 	U_test_opt = getvalue(u_tilde_vec)
 	primalDiff[iii] = norm(U_test_opt - u_tilde_NN_vec)
 	primalDiff0[iii] = norm(U_test_opt[1] - u_tilde_NN_vec[1]) 
+	primalDiff[iii] = norm(test_outputParamDdf[iii,:] - u_tilde_NN_vec)
+	primalDiff0[iii] = norm(test_outputParamDdf[iii,1] - u_tilde_NN_vec[1]) 
 	primalDiffOrigSol[iii] = norm(U_test_opt - test_outputParamDdf[iii,:])
 
 
