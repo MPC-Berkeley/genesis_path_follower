@@ -18,7 +18,7 @@ import argparse
 '''
 
 # PARAMETERS USED TO COMPUTE 
-path = sio.loadmat('NN_test.mat')
+path = sio.loadmat('exp3.mat')
 
 
 ## parameters for LONGITUDINAL control
@@ -109,7 +109,7 @@ trainingDataDict['outputParamDf_lat'] = outputParamDf_lat
 trainingDataDict['outputParamDdf_lat'] = outputParamDdf_lat
 
 
-sio.savemat('NN_test_trainingData.mat', trainingDataDict)
+sio.savemat('exp3_trainingData.mat', trainingDataDict)
 
 
 print('--- Done ---')
