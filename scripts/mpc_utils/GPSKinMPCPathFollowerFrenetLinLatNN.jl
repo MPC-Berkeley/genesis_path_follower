@@ -35,12 +35,25 @@ module GPSKinMPCPathFollowerFrenetLinLatNN
 	import KinMPCParams 		# load basic parameters such as N, dt, L_a, L_b that is shared among the controllers
 
 	println("Creating lateral kinematic bicycle model in NN ....")
+	println(pwd())
 
-	dualNN_Data 	= matread("../catkin_ws/src/genesis_path_follower/paths/trained_weightsPrimalLong.mat")
-	primalNN_Data 	= matread("../catkin_ws/src/genesis_path_follower/paths/trained_weightsDualLongRegDual1e-7.mat")
+	primalNN_Data 	= matread("../catkin_ws/src/genesis_path_follower/paths/trained_weightsPrimalLat.mat")
+	dualNN_Data 	= matread("../catkin_ws/src/genesis_path_follower/paths/trained_weightsDualLat.mat")
 
+	# read out NN primal weights
+	Wi_PLat = primalNN_Data["W1"]
+	bi_PLat = primalNN_Data["b1"]
+	W1_PLat = primalNN_Data["W2"]
+	b1_PLat = primalNN_Data["b2"]
+	Wout_PLat = primalNN_Data["W0"]
+	bout_PLat = primalNN_Data["b0"]
 
-
+	Wi_DLat = dualNN_Data["W1D"]
+	bi_DLat = dualNN_Data["b1D"]
+	W1_DLat = dualNN_Data["W2D"]
+	b1_DLat = dualNN_Data["b2D"]
+	Wout_DLat = dualNN_Data["W0D"]
+	bout_DLat = dualNN_Data["b0D"]
 
 
 	# ====================== general problem formulation is given by ======================
@@ -239,42 +252,61 @@ module GPSKinMPCPathFollowerFrenetLinLatNN
 	# println("objv = $(objv)")
 
 
-	##### OSQP solver
-	
-	# tic()
-	# OSQPmdl = OSQP.Model() 	# needs SparseMatrixCSC,
-	# A_osqp = sparse( [ Aeq_gurobi_init ; eye(N*n_uxu) ] )
-	# lb_osqp = [ beq_gurobi_init ; lb_gurobi ]
-	# ub_osqp = [ beq_gurobi_init ; ub_gurobi ]
-	# P_osqp = sparse(2*H_gurobi)
-	# OSQP.setup!(OSQPmdl; P=P_osqp, q=f_gurobi_init, A=A_osqp, l=lb_osqp, u=ub_osqp, verbose=0)
-	# results_osqp = OSQP.solve!(OSQPmdl)
-	# solv_time=toq()
-	# println("1st solv time OSQP:  $(solv_time*1000) ms")
-	
 
-	# this function is called iteratively
-	# may want to add epsi_ref in the future (epsi in a curve is generally non-zero)
-	function solve_gurobi(ey_0::Float64, epsi_0::Float64, u_0::Float64, s_pred::Array{Float64,1}, v_pred::Array{Float64,1}, k_coeffs::Array{Float64,1})
+	# ================ Trafo 3 =================== 
+	Q_tilde_vec = kron(eye(N),Q_tilde)   # for x_tilde_vec
+	R_tilde_vec = kron(eye(N),R_tilde)	 # for u_tilde_vec
+
+	# A_tilde_vec, B_tilde_vec, E_tilde_vec, g_tilde_vec updated below
+
+	Fu_tilde = [eye(nu) ; -eye(nu)]
+	fu_tilde = [u_tilde_ub; -u_tilde_lb]
+	ng = length(fu_tilde)
+
+	# Concatenate input (tilde) constraints
+	Fu_tilde_vec = kron(eye(N), Fu_tilde)
+	fu_tilde_vec = repmat(fu_tilde,N)
+
+	# Appended State constraints (tilde)
+	F_tilde = [eye(nx+nu) ; -eye(nx+nu)]
+	f_tilde = [x_tilde_ub ; -x_tilde_lb]
+	nf = length(f_tilde);
+
+	# Concatenate appended state (tilde) constraints
+	F_tilde_vec = kron(eye(N), F_tilde)
+	f_tilde_vec = repmat(f_tilde,N)   
+
+	# will be updated below
+	x_tilde_ref = []
+	A_tilde_updated = []
+	B_tilde_updated = []
+	g_tilde_updated = []
+
+	c_pred 		= []
+
+######################################### main functions #######################################
+
+
+
+	function updateMatrices(s_pred, v_pred, k_coeffs)
+		global A_tilde_updated, B_tilde_updated, g_tilde_updated, c_pred
+
+				# prepare data for Lat control
 		
-		tic()
-
-		# build problem
-		x0 = [ey_0 ; epsi_0]
-		u0 = u_0 				# it's really u_{-1}
-		x_tilde_0 = [x0 ; u0]	# initial state of system; PARAMETER
-
 		# system dynamics A, B, c defined later on (they depend on reference)
 		A_updated = zeros(nx, nx, N)
 		B_updated = zeros(nx, nu, N)
 		g_updated = zeros(nx, N)
+		c_pred = zeros(N)
+
 		for i = 1 : N
+			c_pred[i] = k_coeffs[1]*s_pred[i]^3 + k_coeffs[2]*s_pred[i]^2 + k_coeffs[3]*s_pred[i] + k_coeffs[4]
 			A_updated[:,:,i] = [	1	dt*v_pred[i] 
 									0		1			]
 			B_updated[:,:,i] = [	dt*v_pred[i]*L_b/(L_a+L_b) 
 									dt*v_pred[i]/(L_a + L_b)	]
 			g_updated[:,i] = [ 0	# column vector
-							-dt*v_pred[i]*(k_coeffs[1]*s_pred[i]^3 + k_coeffs[2]*s_pred[i]^2 + k_coeffs[3]*s_pred[i] + k_coeffs[4]) 	]
+							-dt*v_pred[i]*c_pred[i] 	]
 		end
 
 
@@ -289,6 +321,169 @@ module GPSKinMPCPathFollowerFrenetLinLatNN
 			B_tilde_updated[:,:,i] = [	B_updated[:,:,i] 	;  	eye(nu)	]
 			g_tilde_updated[:,i] =   [	g_updated[:,i]		; 	zeros(nu) ]
 		end
+
+	end
+
+
+	function eval_PrimalNN(params::Array{Float64,1})
+
+		global A_tilde_updated, B_tilde_updated, g_tilde_updated
+
+		ey_0 = params[1]
+		epsi_0 = params[2]
+
+		tic()
+		z1 = max.( Wi_PLat*params + bi_PLat, 0  )
+		z2 = max.( W1_PLat*z1     + b1_PLat, 0  )
+		u_tilde_NN_vec = Wout_PLat*z2 + bout_PLat
+
+
+		x_tilde_0 = params[1:3] 	
+
+		A_tilde_vec = zeros(N*(nx+nu), (nx+nu))
+		A_tmp = eye(nx+nu)  	# tmp variable used to store the ``powers of A_tilde"
+		for ii = 1 : N
+			A_tmp = A_tilde_updated[:,:,ii]*A_tmp
+		    A_tilde_vec[1+(ii-1)*(nx+nu):ii*(nx+nu),:] = A_tmp 	#A_tilde^ii
+		end
+
+		B_tilde_vec = zeros(N*(nx+nu), nu*N)
+		for ii = 0 : N-1
+		    for jj = 0 : ii-1
+		    	A_tmp = eye(nx+nu)	# used to emulate A_tilde^(ii-jj)
+		    	for kk = 1 : (ii-jj)
+		    		A_tmp = A_tilde_updated[:,:,kk+1]*A_tmp
+		    	end
+		        B_tilde_vec[1+ii*(nx+nu):(ii+1)*(nx+nu), 1+jj*nu:  (jj+1)*nu] = A_tmp*B_tilde_updated[:,:,jj+1] 	# A_tilde^(ii-jj)*B_tilde
+		    end
+		    B_tilde_vec[1+ii*(nx+nu):(ii+1)*(nx+nu), 1+ii*nu:(ii+1)*nu] = B_tilde_updated[:,:,ii+1]
+		end
+
+		nw=nx+nu
+		E_tilde_vec = zeros(N*(nx+nu), nw*N)
+		for ii = 0 : N-1
+		    for jj = 0 : ii-1
+		    	A_tmp = eye(nx+nu) 	# simulates A_tilde^(ii-jj)
+		    	for kk = 1 : (ii-jj)
+		    		A_tmp = A_tilde_updated[:,:,kk+1]*A_tmp
+		    	end
+		        E_tilde_vec[1+ii*(nx+nu):(ii+1)*(nx+nu), 1+jj*nw:  (jj+1)*nw] = A_tmp * eye(nx+nu)    # A_tilde^(ii-jj)*eye(nx+nu)
+		    end
+		    E_tilde_vec[1+ii*(nx+nu):(ii+1)*(nx+nu), 1+ii*nw:(ii+1)*nw] = eye(nx+nu)
+		end
+
+		g_tilde_vec = zeros(N*(nx+nu))
+		for ii = 1 : N
+			g_tilde_vec[1+(ii-1)*(nx+nu) : ii*(nx+nu)] = g_tilde_updated[:,ii]
+		end
+
+		x_tilde_ref = x_tilde_ref_init
+		x_tilde_NN_vec = A_tilde_vec*x_tilde_0 + B_tilde_vec*u_tilde_NN_vec + E_tilde_vec*g_tilde_vec
+
+		xu_tilde_NN_res = [ maximum(F_tilde_vec*x_tilde_NN_vec - f_tilde_vec) ; maximum(Fu_tilde_vec*u_tilde_NN_vec - fu_tilde_vec) ]  # should be <= 0
+		flag_XUfeas = 0
+		if maximum(xu_tilde_NN_res) <= 0  	# infeasible if bigger than zero/threshold
+			flag_XUfeas = 1
+		end
+
+
+		primObj_NN = (x_tilde_NN_vec-x_tilde_ref)'*Q_tilde_vec*(x_tilde_NN_vec-x_tilde_ref) + u_tilde_NN_vec'*R_tilde_vec*u_tilde_NN_vec
+
+		time_NN = toq()
+
+		df_opt_NN = x_tilde_NN_vec[3]
+		df_pred_NN = x_tilde_NN_vec[3:(nx+nu):end]
+		ey_pred_NN = [ ey_0 ; x_tilde_NN_vec[1:(nx+nu):end] ]
+		epsi_pred_NN = [ epsi_0 ; x_tilde_NN_vec[2:(nx+nu):end] ]
+
+
+		return primObj_NN, xu_tilde_NN_res, flag_XUfeas, df_opt_NN, df_pred_NN, ey_pred_NN, epsi_pred_NN, squeeze(u_tilde_NN_vec,2), time_NN 
+	end
+
+
+
+	function get_NNsolution(ey_0::Float64, epsi_0::Float64, u_0::Float64, s_pred::Array{Float64,1}, v_pred::Array{Float64,1}, k_coeffs::Array{Float64,1})
+
+		global c_pred
+
+		updateMatrices(s_pred, v_pred, k_coeffs)
+
+		params = [ey_0 ; epsi_0 ; u_0 ; v_pred[1:N] ; c_pred[1:N]]
+
+		# println("isze of params: $(size(params))")
+
+		primNN_obj, xu_tilde_NN_res, flag_XUfeas, df_opt_NN, df_pred_NN, ey_pred_NN, epsi_pred_NN, ddf_pred_NN, solvTime_NN = eval_PrimalNN(params)
+
+		solvTime_dualNN = []
+		dualNN_obj = []
+
+		# is_opt_NN = (flag_XUfeas==1) && (primNN_obj[1] - dualNN_obj[1] <= 0.1)
+		is_opt_NN = (flag_XUfeas==1)
+
+		if is_opt_NN
+			println("****** IS FEASIBLE: $(is_opt_NN) ******")
+			solMode = "NN"
+			# needs a bit of work
+			df_opt_NN, df_pred_NN, ddf_pred_NN, ey_pred_NN, epsi_pred_NN, solvTime_primNN, is_opt_NN = solve_gurobi(ey_0, epsi_0, u_0, s_pred, v_pred, k_coeffs)
+			return 	df_opt_NN, df_pred_NN, ey_pred_NN, epsi_pred_NN, ddf_pred_NN, solvTime_primNN + solvTime_dualNN, is_opt_NN, solMode, primNN_obj, dualNN_obj,xu_tilde_NN_res
+
+		else  	## NN solution not good
+			solMode = "opt"
+			primNN_obj = []
+			dualNN_obj = []
+			xu_tilde_NN_res = []
+			df_opt_gurobi, df_pred_gurobi, ddf_pred_gurobi, ey_pred_gurobi, epsi_pred_gurobi, solvTimeGurobi1, is_opt_lat = solve_gurobi(ey_0, epsi_0, u_0, s_pred, v_pred, k_coeffs)
+			return df_opt_gurobi, df_pred_gurobi, ey_pred_gurobi, epsi_pred_gurobi, ddf_pred_gurobi, solvTimeGurobi1, is_opt_lat, solMode, primNN_obj, dualNN_obj,xu_tilde_NN_res
+		end 
+
+		# return df_opt, df_pred_gurobi, ddf_pred_gurobi, ey_pred_gurobi, epsi_pred_gurobi, solvTimeGurobi1, status
+	end
+
+
+	# this function is called iteratively
+	# may want to add epsi_ref in the future (epsi in a curve is generally non-zero)
+	function solve_gurobi(ey_0::Float64, epsi_0::Float64, u_0::Float64, s_pred::Array{Float64,1}, v_pred::Array{Float64,1}, k_coeffs::Array{Float64,1})
+		
+		tic()
+
+		global A_tilde_updated, B_tilde_updated, g_tilde_updated
+
+
+		updateMatrices(s_pred, v_pred, k_coeffs)
+
+
+		# build problem
+		x0 = [ey_0 ; epsi_0]
+		u0 = u_0 				# it's really u_{-1}
+		x_tilde_0 = [x0 ; u0]	# initial state of system; PARAMETER
+
+
+		# # system dynamics A, B, c defined later on (they depend on reference)
+		# A_updated = zeros(nx, nx, N)
+		# B_updated = zeros(nx, nu, N)
+		# g_updated = zeros(nx, N)
+		# for i = 1 : N
+		# 	A_updated[:,:,i] = [	1	dt*v_pred[i] 
+		# 							0		1			]
+		# 	B_updated[:,:,i] = [	dt*v_pred[i]*L_b/(L_a+L_b) 
+		# 							dt*v_pred[i]/(L_a + L_b)	]
+		# 	g_updated[:,i] = [ 0	# column vector
+		# 					-dt*v_pred[i]*(k_coeffs[1]*s_pred[i]^3 + k_coeffs[2]*s_pred[i]^2 + k_coeffs[3]*s_pred[i] + k_coeffs[4]) 	]
+		# end
+
+
+		# # x_tilde transformation
+		# # update system matrices for tilde-notation
+		# A_tilde_updated = zeros(nx+nu,nx+nu,N)
+		# B_tilde_updated = zeros(nx+nu,nu,N)
+		# g_tilde_updated = zeros(nx+nu,N)
+		# for i = 1 : N 
+		# 	A_tilde_updated[:,:,i] = [ 	A_updated[:,:,i]  		B_updated[:,:,i] 
+		# 								zeros(nu,nx)   			eye(nu)			]
+		# 	B_tilde_updated[:,:,i] = [	B_updated[:,:,i] 	;  	eye(nu)	]
+		# 	g_tilde_updated[:,i] =   [	g_updated[:,i]		; 	zeros(nu) ]
+		# end
+
 
 		# z-transformation
 		Aeq_gurobi_updated = zeros(N*nx_tilde , N*(nx_tilde+nu_tilde))

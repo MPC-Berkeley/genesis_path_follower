@@ -301,6 +301,7 @@ module GPSKinMPCPathFollowerFrenetLinLongNN
 	function eval_DualNN(params::Array{Float64,1})
 		global x_tilde_ref
 
+		tic()
 		x_tilde_0 = params[1:3]
 		
 		# some terms can be pre-computed
@@ -322,8 +323,9 @@ module GPSKinMPCPathFollowerFrenetLinLongNN
 
 		dualObj_NN = -1/2 * lambda_tilde_NN_vec'*Qdual_tmp*lambda_tilde_NN_vec - (C_dual*(Q_dual\c_dual)+d_dual)'*lambda_tilde_NN_vec - 1/2*c_dual'*(Q_dual\c_dual) + const_dual
 
+		time_NN = toq()
 
-		return dualObj_NN, lambda_tilde_NN_orig
+		return dualObj_NN, lambda_tilde_NN_orig, time_NN
 	end
 
 
@@ -337,8 +339,8 @@ module GPSKinMPCPathFollowerFrenetLinLongNN
 		tic()
 
 		# calls the NN with two Hidden Layers
-		z1 = max.(Wi_PLong*params + bi_PLong, 0)
-		z2 = max.(W1_PLong*z1 + b1_PLong, 0)
+		z1 = max.(Wi_PLong*params  + bi_PLong, 0)
+		z2 = max.(W1_PLong*z1      + b1_PLong, 0)
 		u_tilde_NN_vec = Wout_PLong*z2 + bout_PLong  	#Delta-Acceleration
 
 		# compute NN predicted state
@@ -417,8 +419,8 @@ module GPSKinMPCPathFollowerFrenetLinLongNN
 		params = [s_0 ; v_0 ; u_0 ; s_ref[2:end] ; v_ref[2:end]] 	# stack to 19x1 matrix
 
 		# eval NN solution
-		primNN_obj, xu_tilde_NN_res, flag_XUfeas, a_opt_NN, a_pred_NN, s_pred_NN, v_pred_NN, dA_pred_NN, solvTime_NN = eval_PrimalNN(params)
-		dualNN_obj, lambda_tilde_NN_vec = eval_DualNN(params)
+		primNN_obj, xu_tilde_NN_res, flag_XUfeas, a_opt_NN, a_pred_NN, s_pred_NN, v_pred_NN, dA_pred_NN, solvTime_primNN = eval_PrimalNN(params)
+		dualNN_obj, lambda_tilde_NN_vec, solvTime_dualNN = eval_DualNN(params)
 
 		# println("primal NN obj: $(primNN_obj)")
 		# println("dual NN obj: $(dualNN_obj)")
@@ -430,11 +432,11 @@ module GPSKinMPCPathFollowerFrenetLinLongNN
 		
 
 		if is_opt_NN
-			println("****** IS FEASIBLE: $(is_opt_NN) ******")
+			# println("****** IS FEASIBLE: $(is_opt_NN) ******")
 			solMode = "NN"
 			# needs a bit of work
 			# a_opt_NN, a_pred_NN, s_pred_NN, v_pred_NN, dA_pred_NN, solvTime_NN, is_opt_NN = solve_gurobi(s_0, v_0, u_0, s_ref, v_ref)
-			return 	a_opt_NN, a_pred_NN, s_pred_NN+s_0_true, v_pred_NN, dA_pred_NN, solvTime_NN, is_opt_NN, solMode, primNN_obj, dualNN_obj,xu_tilde_NN_res
+			return 	a_opt_NN, a_pred_NN, s_pred_NN+s_0_true, v_pred_NN, dA_pred_NN, solvTime_primNN + solvTime_dualNN, is_opt_NN, solMode, primNN_obj, dualNN_obj,xu_tilde_NN_res
 
 		else  	## NN solution not good
 			solMode = "opt"
