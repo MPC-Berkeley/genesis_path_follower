@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import tensorflow as tf
 import scipy.io as sio
 from sklearn.utils import shuffle
-import IPython
+# import IPython
 
 #import h5py
 
@@ -81,7 +81,9 @@ output = tf.add(tf.matmul(W_O,layer_2), b_O)
 # loss = tf.reduce_mean(tf.abs(y - y_data)) 
 # optimizer = tf.train.GradientDescentOptimizer(0.05) TO REDUCE OSCILLATION?
 
-cost = tf.reduce_mean(tf.square(output-ys))            # our mean squared error cost function
+# cost = tf.reduce_mean(tf.square(output-ys))            # our mean squared error cost function
+cost = tf.reduce_mean( tf.squared_difference(output,ys) + tf.abs(output - ys) )
+
 train = tf.train.AdamOptimizer(0.01).minimize(cost)   # GD and proximal GD working bad! Adam and RMS well.
 
 c_t = []

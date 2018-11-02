@@ -279,8 +279,14 @@ function pub_loop(acc_pub_obj, steer_pub_obj, mpc_path_pub_obj)
 
 			solv_time_long_gurobi1_all[it_num+1] = solv_time_long_gurobi1
 
-			df_opt_gurobi, df_pred_gurobi, ddf_pred_gurobi, ey_pred_gurobi, epsi_pred_gurobi, solv_time_lat_gurobi1, is_opt_lat_gurobi = kmpcLinLatNN.solve_gurobi(ey_curr, epsi_curr, df_opt, s_pred_gurobi, v_pred_gurobi, K_coeff)
+
+			# df_opt_gurobi, df_pred_gurobi, ddf_pred_gurobi, ey_pred_gurobi, epsi_pred_gurobi, solv_time_lat_gurobi1, is_opt_lat_gurobi = kmpcLinLatNN.get_NNsolution(ey_curr, epsi_curr, df_opt, s_pred_gurobi, v_pred_gurobi, K_coeff)
+			# df_opt_gurobi, df_pred_gurobi, ey_pred_gurobi, epsi_pred_gurobi, ddf_pred_gurobi, solv_time_lat_gurobi1, is_opt_lat, solMode_lat, primNN_Lat_obj, dualNN_lat_obj, xu_tilde_lat_NN_res = kmpcLinLatNN.get_NNsolution(ey_curr, epsi_curr, df_opt, s_pred_gurobi, v_pred_gurobi, K_coeff)
+			df_opt_gurobi, df_pred_gurobi, ddf_pred_gurobi, ey_pred_gurobi, epsi_pred_gurobi, solv_time_lat_gurobi1, is_opt_lat = kmpcLinLatNN.solve_gurobi(ey_curr, epsi_curr, df_opt, s_pred_gurobi, v_pred_gurobi, K_coeff)
+
 			solv_time_lat_gurobi1_all[it_num+1] = solv_time_lat_gurobi1
+
+
 
 			rostm = get_rostime()
 			tm_secs = rostm.secs + 1e-9 * rostm.nsecs
@@ -288,7 +294,7 @@ function pub_loop(acc_pub_obj, steer_pub_obj, mpc_path_pub_obj)
 			log_str_long_Gurobi = @sprintf("Solve Status Long. Gurobi.: %s, Acc: %.3f, SolvTimeLong Gurobi:  %.3f", is_opt_long,  a_opt_gurobi, solv_time_long_gurobi1)
 			loginfo(log_str_long_Gurobi)
 
-			log_str_lat = @sprintf("Solve Status Lat. Gurobi: %s, SA: %.3f, SolvTimeLat:  %.3f", is_opt_lat_gurobi, df_opt_gurobi, solv_time_lat_gurobi1)
+			log_str_lat = @sprintf("Solve Status Lat. Gurobi: %s, SA: %.3f, SolvTimeLat:  %.3f", is_opt_lat, df_opt_gurobi, solv_time_lat_gurobi1)
 		    loginfo(log_str_lat)
 
 		    a_prev = a_opt    		# store previous acceleration (not super clean)
@@ -314,13 +320,12 @@ function pub_loop(acc_pub_obj, steer_pub_obj, mpc_path_pub_obj)
 			# compute the predicted x,y 
 			x_mpc, y_mpc, v_mpc, psi_mpc = convertS2XY(a_pred_gurobi, df_pred_gurobi)	# this function converts the (s,c(s)) to (X,Y)
 
-			println("start saving bags")
 
 			# save relevant messages
 			mpc_path_msg = mpc_path()
 			mpc_path_msg.header.stamp = rostm
 			mpc_path_msg.solv_status_long  = string(is_opt_long)
-			mpc_path_msg.solv_status_lat  = string(is_opt_lat_gurobi)
+			mpc_path_msg.solv_status_lat  = string(is_opt_lat)
 			mpc_path_msg.solv_time_long = solv_time_long_gurobi1
 			mpc_path_msg.solv_time_lat = solv_time_lat_gurobi1
 			# store current states and previous inputs (for NN learning)
@@ -353,16 +358,11 @@ function pub_loop(acc_pub_obj, steer_pub_obj, mpc_path_pub_obj)
 			mpc_path_msg.vr_recon   = v_ref	# v_ref
 			mpc_path_msg.psir_recon = psi_ref_recon 	# psi_ref
 			# # store current and predicted inputs
-			# println(size(a_pred_gurobi))
 			mpc_path_msg.acc   = a_pred_gurobi	# d_f
-			# println(size(df_pred_gurobi))
 			mpc_path_msg.df  = df_pred_gurobi	# acc
-			# println(size(ddf_pred_gurobi))
 			mpc_path_msg.ddf = ddf_pred_gurobi   # delta df; for policy-learning
-			println(size(dA_pred_gurobi))
 			mpc_path_msg.dacc = dA_pred_gurobi	# delta ACC; for policy-learning
 
-			println("end saving bags")
 
 
 			publish(mpc_path_pub_obj, mpc_path_msg)
