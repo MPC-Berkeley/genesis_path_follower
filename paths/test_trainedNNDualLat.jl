@@ -57,9 +57,34 @@ test_Data = matread("NN_test_trainingDataLat10k_PrimalDual2.mat")
 # test_Data = matread("NN_test_trainingDataLat10k_PrimalDual2.mat")
 test_inputParams = test_Data["inputParam_lat"]
 test_outputParamDdf = test_Data["outputParamDdf_lat"]
-test_inputParams = test_inputParams[1:1,:]
+# test_inputParams = test_inputParams[12:13,:]
 
-############################################################################
+num_DataPoints = size(test_inputParams,1)
+num_features =   size(test_inputParams,2)
+num_labels =   size(test_outputParamDdf,2)
+
+println("label $(num_labels)")
+
+
+
+norm_dataIn =  zeros(1,num_features)
+norm_dataOut = zeros(1,num_labels)
+
+for kkkin = 1:num_features
+	norm_dataIn[1,kkkin] =  norm(test_inputParams[:,kkkin])
+	test_inputParams[kkkin,:] = test_inputParams[kkkin,:]./norm_dataIn[1,kkkin]
+
+end
+
+for kkkout= 1:num_labels
+	norm_dataOut[1,kkkout] =  norm(test_outputParamDdf[:,kkkout])
+	# test_outputParamDdf[kkkout,:] = test_outputParamDdf[kkkout,:]./norm_dataOut[1,kkkout]
+end
+
+
+println("norm $(norm_dataOut)")
+
+###########################################################################
 
 ## Load Ranges of params 
 ey_lb = KinMPCParams.ey_lb
@@ -117,8 +142,7 @@ f_tilde_vec = repmat(f_tilde,N)
     
 ######################## ITERATE OVER parameters ################
 # build problem
-num_DataPoints = 1000						# Number of test data points
-num_DataPoints = size(test_inputParams,1)
+# num_DataPoints = 1000						# Number of test data points
 
 solv_time_all = zeros(num_DataPoints)
 dual_gap = zeros(num_DataPoints)
@@ -239,9 +263,12 @@ while iii <= num_DataPoints
 	# z0 = (params - xinoff).*xingain + xinymin
 	z1 = max.(Wi_PLat*z0 + bi_PLat, 0)
 	z2 = max.(W1_PLat*z1 + b1_PLat, 0)
-	u_tilde_NN_vec = Wout_PLat*z2 + bout_PLat  								# Delta-Acceleration
+	u_tilde_NN_vec = Wout_PLat*z2 + bout_PLat 
+    println("dim $(u_tilde_NN_vec)")
+
+	u_tilde_NN_vec = u_tilde_NN_vec.*norm_dataOut'								# Delta-Acceleration
 	# u_tilde_NN_vec = (u_tilde_NN_vec - xoutymin)./xoutgain + xoutoff
-	# println("out julia net $(u_tilde_NN_vec)")
+	println("out julia net $(u_tilde_NN_vec)")
 	
 	# compute NN predicted state
 	x_tilde_0 = params[1:3] 	

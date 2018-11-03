@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import tensorflow as tf
 import scipy.io as sio
 from sklearn.utils import shuffle
+from sklearn.preprocessing import normalize
 # import IPython
 
 #import h5py
@@ -16,6 +17,10 @@ df = sio.loadmat('NN_test_trainingDataLat10k_PrimalDual2.mat',squeeze_me=True, s
 # df = sio.loadmat('NN_test_trainingDataLatRFS.mat',squeeze_me=True, struct_as_record=False) # read data set using pandas
 x_data = df['inputParam_lat']
 y_data = df['outputParamDdf_lat']
+
+x_data = normalize(x_data, norm='l2', axis=0, copy=True, return_norm=False)
+y_data = normalize(y_data, norm='l2', axis=0, copy=True, return_norm=False)
+
 # y_dataDual = df['outputParamDual_lat']
 
 ###### TRY REMOVING #######
@@ -37,11 +42,11 @@ y_train = y_data[:train_length,:]                       # Training data
 
 x_test = x_data[train_length:, :]                       # Testing data
 y_test = y_data[train_length:,:]                        # Testing data
-# y_testDual = y_dataDual[train_length:,:]                # Testing data 
+# y_testDual = y_dataDual[train_length:,:]              # Testing data 
 
 insize =  x_data.shape[1]
 outsize = y_data.shape[1]                               # Dimension of primal output data 
-# outsizeD = y_dataDual.shape[1]                          # Dimension of dual output data 
+# outsizeD = y_dataDual.shape[1]                        # Dimension of dual output data 
 
 xs = tf.placeholder("float")
 ys = tf.placeholder("float")
@@ -86,7 +91,7 @@ output = tf.add(tf.matmul(W_O,layer_2), b_O)
 # cost = tf.reduce_mean(tf.square(output-ys))            # our mean squared error cost function
 cost = tf.reduce_mean( tf.squared_difference(output,ys) + tf.abs(output - ys) )
 
-train = tf.train.AdamOptimizer(0.01).minimize(cost)   # GD and proximal GD working bad! Adam and RMS well.
+train = tf.train.AdamOptimizer(0.01).minimize(cost)      # GD and proximal GD working bad! Adam and RMS well.
 
 c_t = []
 c_test = []
