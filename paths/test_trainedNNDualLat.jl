@@ -23,7 +23,7 @@ L_a 	= KinMPCParams.L_a				# from CoG to front axle (according to Jongsang)
 L_b 	= KinMPCParams.L_b				# from CoG to rear axle (according to Jongsang)
 
 ############## load all NN Matrices ##############
-primalNN_Data 	= matread("trained_weightsPrimalLatTrajDataRFS.mat")
+primalNN_Data 	= matread("trained_weightsPrimalLatOffset.mat")
 dualNN_Data 	= matread("trained_weightsDualLat.mat")		# Dummy now. Must alter later 
 
 # read out NN primal/Dual weights
@@ -53,11 +53,11 @@ Wout_DLat = dualNN_Data["W0D"]
 bout_DLat = dualNN_Data["b0D"]
 
 ####################### debugging code ###################################
-test_Data = matread("NN_test_trainingDataLatRFS.mat")
+test_Data = matread("NN_test_trainingDataLat10k_PrimalDual2.mat")
 # test_Data = matread("NN_test_trainingDataLat10k_PrimalDual2.mat")
 test_inputParams = test_Data["inputParam_lat"]
 test_outputParamDdf = test_Data["outputParamDdf_lat"]
-test_inputParams = test_inputParams[1:1000,:]
+test_inputParams = test_inputParams[1:1,:]
 
 ############################################################################
 
@@ -252,7 +252,7 @@ while iii <= num_DataPoints
 	xu_tilde_NN_res = [ maximum(F_tilde_vec*x_tilde_NN_vec - f_tilde_vec) ; maximum(Fu_tilde_vec*u_tilde_NN_vec - fu_tilde_vec) ]  # should be <= 0
 	flag_XUfeas = 0
 
-	if maximum(xu_tilde_NN_res) < 1e-3  	# infeasible if bigger than zero/threshold
+	if maximum(xu_tilde_NN_res) < 1e-3  						# infeasible if bigger than zero/threshold
 		flag_XUfeas = 1
 	end
 
@@ -311,8 +311,6 @@ while iii <= num_DataPoints
 	primalDiff[iii] = norm(test_outputParamDdf[iii,:] - u_tilde_NN_vec)
 	primalDiff0[iii] = norm(test_outputParamDdf[iii,1] - u_tilde_NN_vec[1]) 
 	primalDiffOrigSol[iii] = norm(U_test_opt - test_outputParamDdf[iii,:])
-
-
 
 	
 	if !(status == :Optimal)

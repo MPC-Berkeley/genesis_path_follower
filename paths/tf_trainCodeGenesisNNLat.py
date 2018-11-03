@@ -12,8 +12,8 @@ from sklearn.utils import shuffle
 #import h5py
 
 #%% We have imported all dependencies
-# df = sio.loadmat('NN_test_trainingDataLat10k_PrimalDual2.mat',squeeze_me=True, struct_as_record=False) # read data set using pandas
-df = sio.loadmat('NN_test_trainingDataLatRFS.mat',squeeze_me=True, struct_as_record=False) # read data set using pandas
+df = sio.loadmat('NN_test_trainingDataLat10k_PrimalDual2.mat',squeeze_me=True, struct_as_record=False) # read data set using pandas
+# df = sio.loadmat('NN_test_trainingDataLatRFS.mat',squeeze_me=True, struct_as_record=False) # read data set using pandas
 x_data = df['inputParam_lat']
 y_data = df['outputParamDdf_lat']
 # y_dataDual = df['outputParamDual_lat']
@@ -49,7 +49,7 @@ ys = tf.placeholder("float")
 #%%
 
 ################## PRIMAL NN TRAINING ##############################
-neuron_size = 2
+neuron_size = 10
 neuron_sizeML = neuron_size                             # Can vary size of the intermediate layer as well
 
 W_1 = tf.Variable(tf.random_uniform([neuron_size,insize]))
@@ -86,7 +86,7 @@ output = tf.add(tf.matmul(W_O,layer_2), b_O)
 # cost = tf.reduce_mean(tf.square(output-ys))            # our mean squared error cost function
 cost = tf.reduce_mean( tf.squared_difference(output,ys) + tf.abs(output - ys) )
 
-train = tf.train.AdamOptimizer(0.001).minimize(cost)   # GD and proximal GD working bad! Adam and RMS well.
+train = tf.train.AdamOptimizer(0.01).minimize(cost)   # GD and proximal GD working bad! Adam and RMS well.
 
 c_t = []
 c_test = []
@@ -100,7 +100,7 @@ with tf.Session() as sess:
      inds = np.arange(x_train.shape[0])
      train_count = len(x_train)
 
-     N_EPOCHS = 150
+     N_EPOCHS = 500
      BATCH_SIZE = 100
 
      for i in range(0, N_EPOCHS):
@@ -122,7 +122,7 @@ with tf.Session() as sess:
      vj['b2'] = sess.run(b_2)
      vj['b0'] = sess.run(b_O)
      # sio.savemat('trained_weightsPrimalLat.mat',vj)
-     sio.savemat('trained_weightsPrimalLatTrajDataRFS.mat',vj)
+     sio.savemat('trained_weightsPrimalLatOffset.mat',vj)
 
      ########### CAN WE LOOP OVER ALL TRAINING DATA TO SEE WHAT THE MIN/MAX/AVG ERROR IS ????????  ###########
 
