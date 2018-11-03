@@ -39,11 +39,11 @@ module GPSKinMPCPathFollowerFrenetLinLatNN
 
 	# saved place is different
 	if KinMPCParams.platform == "nuvo"
-		primalNN_Data 	= matread("../GenesisAutoware/ros/src/genesis_path_follower/paths/trained_weightsPrimalLat.mat")
+		primalNN_Data 	= matread("../GenesisAutoware/ros/src/genesis_path_follower/paths/trained_weightsPrimalLatTrajData.mat")
 		dualNN_Data 	= matread("../GenesisAutoware/ros/src/genesis_path_follower/paths/trained_weightsDualLat.mat")
 
 	elseif KinMPCParams.platform == "abby"
-		primalNN_Data 	= matread("../catkin_ws/src/genesis_path_follower/paths/trained_weightsPrimalLat.mat")
+		primalNN_Data 	= matread("../catkin_ws/src/genesis_path_follower/paths/trained_weightsPrimalLatTrajData.mat")
 		dualNN_Data 	= matread("../catkin_ws/src/genesis_path_follower/paths/trained_weightsDualLat.mat")
 	
 	else
@@ -301,7 +301,7 @@ module GPSKinMPCPathFollowerFrenetLinLatNN
 	function updateMatrices(s_pred, v_pred, k_coeffs)
 		global A_tilde_updated, B_tilde_updated, g_tilde_updated, c_pred
 
-				# prepare data for Lat control
+		# prepare data for Lat control
 		
 		# system dynamics A, B, c defined later on (they depend on reference)
 		A_updated = zeros(nx, nx, N)
@@ -418,7 +418,7 @@ module GPSKinMPCPathFollowerFrenetLinLatNN
 
 		updateMatrices(s_pred, v_pred, k_coeffs)
 
-		params = [ey_0 ; epsi_0 ; u_0 ; v_pred[1:N] ; c_pred[1:N]]
+		params = [ey_0 ; epsi_0 ; u_0 ; v_pred[1:N] ; c_pred]
 
 		# println("isze of params: $(size(params))")
 
