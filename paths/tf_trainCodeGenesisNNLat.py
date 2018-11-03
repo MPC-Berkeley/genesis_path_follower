@@ -13,7 +13,7 @@ from sklearn.utils import shuffle
 
 #%% We have imported all dependencies
 # df = sio.loadmat('NN_test_trainingDataLat10k_PrimalDual2.mat',squeeze_me=True, struct_as_record=False) # read data set using pandas
-df = sio.loadmat('NN_test_trainingData',squeeze_me=True, struct_as_record=False) # read data set using pandas
+df = sio.loadmat('NN_test_trainingDataLatRFS.mat',squeeze_me=True, struct_as_record=False) # read data set using pandas
 x_data = df['inputParam_lat']
 y_data = df['outputParamDdf_lat']
 # y_dataDual = df['outputParamDual_lat']
@@ -100,8 +100,8 @@ with tf.Session() as sess:
      inds = np.arange(x_train.shape[0])
      train_count = len(x_train)
 
-     N_EPOCHS = 1000
-     BATCH_SIZE = 32
+     N_EPOCHS = 150
+     BATCH_SIZE = 100
 
      for i in range(0, N_EPOCHS):
          for start, end in zip(range(0, train_count, BATCH_SIZE),
@@ -122,7 +122,7 @@ with tf.Session() as sess:
      vj['b2'] = sess.run(b_2)
      vj['b0'] = sess.run(b_O)
      # sio.savemat('trained_weightsPrimalLat.mat',vj)
-     sio.savemat('trained_weightsPrimalLatTrajData.mat',vj)
+     sio.savemat('trained_weightsPrimalLatTrajDataRFS.mat',vj)
 
      ########### CAN WE LOOP OVER ALL TRAINING DATA TO SEE WHAT THE MIN/MAX/AVG ERROR IS ????????  ###########
 
