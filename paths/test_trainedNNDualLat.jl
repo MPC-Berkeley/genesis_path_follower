@@ -23,8 +23,8 @@ L_a 	= KinMPCParams.L_a				# from CoG to front axle (according to Jongsang)
 L_b 	= KinMPCParams.L_b				# from CoG to rear axle (according to Jongsang)
 
 ############## load all NN Matrices ##############
-primalNN_Data 	= matread("trained_weightsPrimalLatTrajData.mat")
-dualNN_Data 	= matread("trained_weightsDualLat.mat")
+primalNN_Data 	= matread("trained_weightsPrimalLatOffset.mat")
+dualNN_Data 	= matread("trained_weightsDualLat.mat")		# Dummy now. Must alter later 
 
 # read out NN primal/Dual weights
 Wi_PLat = primalNN_Data["W1"]
@@ -53,13 +53,38 @@ Wout_DLat = dualNN_Data["W0D"]
 bout_DLat = dualNN_Data["b0D"]
 
 ####################### debugging code ###################################
-test_Data = matread("NN_test_trainingData.mat")
+test_Data = matread("NN_test_trainingDataLat10k_PrimalDual2.mat")
 # test_Data = matread("NN_test_trainingDataLat10k_PrimalDual2.mat")
 test_inputParams = test_Data["inputParam_lat"]
 test_outputParamDdf = test_Data["outputParamDdf_lat"]
-# test_inputParams = test_inputParams[1:100,:]
+# test_inputParams = test_inputParams[12:13,:]
 
-############################################################################
+num_DataPoints = size(test_inputParams,1)
+num_features =   size(test_inputParams,2)
+num_labels =   size(test_outputParamDdf,2)
+
+println("label $(num_labels)")
+
+
+
+norm_dataIn =  zeros(1,num_features)
+norm_dataOut = zeros(1,num_labels)
+
+for kkkin = 1:num_features
+	norm_dataIn[1,kkkin] =  norm(test_inputParams[:,kkkin])
+	test_inputParams[kkkin,:] = test_inputParams[kkkin,:]./norm_dataIn[1,kkkin]
+
+end
+
+for kkkout= 1:num_labels
+	norm_dataOut[1,kkkout] =  norm(test_outputParamDdf[:,kkkout])
+	# test_outputParamDdf[kkkout,:] = test_outputParamDdf[kkkout,:]./norm_dataOut[1,kkkout]
+end
+
+
+println("norm $(norm_dataOut)")
+
+###########################################################################
 
 ## Load Ranges of params 
 ey_lb = KinMPCParams.ey_lb
@@ -117,8 +142,7 @@ f_tilde_vec = repmat(f_tilde,N)
     
 ######################## ITERATE OVER parameters ################
 # build problem
-num_DataPoints = 1000						# Number of test data points
-num_DataPoints = size(test_inputParams,1)
+# num_DataPoints = 1000						# Number of test data points
 
 solv_time_all = zeros(num_DataPoints)
 dual_gap = zeros(num_DataPoints)
@@ -239,9 +263,12 @@ while iii <= num_DataPoints
 	# z0 = (params - xinoff).*xingain + xinymin
 	z1 = max.(Wi_PLat*z0 + bi_PLat, 0)
 	z2 = max.(W1_PLat*z1 + b1_PLat, 0)
-	u_tilde_NN_vec = Wout_PLat*z2 + bout_PLat  								# Delta-Acceleration
+	u_tilde_NN_vec = Wout_PLat*z2 + bout_PLat 
+    println("dim $(u_tilde_NN_vec)")
+
+	u_tilde_NN_vec = u_tilde_NN_vec.*norm_dataOut'								# Delta-Acceleration
 	# u_tilde_NN_vec = (u_tilde_NN_vec - xoutymin)./xoutgain + xoutoff
-	# println("out julia net $(u_tilde_NN_vec)")
+	println("out julia net $(u_tilde_NN_vec)")
 	
 	# compute NN predicted state
 	x_tilde_0 = params[1:3] 	
@@ -252,7 +279,7 @@ while iii <= num_DataPoints
 	xu_tilde_NN_res = [ maximum(F_tilde_vec*x_tilde_NN_vec - f_tilde_vec) ; maximum(Fu_tilde_vec*u_tilde_NN_vec - fu_tilde_vec) ]  # should be <= 0
 	flag_XUfeas = 0
 
-	if maximum(xu_tilde_NN_res) < 1e-3  	# infeasible if bigger than zero/threshold
+	if maximum(xu_tilde_NN_res) < 1e-3  						# infeasible if bigger than zero/threshold
 		flag_XUfeas = 1
 	end
 
@@ -311,8 +338,6 @@ while iii <= num_DataPoints
 	primalDiff[iii] = norm(test_outputParamDdf[iii,:] - u_tilde_NN_vec)
 	primalDiff0[iii] = norm(test_outputParamDdf[iii,1] - u_tilde_NN_vec[1]) 
 	primalDiffOrigSol[iii] = norm(U_test_opt - test_outputParamDdf[iii,:])
-
-
 
 	
 	if !(status == :Optimal)
