@@ -343,8 +343,8 @@ function pub_loop(acc_pub_obj, steer_pub_obj, mpc_path_pub_obj)
 			mpc_path_msg.vs   = v_mpc	# v_mpc; containts v_curr
 			mpc_path_msg.psis = psi_mpc 	# psi_mpc; containts psi_curr
 			# Optimal solution of MPC problem (in Frenet)
-			mpc_path_msg.ss_fren   	=  s_pred_gurobi		# contains s_0 
-			mpc_path_msg.vs_fren   	=  v_pred_gurobi		# contains v_0
+			mpc_path_msg.ss_fren   	= s_pred_gurobi		# contains s_0 
+			mpc_path_msg.vs_fren   	= v_pred_gurobi		# contains v_0
 			mpc_path_msg.eys_fren   = ey_pred_gurobi	# contains ey_0
 			mpc_path_msg.epsis_fren = epsi_pred_gurobi 	# contains epsi_0
 			mpc_path_msg.curv 		= K_coeff

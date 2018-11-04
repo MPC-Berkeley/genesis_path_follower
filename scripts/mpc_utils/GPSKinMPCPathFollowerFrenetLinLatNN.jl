@@ -39,11 +39,11 @@ module GPSKinMPCPathFollowerFrenetLinLatNN
 
 	# saved place is different
 	if KinMPCParams.platform == "nuvo"
-		primalNN_Data 	= matread("../GenesisAutoware/ros/src/genesis_path_follower/paths/trained_weightsPrimalLat.mat")
+		primalNN_Data 	= matread("../GenesisAutoware/ros/src/genesis_path_follower/paths/trained_weightsPrimalLatTrajData.mat")
 		dualNN_Data 	= matread("../GenesisAutoware/ros/src/genesis_path_follower/paths/trained_weightsDualLat.mat")
 
 	elseif KinMPCParams.platform == "abby"
-		primalNN_Data 	= matread("../catkin_ws/src/genesis_path_follower/paths/trained_weightsPrimalLat.mat")
+		primalNN_Data 	= matread("../catkin_ws/src/genesis_path_follower/paths/trained_weightsPrimalLatTrajData.mat")
 		dualNN_Data 	= matread("../catkin_ws/src/genesis_path_follower/paths/trained_weightsDualLat.mat")
 	
 	else
@@ -301,7 +301,7 @@ module GPSKinMPCPathFollowerFrenetLinLatNN
 	function updateMatrices(s_pred, v_pred, k_coeffs)
 		global A_tilde_updated, B_tilde_updated, g_tilde_updated, c_pred
 
-				# prepare data for Lat control
+		# prepare data for Lat control
 		
 		# system dynamics A, B, c defined later on (they depend on reference)
 		A_updated = zeros(nx, nx, N)
@@ -418,7 +418,7 @@ module GPSKinMPCPathFollowerFrenetLinLatNN
 
 		updateMatrices(s_pred, v_pred, k_coeffs)
 
-		params = [ey_0 ; epsi_0 ; u_0 ; v_pred[1:N] ; c_pred[1:N]]
+		params = [ey_0 ; epsi_0 ; u_0 ; v_pred[1:N] ; c_pred]
 
 		# println("isze of params: $(size(params))")
 
@@ -579,67 +579,5 @@ module GPSKinMPCPathFollowerFrenetLinLatNN
 	   	# return df_opt, df_pred_gurobi, ey_pred_gurobi, epsi_pred_gurobi,  solvTimeGurobi1, status
 
 	end  	# end of solve_gurobi()
-
-
-	# #####################################	
-	# ##### State Update Function #####
- #    function update_init_cond(ey::Float64, epsi::Float64)
- #        # update mpc initial condition 
- #        setvalue(ey0,   ey)
- #        setvalue(epsi0, epsi)
- #    end
-
-	# #####################################
-	# ##### Reference Update Function #####
- #    # function update_reference(path::Dict, k_coeffs::Array{Float64,1}, v_des::Float64, s_ref::Array{Float64,1})
- #    function update_reference(s_ref::Array{Float64,1}, v_ref::Array{Float64,1}, k_coeffs::Array{Float64,1})
- #    	setvalue(k_poly[i=1:4], k_coeffs) 	# coeff stored with highest order first
- #    	setvalue(s_r[i=1:(N+1)], s_ref) 	# more like predicted s (obtained from long. controller)
- #    	setvalue(v_r[i=1:(N+1)], v_ref)		# more like predicted v (obtained from long. controller)
- #    end
-
-	# #########################################
-	# ##### Input Update Function #####
-	# # previously predicted input from MPC of previous iteration
-	# # could also do current vehicle
-	# # because constraints on u_k - u_{k-1}
-	# function update_current_input(c_swa::Float64)
-	# 	setvalue(d_f_current, c_swa)
-	# end
-
-	# #################################
-	# ##### Model Solve Function #####
- #    function solve_model()
- #        # Solve the model, assuming relevant update functions have been called by the user.
- #        tic()
- #        status = solve(mdl)
- #        solv_time = toq()
-
- #        # get optimal solutions
- #        d_f_opt = getvalue(d_f[1:N])
- #        return d_f_opt[1], status, solv_time
- #    end
-
-	# #################################
-	# ##### Diagnostics Function ######
-	# function get_solver_results()
-	# 	# This function gets all relevant solver variables and returns it to the client.
-	# 	# Handy for debugging or logging full results.
-
-	# 	# State Variables and Reference
-	# 	# s_mpc   = getvalue(s[1:(N+1)])
-	# 	ey_mpc   = getvalue(ey[1:(N+1)])
-	# 	# v_mpc   = getvalue(v[1:(N+1)])
-	# 	epsi_mpc = getvalue(epsi[1:(N+1)])
-	# 	K = getvalue(k_poly[1:4])
-
-	# 	# Optimal Solution
- #        d_f_opt = getvalue(d_f[1:N])
- #        # acc_opt = getvalue(acc[1:N])
-
- #        # path_ref set in update_reference function.
-	# 	return ey_mpc, epsi_mpc, K, path_ref, d_f_opt
-
-	# end
 
 end
