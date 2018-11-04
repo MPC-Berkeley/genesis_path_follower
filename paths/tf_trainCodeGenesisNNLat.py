@@ -8,19 +8,41 @@ import tensorflow as tf
 import scipy.io as sio
 from sklearn.utils import shuffle
 from sklearn.preprocessing import normalize
+import IPython
+from sklearn.preprocessing import StandardScaler
+from sklearn import preprocessing
+import math
 # import IPython
 
 #import h5py
 
+def normalize(x, mean, std, eps=1e-8):
+    return (x - mean) / (std + eps)
+
+def unnormalize(x, mean, std):
+    return x * std + mean
+
 #%% We have imported all dependencies
-df = sio.loadmat('NN_test_trainingDataLat10k_PrimalDual2.mat',squeeze_me=True, struct_as_record=False) # read data set using pandas
+df = sio.loadmat('NN_test_trainingDataLat100k_PrimalDual2.mat',squeeze_me=True, struct_as_record=False) # read data set using pandas
 # df = sio.loadmat('NN_test_trainingDataLatRFS.mat',squeeze_me=True, struct_as_record=False) # read data set using pandas
 x_data = df['inputParam_lat']
 y_data = df['outputParamDdf_lat']
-
-x_data = normalize(x_data, norm='l2', axis=0, copy=True, return_norm=False)
-y_data = normalize(y_data, norm='l2', axis=0, copy=True, return_norm=False)
-
+x_data_t = x_data
+y_data_t = y_data
+#IPython.embed()
+#x_data = normalize(x_data, norm='l2', axis=0, copy=True, return_norm=False)
+#y_data = normalize(y_data, norm='l2', axis=0, copy=True, return_norm=False)
+#IPython.embed()
+#scaler.tranform(x_data)
+#scaler.tranform(y_data)
+# x_data = preprocessing.scale(x_data)
+# y_data = preprocessing.scale(y_data)
+#scalerx = preprocessing.StandardScaler().fit(x_data)
+#IPython.embed()
+#x_data = normalize(x_data, np.mean(x_data, 0), np.std(x_data, 0))
+#x_data_test = scalerx.transform(x_data) sanity check
+#scalery = preprocessing.StandardScaler().fit(y_data)
+#y_data = normalize(y_data, np.mean(y_data, 0), np.std(y_data, 0)) 
 # y_dataDual = df['outputParamDual_lat']
 
 ###### TRY REMOVING #######
@@ -41,20 +63,23 @@ y_train = y_data[:train_length,:]                       # Training data
 # y_trainDual = y_dataDual[:train_length,:]               # Training data 
 
 x_test = x_data[train_length:, :]                       # Testing data
-y_test = y_data[train_length:,:]                        # Testing data
+y_test = y_data[train_length:,:]   
+y_data_t_test = y_data_t[train_length:, :]                     # Testing data
 # y_testDual = y_dataDual[train_length:,:]              # Testing data 
 
 insize =  x_data.shape[1]
 outsize = y_data.shape[1]                               # Dimension of primal output data 
 # outsizeD = y_dataDual.shape[1]                        # Dimension of dual output data 
 
-xs = tf.placeholder("float")
-ys = tf.placeholder("float")
+xs = tf.placeholder(tf.float32, [insize, None])#tf.placeholder("float")
+ys = tf.placeholder(tf.float32, [outsize, None])#tf.placeholder("float")
+lr = tf.placeholder(tf.float32)
+
 # ysD = tf.placeholder("float")
 #%%
 
 ################## PRIMAL NN TRAINING ##############################
-neuron_size = 10
+neuron_size = 30
 neuron_sizeML = neuron_size                             # Can vary size of the intermediate layer as well
 
 W_1 = tf.Variable(tf.random_uniform([neuron_size,insize]))
@@ -89,9 +114,9 @@ output = tf.add(tf.matmul(W_O,layer_2), b_O)
 # optimizer = tf.train.GradientDescentOptimizer(0.05) TO REDUCE OSCILLATION?
 
 # cost = tf.reduce_mean(tf.square(output-ys))            # our mean squared error cost function
-cost = tf.reduce_mean( tf.squared_difference(output,ys) + tf.abs(output - ys) )
+cost = tf.losses.mean_squared_error(output, ys)#tf.reduce_mean(tf.squared_difference(output, ys))#+ tf.abs(output - ys) )
 
-train = tf.train.AdamOptimizer(0.01).minimize(cost)      # GD and proximal GD working bad! Adam and RMS well.
+train = tf.train.AdamOptimizer(lr).minimize(cost)      # GD and proximal GD working bad! Adam and RMS well.
 
 c_t = []
 c_test = []
@@ -105,19 +130,36 @@ with tf.Session() as sess:
      inds = np.arange(x_train.shape[0])
      train_count = len(x_train)
 
-     N_EPOCHS = 500
+     N_EPOCHS = 450
      BATCH_SIZE = 100
-
-     for i in range(0, N_EPOCHS):
+     max_learning_rate = 0.003
+     min_learning_rate = 0.0001
+     #learning_rate = 0.0001
+     decay_speed = 1200000.0
+     lr_it = 0
+     for i in range(0, N_EPOCHS):        
+         
          for start, end in zip(range(0, train_count, BATCH_SIZE),
                                range(BATCH_SIZE, train_count + 1,BATCH_SIZE)):
-
+             learning_rate = min_learning_rate + (max_learning_rate - min_learning_rate) * math.exp(-lr_it/decay_speed)
+             lr_it += 1
              sess.run([cost,train], feed_dict={xs: np.transpose(x_train[start:end]),
-                                            ys: np.transpose(y_train[start:end])})
+                                            ys: np.transpose(y_train[start:end]), lr: learning_rate})
     
          c_t.append(sess.run(cost, feed_dict={xs:np.transpose(x_train),ys:np.transpose(y_train)}))
          c_test.append(sess.run(cost, feed_dict={xs:np.transpose(x_test),ys:np.transpose(y_test)}))
-         print('Epoch :',i,'Cost Train :',c_t[i], 'Cost Test :',c_test[i])
+         print('Epoch :',i,'Cost Train :',c_t[i], 'Cost Test :',c_test[i], 'learning rate',learning_rate)
+
+     # print('**********NN************')
+     # print(unnormalize(sess.run(output, {xs: x_test[5,:].reshape(insize,1)}),np.mean(y_data, 0) , np.std(y_data, 0)))
+     # # print(x_test[2,:])
+     # print('**********REAL************')
+     # print(y_data_t_test[5,:])
+     # print('**********NN************')
+     # print(sess.run(output, {xs: unx_test[7,:].reshape(insize,1)}))
+     # #print(x_test[2,:])
+     # print('**********REAL************')
+     # print(y_data_t_test[7,:])
 #%% Saving weight matrices 
      vj={}
      vj['W1'] = sess.run(W_1)
@@ -126,27 +168,23 @@ with tf.Session() as sess:
      vj['b1'] = sess.run(b_1)
      vj['b2'] = sess.run(b_2)
      vj['b0'] = sess.run(b_O)
+     #vj['b3'] = sess.run(b_3)
      # sio.savemat('trained_weightsPrimalLat.mat',vj)
      sio.savemat('trained_weightsPrimalLatOffset.mat',vj)
 
-     ########### CAN WE LOOP OVER ALL TRAINING DATA TO SEE WHAT THE MIN/MAX/AVG ERROR IS ????????  ###########
 
-
-
-
-#%%         
 ################################ Plotting the Primal NN Train Quality
-plt.plot(range(len(c_t)),c_t, 'r')
-plt.ylabel('Error in Training')
-plt.xlabel('Epoch')
-plt.title('Fitting Error Training')
-plt.show()
-# plt.hold(True)                                          
-plt.plot(range(len(c_test)),c_test, 'b')
-plt.ylabel('Error in Testing Points')
-plt.xlabel('Epoch')
-plt.title('Fitting Testing Error')
-plt.show()
+# plt.plot(range(len(c_t)),c_t, 'r')
+# plt.ylabel('Error in Training')
+# plt.xlabel('Epoch')
+# plt.title('Fitting Error Training')
+# plt.show()
+# # plt.hold(True)                                          
+# plt.plot(range(len(c_test)),c_test, 'b')
+# plt.ylabel('Error in Testing Points')
+# plt.xlabel('Epoch')
+# plt.title('Fitting Testing Error')
+# plt.show()
 #%%
 
 ########################## PRIMAL TRAIN ENDS. DUAL TRAIN START 
@@ -225,5 +263,4 @@ plt.show()
 # plt.xlabel('Epoch')
 # plt.title('Fitting Testing Error')
 # plt.show()
-
 
