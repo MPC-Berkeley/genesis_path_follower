@@ -23,11 +23,11 @@ L_a 	= KinMPCParams.L_a				# from CoG to front axle (according to Jongsang)
 L_b 	= KinMPCParams.L_b				# from CoG to rear axle (according to Jongsang)
 
 ############## load all data ##############
-# longData = matread("NN_test_trainingData.mat")
+longData = matread("NN_test_trainingData.mat")
 
-# inputParam_long = longData["inputParam_long"]   # np.hstack((s_curr.T, v_curr.T ,a_prev.T, s_ref, v_ref ))
-# outputParamAcc_long = longData["outputParamAcc_long"]
-# outputParamDacc_long = longData["outputParamDacc_long"]
+inputParam_long = longData["inputParam_long"]   # np.hstack((s_curr.T, v_curr.T ,a_prev.T, s_ref, v_ref ))
+outputParamAcc_long = longData["outputParamAcc_long"]
+outputParamDacc_long = longData["outputParamDacc_long"]
 
 ## Load Ranges of params 
 
@@ -39,11 +39,11 @@ L_b 	= KinMPCParams.L_b				# from CoG to rear axle (according to Jongsang)
 ###### Merge random data with extra data from vehicle path following    
 # inputParam_long =  [s_train_rand v_train_rand aprev_train_rand s_ref_train_rand v_ref_train_rand ]
 
-# s_curr_all = inputParam_long[:,1]
-# v_curr_all = inputParam_long[:,2]
-# a_prev_all = inputParam_long[:,3]
-# s_ref_all =  inputParam_long[:,4:4+N-1]
-# v_ref_all =  inputParam_long[:,12:end]								# All data appended 
+s_curr_all = inputParam_long[:,1]
+v_curr_all = inputParam_long[:,2]
+a_prev_all = inputParam_long[:,3]
+s_ref_all =  inputParam_long[:,4:4+N-1]
+v_ref_all =  inputParam_long[:,12:end]								# All data appended 
 
 # input reference
 u_ref_init = kmpcLinLong.u_ref_init									# if not used, set cost to zeros
@@ -117,11 +117,13 @@ nf = length(f_tilde);
 # Concatenate appended state (tilde) constraints
 F_tilde_vec = kron(eye(N), F_tilde)
 f_tilde_vec = repmat(f_tilde,N)   
-	
+
 
 ######################## ITERATE OVER parameters ################
 # build problem
 num_DataPoints = 1000
+num_DataPoints = size(inputParam_long,1)
+
 solv_time_all = zeros(num_DataPoints)
 a_res_all = zeros(num_DataPoints)
 dA_res_all = zeros(num_DataPoints)
@@ -135,9 +137,9 @@ dual_Fx = []
 dual_Fu = []
 L_test_opt = []
 
-inputParam_long = zeros(num_DataPoints,3+2*N)
-outputParamDacc_long = zeros(num_DataPoints, N*(nu))
-outputParamAcc_long  = zeros(num_DataPoints, N*(nu))
+# inputParam_long = zeros(num_DataPoints,3+2*N)
+# outputParamDacc_long = zeros(num_DataPoints, N*(nu))
+# outputParamAcc_long  = zeros(num_DataPoints, N*(nu))
 s_ub_ref = zeros(1,N)
 ii = 1
 
@@ -149,14 +151,21 @@ while ii <= num_DataPoints
 	
 	# Save only feasible points. 
 	# extract appropriate parameters	
- 	s_0 = -1 + 2*rand(1)								# Normalized to 0 now apparently  
- 	v_0 = v_lb + (v_ub-v_lb)*rand(1) 
- 	u_0 = aprev_lb + (aprev_ub-aprev_lb)*rand(1) 		
-	s_ref = rand(1)*s_ub_ref							# Vary along horizon 
- 	v_ref = v_lb + (v_ub-v_lb)*rand(1,N)				
+ # 	s_0 = -1 + 2*rand(1)								# Normalized to 0 now apparently  
+ # 	v_0 = v_lb + (v_ub-v_lb)*rand(1) 
+ # 	u_0 = aprev_lb + (aprev_ub-aprev_lb)*rand(1) 		
+	# s_ref = rand(1)*s_ub_ref							# Vary along horizon 
+ # 	v_ref = v_lb + (v_ub-v_lb)*rand(1,N)				
  
-	# acc_stored = outputParamAcc_long[ii,:]			
-	# dAcc_stored = outputParamDacc_long[ii,:]			
+	# these are the stored solution
+	s_0 = s_curr_all[ii]
+	v_0 = v_curr_all[ii]
+	u_0 = a_prev_all[ii]
+	s_ref = s_ref_all[ii,:]
+	v_ref = v_ref_all[ii,:]
+
+	acc_stored = outputParamAcc_long[ii,:]			
+	dAcc_stored = outputParamDacc_long[ii,:]			
 
 
 	x_ref = zeros(N*nx,1)
@@ -192,9 +201,7 @@ while ii <= num_DataPoints
  		@goto label1 
  	end
 
-# 	#### compare solution with stored solutions ####
-# 	# a_res_all[ii] = norm(a_pred_opt - acc_stored)
-# 	# dA_res_all[ii] = norm(dA_pred_opt - dAcc_stored)
+
 
 # 	#### extract dual variables ####
 # 	### seems to be wrong 
@@ -225,7 +232,7 @@ while ii <= num_DataPoints
 	# Solve the dual problem online to match cost 
     mdlD = Model(solver=GurobiSolver(Presolve=0, LogToConsole=0))
 	@variable(mdlD, L_test[1:N*(nf+ng)])  	# decision variable; contains everything
-	@objective(mdlD, Max, -1/2 * L_test'*Qdual_tmp*L_test - (C_dual*(Q_dual\c_dual)+d_dual)'*L_test - 1/2*c_dual'*(Q_dual\c_dual) + const_dual - 1e-7*L_test'*eye(N*(nf+ng))*L_test)
+	@objective(mdlD, Max, -1/2 * L_test'*Qdual_tmp*L_test - (C_dual*(Q_dual\c_dual)+d_dual)'*L_test - 1/2*c_dual'*(Q_dual\c_dual) + const_dual)
 	@constraint(mdlD, -L_test .<= 0)
 
 	statusD = solve(mdlD)
@@ -234,7 +241,7 @@ while ii <= num_DataPoints
  			@goto label1 
  		end
 	
-	inputParam_long[ii,:] = [s_0 v_0 u_0 s_ref v_ref]
+	# inputParam_long[ii,:] = [s_0 v_0 u_0 s_ref v_ref]
 
 	optVal_long[ii] = obj_primal
 	solv_time_all[ii] = toq()
@@ -245,11 +252,16 @@ while ii <= num_DataPoints
 	a_pred_opt = x_tilde_vec_opt[3:nx+nu:end]
 
 	## store the primal solution too as output gonna change now 
-	outputParamDacc_long[ii,:] =  	dA_pred_opt
-	outputParamAcc_long[ii,:]  = 	a_pred_opt
+	# outputParamDacc_long[ii,:] =  	dA_pred_opt
+	# outputParamAcc_long[ii,:]  = 	a_pred_opt
  	###########################################################	
 
 	obj_dualOnline = getobjectivevalue(mdlD)
+
+# 	#### compare solution with stored solutions ####
+	a_res_all[ii] = norm(a_pred_opt - acc_stored)
+	dA_res_all[ii] = norm(dA_pred_opt - dAcc_stored)
+
 
 	# extract solution
 	L_test_opt = getvalue(L_test)
@@ -266,8 +278,8 @@ end
 
 
 println("===========================================")
-# # println("max a-residual:  $(maximum(a_res_all))")
-# # println("max dA-residual:  $(maximum(dA_res_all))")
+println("max a-residual:  $(maximum(a_res_all))")
+println("max dA-residual:  $(maximum(dA_res_all))")
 println("max solv-time (excl modelling time):  $(maximum(solv_time_all[3:end]))")
 println("avg solv-time (excl modelling time):  $(mean(solv_time_all[3:end]))")
 println("max dual_gap:  $(maximum(dual_gap))")
