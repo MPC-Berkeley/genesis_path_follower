@@ -24,7 +24,7 @@ L_b 	= KinMPCParams.L_b				# from CoG to rear axle (according to Jongsang)
 
 ############## load all NN Matrices ##############
 primalNN_Data 	= matread("trained_weightsPrimalLatOffset.mat")
-dualNN_Data 	= matread("trained_weightsDualLat.mat")		# Dummy now. Must alter later 
+dualNN_Data 	= matread("trained_weightsDualLat.mat")		 
 
 # read out NN primal/Dual weights
 Wi_PLat = primalNN_Data["W1"]
@@ -33,15 +33,6 @@ W1_PLat = primalNN_Data["W2"]
 b1_PLat = primalNN_Data["b2"]
 Wout_PLat = primalNN_Data["W0"]
 bout_PLat = primalNN_Data["b0"]
-
-## Noob stuff (Doing the map-min-max thing to see MATLAB quality)
-# xinoff = primalNN_Data["xinoff"]
-# xingain = primalNN_Data["xingain"]
-# xinymin = primalNN_Data["xinymin"]
-
-# xoutoff = primalNN_Data["xoutoff"]
-# xoutgain = primalNN_Data["xoutgain"]
-# xoutymin = primalNN_Data["xoutymin"]
 
 ##
 
@@ -52,37 +43,16 @@ b1_DLat = dualNN_Data["b2D"]
 Wout_DLat = dualNN_Data["W0D"]
 bout_DLat = dualNN_Data["b0D"]
 
+
 ####################### debugging code ###################################
 test_Data = matread("NN_test_trainingDataLat10k_PrimalDual2.mat")
 # test_Data = matread("NN_test_trainingDataLat10k_PrimalDual2.mat")
 test_inputParams = test_Data["inputParam_lat"]
 test_outputParamDdf = test_Data["outputParamDdf_lat"]
-# test_inputParams = test_inputParams[12:13,:]
+test_inputParams = test_inputParams[12:13,:]
+
 
 num_DataPoints = size(test_inputParams,1)
-num_features =   size(test_inputParams,2)
-num_labels =   size(test_outputParamDdf,2)
-
-println("label $(num_labels)")
-
-
-
-norm_dataIn =  zeros(1,num_features)
-norm_dataOut = zeros(1,num_labels)
-
-for kkkin = 1:num_features
-	norm_dataIn[1,kkkin] =  norm(test_inputParams[:,kkkin])
-	test_inputParams[kkkin,:] = test_inputParams[kkkin,:]./norm_dataIn[1,kkkin]
-
-end
-
-for kkkout= 1:num_labels
-	norm_dataOut[1,kkkout] =  norm(test_outputParamDdf[:,kkkout])
-	# test_outputParamDdf[kkkout,:] = test_outputParamDdf[kkkout,:]./norm_dataOut[1,kkkout]
-end
-
-
-println("norm $(norm_dataOut)")
 
 ###########################################################################
 
@@ -259,16 +229,12 @@ while iii <= num_DataPoints
 	################## BEGIN extract Primal NN solution ##################
 	tic()
 	# calls the NN with two Hidden Layers
-	z0 = params
+	z0 = params	
 	# z0 = (params - xinoff).*xingain + xinymin
 	z1 = max.(Wi_PLat*z0 + bi_PLat, 0)
 	z2 = max.(W1_PLat*z1 + b1_PLat, 0)
-	u_tilde_NN_vec = Wout_PLat*z2 + bout_PLat 
-    println("dim $(u_tilde_NN_vec)")
 
-	u_tilde_NN_vec = u_tilde_NN_vec.*norm_dataOut'								# Delta-Acceleration
-	# u_tilde_NN_vec = (u_tilde_NN_vec - xoutymin)./xoutgain + xoutoff
-	println("out julia net $(u_tilde_NN_vec)")
+	u_tilde_NN_vec = Wout_PLat*z2 + bout_PLat 
 	
 	# compute NN predicted state
 	x_tilde_0 = params[1:3] 	
