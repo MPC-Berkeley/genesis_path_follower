@@ -1,4 +1,4 @@
-# code to test and extract dual multipliers from primal solution Lateral 
+# code to test and extract dual multipliers from primal solution
 # GXZ + MB
 
 using MAT
@@ -6,21 +6,21 @@ using Gurobi
 using JuMP
 
 
+
 #### problem paramters for LONGITUDINAL Control 
 # Global variable LOAD_PATH contains the directories Julia searches for modules when calling require. It can be extended using push!:
 push!(LOAD_PATH, "../scripts/mpc_utils") 	
-import GPSKinMPCPathFollowerFrenetLinLatGurobi
-import KinMPCParams
-const kmpcLinLat = GPSKinMPCPathFollowerFrenetLinLatGurobi  # short-hand-notation
+import GPSKinMPCPathFollowerFrenetLinLatGurobi_old
+const kmpcLinLat = GPSKinMPCPathFollowerFrenetLinLatGurobi_old  # short-hand-notation
 
 
 # Load as Many parameters as possible from MPC file to avoid parameter mis-match
-N 		= KinMPCParams.N
-dt 		= KinMPCParams.dt
-nx 		= 2								# dimension of x = (ey,epsi)
-nu 		= 1								# number of inputs u = df
-L_a 	= KinMPCParams.L_a				# from CoG to front axle (according to Jongsang)
-L_b 	= KinMPCParams.L_b				# from CoG to rear axle (according to Jongsang)
+N 		= kmpcLinLat.N
+dt 		= kmpcLinLat.dt
+nx 		= kmpcLinLat.nx				# dimension of x = (ey,epsi)
+nu 		= kmpcLinLat.nu				# number of inputs u = df
+L_a 	= kmpcLinLat.L_a		# from CoG to front axle (according to Jongsang)
+L_b 	= kmpcLinLat.L_b		# from CoG to rear axle (according to Jongsang)
 
 
 n_uxu 	= kmpcLinLat.n_uxu
@@ -29,26 +29,11 @@ f_gurobi_init = kmpcLinLat.f_gurobi_init
 ub_gurobi = kmpcLinLat.ub_gurobi
 lb_gurobi = kmpcLinLat.lb_gurobi
 
-## Load Ranges of params 
-ey_lb = KinMPCParams.ey_lb
-ey_ub = KinMPCParams.ey_ub
-epsi_lb = KinMPCParams.epsi_lb
-epsi_ub = KinMPCParams.epsi_ub
-dfprev_lb = -KinMPCParams.df_max
-dfprev_ub =  KinMPCParams.df_max
-
-v_lb = KinMPCParams.v_min 
-v_ub = KinMPCParams.v_max
-curv_lb = KinMPCParams.curv_lb
-curv_ub = KinMPCParams.curv_ub
- 
-
 ############## load all data ##############
-# latData = matread("testSimDataDebugExtracted.mat")   				# bad
-latData = matread("NN_test_trainingData.mat")   					# bad
-# latData = matread("exp1_trainingData.mat") 						# bad
-# latData = matread("NN_test_trainingDataLat10k_PrimalDual2.mat")	# bad
-# latData = matread("NN_test_RandtrainingDataLat_Trafo2.mat")   			# bad
+# latData = matread("testSimDataDebugExtracted.mat")   	# good
+# latData = matread("NN_test_trainingData.mat")   		# good
+# latData = matread("exp1_trainingData.mat")				# good
+latData = matread("NN_test_trainingDataLat10k_PrimalDual2.mat") # bad
 
 # inputParam_lat = np.hstack((ey_curr.T, epsi_curr.T ,df_prev.T, v_pred, c_pred))
 inputParam_lat = latData["inputParam_lat"]   #
@@ -61,7 +46,6 @@ epsi_curr_all = inputParam_lat[:,2]
 df_prev_all = inputParam_lat[:,3]
 v_pred_all = inputParam_lat[:,4:4+N-1]
 c_pred_all = inputParam_lat[:,12:end]
-
 
 ### Load MPC data ###
 x_tilde_lb = kmpcLinLat.x_tilde_lb
@@ -98,36 +82,31 @@ f_tilde_vec = repmat(f_tilde,N)
 
 ######################## ITERATE OVER saved parameters ################
 # build problem
-# num_DataPoints = 10000								# Training data count 
-num_DataPoints = size(inputParam_lat,1)
-
+num_DataPoints = length(ey_curr_all)
 solv_time_all = zeros(num_DataPoints)
-df_res_all = zeros(num_DataPoints) 		 	# compares solution of computed problem with training (stored) data
-ddf_res_all = zeros(num_DataPoints)			# compares solution of computed problem with training (stored) data
+df_res_all = zeros(num_DataPoints)
+ddf_res_all = zeros(num_DataPoints)
 dual_gap = zeros(num_DataPoints)
-dual_gapRel = zeros(num_DataPoints)
 optVal_long = zeros(num_DataPoints)
 
-inputParam_lat = zeros(num_DataPoints,3+2*N)
 outputParamDual_lat = zeros(num_DataPoints, N*(nf+ng))
+status = []
+statusD = []
 
-# outputParamDf_lat = zeros(num_DataPoints, N*(nu))
-# outputParamDdf_lat  = zeros(num_DataPoints, N*(nu))
-
+# used to debug
 obj_diff = zeros(num_DataPoints)
 obj_diffRel = zeros(num_DataPoints)
 df_res_all2 = zeros(num_DataPoints)
 ddf_res_all2 = zeros(num_DataPoints)
 
-ddf_res_12 = zeros(num_DataPoints) 		# differences btw trafo1 and trafo2
-
-
-status = []
-statusD = []
-
 # counts number of errors when solving the optimization problems
 primStatusError = 0
 dualStatusError = 0
+
+dual_Fx = []
+dual_Fu = []
+L_test_opt = []
+
 
 ey_0 = []
 epsi_0 = []
@@ -137,34 +116,16 @@ c_pred = []
 df_stored = []
 ddf_stored = []
 
-dual_Fx = []
-dual_Fu = []
-L_test_opt = []
 
-iii = 1
-
-while iii <= num_DataPoints
-	
-	# Save only feasible points. 
-	# extract appropriate parameters	
-	# RANDOM data extraction
- # 	ey_0 = ey_lb + (ey_ub-ey_lb)*rand(1)				
- # 	epsi_0 = epsi_lb + (epsi_ub-epsi_lb)*rand(1) 
- # 	u_0 = dfprev_lb + (dfprev_ub-dfprev_lb)*rand(1) 		
-	# v_pred = v_lb + (v_ub-v_lb)*rand(1,N)						#  Along horizon 
-	# c_pred = curv_lb + (curv_ub-curv_lb)*rand(1,N)				#  Along horizon 
- 	
-
-	###### stored data #####
+for iii = 1 : num_DataPoints
+	# extract appropriate parameters
 	ey_0 = ey_curr_all[iii]
 	epsi_0 = epsi_curr_all[iii]
 	u_0 = df_prev_all[iii]
 	v_pred = v_pred_all[iii,:]
 	c_pred = c_pred_all[iii,:]
- 	# load data to check if solution identical
 	df_stored = outputParamDf_lat[iii,:]
 	ddf_stored = outputParamDdf_lat[iii,:]
-
 
 	# build problem (only the updated parts)
 	x0 = [ey_0 ; epsi_0]
@@ -204,9 +165,6 @@ while iii <= num_DataPoints
 	    A_tilde_vec[1+(ii-1)*(nx+nu):ii*(nx+nu),:] = A_tmp 	#A_tilde^ii
 	end
 
-	A_tilde_vec2 = zeros(N*(nx+nu), (nx+nu))
-
-
 	B_tilde_vec = zeros(N*(nx+nu), nu*N)
 	for ii = 0 : N-1
 	    for jj = 0 : ii-1
@@ -238,7 +196,6 @@ while iii <= num_DataPoints
 	end
 
 	x_tilde_ref = x_tilde_ref_init
-	
 	mdl = Model(solver=GurobiSolver(Presolve=0, LogToConsole=0))
 	@variable(mdl, x_tilde_vec[1:N*(nx+nu)])  	# decision variable; contains everything
 	@variable(mdl, u_tilde_vec[1:N*nu] )
@@ -249,44 +206,10 @@ while iii <= num_DataPoints
 
 	tic()
 	status = solve(mdl)
-	
 	if !(status == :Optimal)
 		println(status)
 		primStatusError = primStatusError+1
-		@goto label1
 	end
-
-	#### get dual variables ###
-	# Q_dual = 2*(B_tilde_vec'*Q_tilde_vec*B_tilde_vec + R_tilde_vec);
-     
- #    c_dual = (2*x_tilde_0'*A_tilde_vec'*Q_tilde_vec*B_tilde_vec + 2*g_tilde_vec'*E_tilde_vec'*Q_tilde_vec*B_tilde_vec +
- #    	      - 2*x_tilde_ref'*Q_tilde_vec*B_tilde_vec)'
-     
- #    const_dual = x_tilde_0'*A_tilde_vec'*Q_tilde_vec*A_tilde_vec*x_tilde_0 + 2*x_tilde_0'*A_tilde_vec'*Q_tilde_vec*E_tilde_vec*g_tilde_vec +
- #                  + g_tilde_vec'*E_tilde_vec'*Q_tilde_vec*E_tilde_vec*g_tilde_vec +
- #                  - 2*x_tilde_0'*A_tilde_vec'*Q_tilde_vec*x_tilde_ref - 2*g_tilde_vec'*E_tilde_vec'*Q_tilde_vec*x_tilde_ref +
- #                  + x_tilde_ref'*Q_tilde_vec*x_tilde_ref
-        
- #    C_dual = [F_tilde_vec*B_tilde_vec; Fu_tilde_vec]		        # Adding state constraints 
- #    d_dual = [f_tilde_vec - F_tilde_vec*A_tilde_vec*x_tilde_0 - F_tilde_vec*E_tilde_vec*g_tilde_vec;  fu_tilde_vec]
- #    Qdual_tmp = C_dual*(Q_dual\(C_dual'))
- #    Qdual_tmp = 0.5*(Qdual_tmp+Qdual_tmp') + 0e-5*eye(N*(nf+ng))
-
-	# # Solve the dual problem online to match cost 
- #    mdlD = Model(solver=GurobiSolver(Presolve=0, LogToConsole=0))
-	# @variable(mdlD, L_test[1:N*(nf+ng)])  	# decision variable; contains everything
-	# @objective(mdlD, Max, -1/2 * L_test'*Qdual_tmp*L_test - (C_dual*(Q_dual\c_dual)+d_dual)'*L_test - 1/2*c_dual'*(Q_dual\c_dual) + const_dual)
-	# @constraint(mdlD, -L_test .<= 0)
-
-	# statusD = solve(mdlD)
-	
-	# if !(statusD == :Optimal)
-	# 	println(statusD)
-	# 	dualStatusError = dualStatusError+1
-	# 	@goto label1
-	# end
-
-	# inputParam_lat[iii,:] = [ey_0 epsi_0 u_0 v_pred c_pred]
 
 	obj_primal = getobjectivevalue(mdl)
 	obj_primal1 = obj_primal
@@ -297,24 +220,57 @@ while iii <= num_DataPoints
 	ddf_pred_opt = getvalue(u_tilde_vec)
 	df_pred_opt = x_tilde_vec_opt[3:nx+nu:end]
 
-	## store the primal solution too as output gonna change now 
-	# outputParamDf_lat[iii,:]   = df_pred_opt
-	# outputParamDdf_lat[iii,:]  = ddf_pred_opt
- 	###########################################################	
-
 	# #### compare solution ####
-	df_res_all[iii] =  norm(df_pred_opt - df_stored)
+	df_res_all[iii] = norm(df_pred_opt - df_stored)
 	ddf_res_all[iii] = norm(ddf_pred_opt - ddf_stored)
 
-	# obj_dualOnline = getobjectivevalue(mdlD)
+
+	#### extract dual variables ####
+	### seems to be wrong 
+	dual_eq = getdual(constr_eq)
+	dual_Fx = getdual(constr_Fx)
+	dual_Fu = getdual(constr_Fu)
+	dual_ineq = [dual_Fx; dual_Fu]
+
+
+	#### get dual variables ###
+	Q_dual = 2*(B_tilde_vec'*Q_tilde_vec*B_tilde_vec + R_tilde_vec);
+     
+    c_dual = (2*x_tilde_0'*A_tilde_vec'*Q_tilde_vec*B_tilde_vec + 2*g_tilde_vec'*E_tilde_vec'*Q_tilde_vec*B_tilde_vec +
+    	      - 2*x_tilde_ref'*Q_tilde_vec*B_tilde_vec)'
+     
+    const_dual = x_tilde_0'*A_tilde_vec'*Q_tilde_vec*A_tilde_vec*x_tilde_0 + 2*x_tilde_0'*A_tilde_vec'*Q_tilde_vec*E_tilde_vec*g_tilde_vec +
+                  + g_tilde_vec'*E_tilde_vec'*Q_tilde_vec*E_tilde_vec*g_tilde_vec +
+                  - 2*x_tilde_0'*A_tilde_vec'*Q_tilde_vec*x_tilde_ref - 2*g_tilde_vec'*E_tilde_vec'*Q_tilde_vec*x_tilde_ref +
+                  + x_tilde_ref'*Q_tilde_vec*x_tilde_ref
+        
+    C_dual = [F_tilde_vec*B_tilde_vec; Fu_tilde_vec]		        # Adding state constraints 
+    d_dual = [f_tilde_vec - F_tilde_vec*A_tilde_vec*x_tilde_0 - F_tilde_vec*E_tilde_vec*g_tilde_vec;  fu_tilde_vec]
+    Qdual_tmp = C_dual*(Q_dual\(C_dual'))
+    Qdual_tmp = 0.5*(Qdual_tmp+Qdual_tmp') + 0e-5*eye(N*(nf+ng))
+
+	# Solve the dual problem online to match cost 
+    mdlD = Model(solver=GurobiSolver(Presolve=0, LogToConsole=0))
+	@variable(mdlD, L_test[1:N*(nf+ng)])  	# decision variable; contains everything
+	@objective(mdlD, Max, -1/2 * L_test'*Qdual_tmp*L_test - (C_dual*(Q_dual\c_dual)+d_dual)'*L_test - 1/2*c_dual'*(Q_dual\c_dual) + const_dual)
+	@constraint(mdlD, -L_test .<= 0)
+
+	statusD = solve(mdlD)
+	
+	if !(statusD == :Optimal)
+		println(statusD)
+		dualStatusError = dualStatusError+1
+	end
+
+	obj_dualOnline = getobjectivevalue(mdlD)
 
 	# extract solution
-	# L_test_opt = getvalue(L_test)
-	# outputParamDual_lat[iii,:] = L_test_opt
+	L_test_opt = getvalue(L_test)
+	outputParamDual_lat[iii,:] = L_test_opt
 
-	# dual_gap[iii] = (obj_primal - obj_dualOnline)
-	# dual_gapRel[iii] = (obj_primal-obj_dualOnline)/obj_primal
+	dual_gap[iii] = (obj_primal - obj_dualOnline)
 	
+
 ###########################
 
 	# z-transformation
@@ -337,9 +293,9 @@ while iii <= num_DataPoints
 	# ================== recall Transformation 2 ======================
 	# bring into GUROBI format
 	# minimize_z    z' * H * z + f' * z
-	# 	s.t.		A_eq * z = b_eq
-	# 				A * z <= b
-	# 				z_lb <= z <= z_ub
+		# s.t.		A_eq * z = b_eq
+					# A * z <= b
+					# z_lb <= z <= z_ub
 
 	mdl = Model(solver=GurobiSolver(Presolve=0, LogToConsole=0))
 	@variable(mdl, z[1:N*n_uxu])  	# decision variable; contains everything
@@ -367,11 +323,16 @@ while iii <= num_DataPoints
 	df_res_all2[iii] = norm(df_pred_opt2 - df_stored)
 	ddf_res_all2[iii] = norm(ddf_pred_opt2 - ddf_stored)
 
-	ddf_res_12[iii] = norm(ddf_pred_opt2 - ddf_pred_opt)
 
-	iii = iii + 1 
+	# #### extract dual variables ####
+	# dual_eq = getdual(constr_eq)
+	# dual_ub = getdual(constr_ub)
+	# dual_lb = getdual(constr_lb)
 
-	@label label1
+	# outputParamDualEQ_lat[iii,:] = dual_eq
+	# outputParamDualLB_lat[iii,:] = dual_ub
+	# outputParamDualUB_lat[iii,:] = dual_ub
+
 end
 
 println("****************************")
@@ -380,26 +341,17 @@ println("dual status errors:  $(dualStatusError)")
 
 println("max obj_diff (difference btw Trafo1 and Trafo2): $(maximum(obj_diff))")
 println("max Rel obj_diff (difference btw Trafo1 and Trafo2): $(maximum(obj_diffRel))")
-
 println("max df-residual2:  $(maximum(df_res_all2))")
-println("max ddf-residual2:  $(maximum(ddf_res_all2))")
+println("max ddf-residua2l:  $(maximum(ddf_res_all2))")
 
 println("max df-residual:  $(maximum(df_res_all))")
 println("max ddf-residual:  $(maximum(ddf_res_all))")
-# println("max solv-time (excl modelling time):  $(maximum(solv_time_all[2:end]))")
-# println("avg solv-time (excl modelling time):  $(mean(solv_time_all[2:end]))")
+println("max solv-time (excl modelling time):  $(maximum(solv_time_all[2:end]))")
+println("avg solv-time (excl modelling time):  $(mean(solv_time_all[2:end]))")
 println("max dual_gap:  $(maximum(dual_gap))")
 println("min dual_gap:  $(minimum(dual_gap))")
-println("max Rel dual_gap:  $(maximum(dual_gapRel))")
-println("min Rel dual_gap:  $(minimum(dual_gapRel))")
 
-
-println("max ddf-difference trafo 1 and trafo 2: $(maximum(ddf_res_12))")
-println("min ddf-difference trafo 1 and trafo 2: $(minimum(ddf_res_12))")
-println("mean ddf-difference trafo 1 and trafo 2: $(mean(ddf_res_12))")
-
-
-# matwrite("NN_test_trainingDataLat100k_PrimalDual.mat", Dict(
+# matwrite("NN_test_trainingDataLat_PrimalDual.mat", Dict(
 # 	"inputParam_lat" => inputParam_lat,
 # 	"outputParamDf_lat" => outputParamDf_lat,
 # 	"outputParamDdf_lat" => outputParamDdf_lat,

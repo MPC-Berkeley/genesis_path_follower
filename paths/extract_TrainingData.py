@@ -13,15 +13,15 @@ import math
 import argparse
 
 
-''' Code extract info
-
-'''
-
-# PARAMETERS USED TO COMPUTE 
-path = sio.loadmat('exp3.mat')
+### Define file names
+infile = 'testSimDataDebug.mat'
+outfile = 'testSimDataDebugExtracted.mat'
 
 
-## parameters for LONGITUDINAL control
+### script starts here
+path = sio.loadmat(infile)
+
+########## parameters for LONGITUDINAL control ##########
 #  		input parameters: 	s0=s(0), v0=v(0), a_prev=a(-1), s_ref, v_ref
 #  		output parameters:	a_pred; da_pred      (either can be used)
 
@@ -29,7 +29,6 @@ path = sio.loadmat('exp3.mat')
 s_curr_orig = np.ravel(path['s_curr']) 	# s(0)
 v_curr_orig = np.ravel(path['v_curr'])	# v(0)
 a_prev_orig = np.ravel(path['a_prev'])	# a(-1)
-
 
 
 # opt solutions
@@ -56,7 +55,7 @@ outputParamDacc_long = da_pred
 
 
 
-####### parameters for LATERAL control
+########## parameters for LATERAL control ##########
 #  		input parameters: 	ey0=ey(0), epsi0=epsi(0), delta_prev=a(-1), v_pred, c_pred
 #  		output parameters:	a_pred; da_pred      (either can be used)
 # the data are collected row-wise (if matrix)
@@ -77,8 +76,8 @@ s_pred_orig = path['s_pred']	# needed to compute curvature
 s_pred = np.delete(s_pred_orig, -1, 1)	# delete last column b/c not needed
 
 numTrPts = np.size(df_pred,0)	# number of training points
-N_mpc = np.size(df_pred,1)	# number of training points
-k_coeffs = path['K_coeff']  # numTrPts x 4
+N_mpc = np.size(df_pred,1)		# number of training points
+k_coeffs = path['K_coeff']  	# numTrPts x 4
 # extract curvature
 c_pred = np.zeros([numTrPts, N_mpc])
 
@@ -93,12 +92,12 @@ ey_curr = np.array([ey_curr_orig])  	# allows for transpose of vector
 epsi_curr = np.array([epsi_curr_orig]) 	# allows for transpose of vector
 df_prev = np.array([df_prev_orig])	# allows for transpose
 
-inputParam_lat = np.hstack((ey_curr.T, epsi_curr.T ,df_prev.T, v_pred, c_pred))
+inputParam_lat = np.hstack((ey_curr.T, epsi_curr.T , df_prev.T, v_pred, c_pred))
 outputParamDf_lat = df_pred
 outputParamDdf_lat = ddf_pred
 
 
-### save the data ###
+######### save the data #########
 trainingDataDict = {}
 trainingDataDict['inputParam_long'] = inputParam_long
 trainingDataDict['outputParamAcc_long'] = outputParamAcc_long
@@ -109,9 +108,11 @@ trainingDataDict['outputParamDf_lat'] = outputParamDf_lat
 trainingDataDict['outputParamDdf_lat'] = outputParamDdf_lat
 
 
-sio.savemat('exp3_trainingData.mat', trainingDataDict)
+sio.savemat(outfile, trainingDataDict)
 
-
+print('--- Summary ---')
+print "infile: " + infile
+print "outfile:" + outfile
 print('--- Done ---')
 
 
