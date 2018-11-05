@@ -76,8 +76,8 @@ s_pred_orig = path['s_pred']	# needed to compute curvature
 s_pred = np.delete(s_pred_orig, -1, 1)	# delete last column b/c not needed
 
 numTrPts = np.size(df_pred,0)	# number of training points
-N_mpc = np.size(df_pred,1)	# number of training points
-k_coeffs = path['K_coeff']  # numTrPts x 4
+N_mpc = np.size(df_pred,1)		# number of training points
+k_coeffs = path['K_coeff']  	# numTrPts x 4
 # extract curvature
 c_pred = np.zeros([numTrPts, N_mpc])
 

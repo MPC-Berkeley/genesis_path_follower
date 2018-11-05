@@ -44,7 +44,7 @@ curv_ub = KinMPCParams.curv_ub
  
 
 ############## load all data ##############
-latData = matread("NN_test_trainingData.mat")
+latData = matread("exp1_trainingData.mat")
 # latData = matread("exp1_trainingData.mat")
 
 # inputParam_lat = np.hstack((ey_curr.T, epsi_curr.T ,df_prev.T, v_pred, c_pred))
@@ -287,11 +287,9 @@ while iii <= num_DataPoints
 	outputParamDdf_lat[iii,:]  = ddf_pred_opt
  	###########################################################	
 
-
 	# #### compare solution ####
-	df_res_all[iii] = norm(df_pred_opt - df_stored)
+	df_res_all[iii] =  norm(df_pred_opt - df_stored)
 	ddf_res_all[iii] = norm(ddf_pred_opt - ddf_stored)
-
 
 	# obj_dualOnline = getobjectivevalue(mdlD)
 
@@ -302,7 +300,6 @@ while iii <= num_DataPoints
 	# dual_gap[iii] = (obj_primal - obj_dualOnline)
 	# dual_gapRel[iii] = (obj_primal-obj_dualOnline)/obj_primal
 	
-
 ###########################
 
 	# z-transformation
