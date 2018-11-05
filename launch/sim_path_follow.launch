@@ -4,8 +4,8 @@
 	<!-- This launch file is intended to simulate a path following experiment with GPS.  Vehicle simulation, GPS plotting, and vehicle control are enabled. -->
 	
 	<!-- Pick between CPG + RFS coordinate systems here. -->
-	<rosparam command="load" file="$(find genesis_path_follower)/launch/rfs.yaml" ns="vehicle" />
-	<!-- <rosparam command="load" file="$(find genesis_path_follower)/launch/cpg.yaml" ns="vehicle"/> -->
+	<!-- <rosparam command="load" file="$(find genesis_path_follower)/launch/rfs.yaml" ns="vehicle" /> -->
+	<rosparam command="load" file="$(find genesis_path_follower)/launch/cpg.yaml" ns="vehicle"/>
 
   <param name="vehicle/scripts_dir" type="str" value="$(find genesis_path_follower)/scripts/" />
   
