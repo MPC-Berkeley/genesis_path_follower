@@ -44,7 +44,7 @@ curv_ub = KinMPCParams.curv_ub
  
 
 ############## load all data ##############
-latData = matread("NN_test_trainingData.mat")
+latData = matread("testSimDataDebugExtracted.mat")
 # latData = matread("exp1_trainingData.mat")
 
 # inputParam_lat = np.hstack((ey_curr.T, epsi_curr.T ,df_prev.T, v_pred, c_pred))
@@ -384,6 +384,7 @@ println("min Rel dual_gap:  $(minimum(dual_gapRel))")
 
 println("max ddf-difference trafo 1 and trafo 2: $(maximum(ddf_res_12))")
 println("min ddf-difference trafo 1 and trafo 2: $(minimum(ddf_res_12))")
+println("mean ddf-difference trafo 1 and trafo 2: $(mean(ddf_res_12))")
 
 
 # matwrite("NN_test_trainingDataLat100k_PrimalDual.mat", Dict(
