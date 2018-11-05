@@ -166,7 +166,6 @@ while iii <= num_DataPoints
 	ddf_stored = outputParamDdf_lat[iii,:]
 
 
-
 	# build problem (only the updated parts)
 	x0 = [ey_0 ; epsi_0]
 	u0 = u_0 				# it's really u_{-1}
@@ -204,6 +203,9 @@ while iii <= num_DataPoints
 		A_tmp = A_tilde_updated[:,:,ii]*A_tmp
 	    A_tilde_vec[1+(ii-1)*(nx+nu):ii*(nx+nu),:] = A_tmp 	#A_tilde^ii
 	end
+
+	A_tilde_vec2 = zeros(N*(nx+nu), (nx+nu))
+
 
 	B_tilde_vec = zeros(N*(nx+nu), nu*N)
 	for ii = 0 : N-1
