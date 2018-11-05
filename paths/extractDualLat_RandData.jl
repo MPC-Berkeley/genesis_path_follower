@@ -38,8 +38,8 @@ epsi_ub = KinMPCParams.epsi_ub
 dfprev_lb = -KinMPCParams.df_max
 dfprev_ub =  KinMPCParams.df_max
 
-v_lb = KinMPCParams.v_min 
-v_ub = KinMPCParams.v_max
+v_lb = KinMPCParams.vpred_lb 
+v_ub = KinMPCParams.vpred_ub
 curv_lb = KinMPCParams.curv_lb
 curv_ub = KinMPCParams.curv_ub
 
