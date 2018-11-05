@@ -1,0 +1,253 @@
+[ 89%] Built target wf_simulator
+[ 89%] Built target cloud_transformer
+[ 89%] Built target pure_pursuit
+In file included from /usr/local/cuda/include/channel_descriptor.h:62:0,
+                 from /usr/local/cuda/include/cuda_runtime.h:90,
+                 from /home/mpc/ssdcaffe/distribute/include/caffe/util/device_alternate.hpp:36,
+                 from /home/mpc/ssdcaffe/distribute/include/caffe/common.hpp:19,
+                 from /home/mpc/ssdcaffe/distribute/include/caffe/blob.hpp:8,
+                 from /home/mpc/ssdcaffe/distribute/include/caffe/caffe.hpp:7,
+                 from /home/mpc/GenesisAutoware/ros/src/computing/perception/detection/packages/cv_tracker/nodes/ssd/include/ssd_detector.h:4,
+                 from /home/mpc/GenesisAutoware/ros/src/computing/perception/detection/packages/cv_tracker/nodes/ssd/ssd_detector.cpp:30:
+/usr/local/cuda/include/cuda_runtime_api.h:1683:101: error: use of enum ‘cudaDeviceP2PAttr’ without previous declaration
+ extern __host__ __cudart_builtin__ cudaError_t CUDARTAPI cudaDeviceGetP2PAttribute(int *value, enum cudaDeviceP2PAttr attr, int srcDevice, int dstDevice);
+                                                                                                     ^
+/usr/local/cuda/include/cuda_runtime_api.h:2930:102: error: use of enum ‘cudaFuncAttribute’ without previous declaration
+ extern __host__ __cudart_builtin__ cudaError_t CUDARTAPI cudaFuncSetAttribute(const void *func, enum cudaFuncAttribute attr, int value);
+                                                                                                      ^
+In file included from /usr/local/cuda/include/channel_descriptor.h:62:0,
+                 from /usr/local/cuda/include/cuda_runtime.h:90,
+                 from /home/mpc/ssdcaffe/distribute/include/caffe/util/device_alternate.hpp:36,
+                 from /home/mpc/ssdcaffe/distribute/include/caffe/common.hpp:19,
+                 from /home/mpc/ssdcaffe/distribute/include/caffe/blob.hpp:8,
+                 from /home/mpc/ssdcaffe/distribute/include/caffe/caffe.hpp:7,
+                 from /home/mpc/GenesisAutoware/ros/src/computing/perception/detection/packages/cv_tracker/nodes/ssd/include/ssd_detector.h:4,
+                 from /home/mpc/GenesisAutoware/ros/src/computing/perception/detection/packages/cv_tracker/nodes/ssd/ssd_detector.cpp:30:
+/usr/local/cuda/include/cuda_runtime_api.h:5770:92: error: use of enum ‘cudaMemoryAdvise’ without previous declaration
+ extern __host__ cudaError_t CUDARTAPI cudaMemAdvise(const void *devPtr, size_t count, enum cudaMemoryAdvise advice, int device);
+                                                                                            ^
+/usr/local/cuda/include/cuda_runtime_api.h:5827:98: error: use of enum ‘cudaMemRangeAttribute’ without previous declaration
+ extern __host__ cudaError_t CUDARTAPI cudaMemRangeGetAttribute(void *data, size_t dataSize, enum cudaMemRangeAttribute attribute, const void *devPtr, size_t count);
+                                                                                                  ^
+/usr/local/cuda/include/cuda_runtime_api.h:5864:102: error: use of enum ‘cudaMemRangeAttribute’ without previous declaration
+ extern __host__ cudaError_t CUDARTAPI cudaMemRangeGetAttributes(void **data, size_t *dataSizes, enum cudaMemRangeAttribute *attributes, size_t numAttributes, const void *devPtr, size_t count);
+                                                                                                      ^
+[ 89%] Built target ff_waypoint_follower
+[ 89%] Built target lattice_trajectory_gen
+[ 89%] Built target lane_stop
+[ 89%] Built target dp_planner
+[ 89%] Automatic MOC, UIC and RCC for target tlr_tuner
+[ 89%] Built target libcontext
+[ 89%] Built target lattice_twist_convert
+[ 89%] Built target tlr_tuner_autogen
+[ 89%] Built target op_ros_helpers
+[ 89%] Automatic MOC, UIC and RCC for target region_tlr_ssd
+[ 89%] Automatic MOC, UIC and RCC for target label_maker
+[ 89%] Built target region_tlr_ssd_autogen
+[ 89%] Built target feat_proj
+[ 89%] Built target label_maker_autogen
+[ 89%] Built target way_planner
+[ 90%] Built target calibration_publisher
+[ 90%] Built target calibration_test
+[ 90%] Automatic MOC and RCC for target points2image
+[ 90%] Automatic MOC and RCC for target vscan2image
+[ 90%] Built target vscan2image_autogen
+[ 90%] Built target points2image_autogen
+[ 91%] Built target calibrationtoolkit
+[ 92%] Built target points2vscan
+[ 92%] Built target vscan2linelist
+[ 92%] Built target cloud_nodelet
+[ 93%] Built target cloud_node
+[ 93%] Built target transform_node
+[ 93%] Built target csv2pcd
+[ 93%] Built target icp_matching
+[ 93%] Built target transform_nodelet
+[ 93%] Built target pcd_arealist
+[ 93%] Built target pcd_binarizer
+[ 93%] Built target pcd2csv
+[ 94%] Built target pcd_filter
+[ 95%] Built target map_extender
+[ 95%] Linking CXX executable /home/mpc/GenesisAutoware/ros/devel/lib/ndt_localizer/ndt_matching_omp
+[ 95%] Linking CXX executable /home/mpc/GenesisAutoware/ros/devel/lib/ndt_localizer/ndt_matching
+[ 95%] Linking CXX executable /home/mpc/GenesisAutoware/ros/devel/lib/ndt_localizer/ndt_mapping
+[ 95%] Linking CXX executable /home/mpc/GenesisAutoware/ros/devel/lib/ndt_localizer/ndt_mapping_omp
+[ 96%] Built target orb_matching_pf
+[ 96%] Built target orb_matching
+[ 96%] Linking CXX executable /home/mpc/GenesisAutoware/ros/devel/lib/ndt_localizer/queue_counter
+[ 96%] Linking CXX executable /home/mpc/GenesisAutoware/ros/devel/lib/ndt_localizer/approximate_ndt_mapping
+In file included from /usr/local/cuda/include/channel_descriptor.h:62:0,
+                 from /usr/local/cuda/include/cuda_runtime.h:90,
+                 from /home/mpc/ssdcaffe/distribute/include/caffe/util/device_alternate.hpp:36,
+                 from /home/mpc/ssdcaffe/distribute/include/caffe/common.hpp:19,
+                 from /home/mpc/ssdcaffe/distribute/include/caffe/blob.hpp:8,
+                 from /home/mpc/ssdcaffe/distribute/include/caffe/caffe.hpp:7,
+                 from /home/mpc/GenesisAutoware/ros/src/computing/perception/detection/packages/cv_tracker/nodes/ssd/include/ssd_detector.h:4,
+                 from /home/mpc/GenesisAutoware/ros/src/computing/perception/detection/packages/cv_tracker/nodes/ssd/ssd_node.cpp:47:
+/usr/local/cuda/include/cuda_runtime_api.h:1683:101: error: use of enum ‘cudaDeviceP2PAttr’ without previous declaration
+ extern __host__ __cudart_builtin__ cudaError_t CUDARTAPI cudaDeviceGetP2PAttribute(int *value, enum cudaDeviceP2PAttr attr, int srcDevice, int dstDevice);
+                                                                                                     ^
+/usr/local/cuda/include/cuda_runtime_api.h:2930:102: error: use of enum ‘cudaFuncAttribute’ without previous declaration
+ extern __host__ __cudart_builtin__ cudaError_t CUDARTAPI cudaFuncSetAttribute(const void *func, enum cudaFuncAttribute attr, int value);
+                                                                                                      ^
+In file included from /usr/local/cuda/include/channel_descriptor.h:62:0,
+                 from /usr/local/cuda/include/cuda_runtime.h:90,
+                 from /home/mpc/ssdcaffe/distribute/include/caffe/util/device_alternate.hpp:36,
+                 from /home/mpc/ssdcaffe/distribute/include/caffe/common.hpp:19,
+                 from /home/mpc/ssdcaffe/distribute/include/caffe/blob.hpp:8,
+                 from /home/mpc/ssdcaffe/distribute/include/caffe/caffe.hpp:7,
+                 from /home/mpc/GenesisAutoware/ros/src/computing/perception/detection/packages/cv_tracker/nodes/ssd/include/ssd_detector.h:4,
+                 from /home/mpc/GenesisAutoware/ros/src/computing/perception/detection/packages/cv_tracker/nodes/ssd/ssd_node.cpp:47:
+/usr/local/cuda/include/cuda_runtime_api.h:5770:92: error: use of enum ‘cudaMemoryAdvise’ without previous declaration
+ extern __host__ cudaError_t CUDARTAPI cudaMemAdvise(const void *devPtr, size_t count, enum cudaMemoryAdvise advice, int device);
+                                                                                            ^
+/usr/local/cuda/include/cuda_runtime_api.h:5827:98: error: use of enum ‘cudaMemRangeAttribute’ without previous declaration
+ extern __host__ cudaError_t CUDARTAPI cudaMemRangeGetAttribute(void *data, size_t dataSize, enum cudaMemRangeAttribute attribute, const void *devPtr, size_t count);
+                                                                                                  ^
+/usr/local/cuda/include/cuda_runtime_api.h:5864:102: error: use of enum ‘cudaMemRangeAttribute’ without previous declaration
+ extern __host__ cudaError_t CUDARTAPI cudaMemRangeGetAttributes(void **data, size_t *dataSizes, enum cudaMemRangeAttribute *attributes, size_t numAttributes, const void *devPtr, size_t count);
+                                                                                                      ^
+In file included from /home/mpc/ssdcaffe/distribute/include/caffe/caffe.hpp:7:0,
+                 from /home/mpc/GenesisAutoware/ros/src/computing/perception/detection/packages/cv_tracker/nodes/ssd/include/ssd_detector.h:4,
+                 from /home/mpc/GenesisAutoware/ros/src/computing/perception/detection/packages/cv_tracker/nodes/ssd/ssd_detector.cpp:30:
+/home/mpc/ssdcaffe/distribute/include/caffe/blob.hpp: In instantiation of ‘std::__cxx11::string caffe::Blob<Dtype>::shape_string() const [with Dtype = float; std::__cxx11::string = std::__cxx11::basic_string<char>]’:
+/home/mpc/ssdcaffe/distribute/include/caffe/blob.hpp:121:49:   required from ‘int caffe::Blob<Dtype>::CanonicalAxisIndex(int) const [with Dtype = float]’
+/home/mpc/ssdcaffe/distribute/include/caffe/blob.hpp:72:37:   required from ‘int caffe::Blob<Dtype>::shape(int) const [with Dtype = float]’
+/home/mpc/ssdcaffe/distribute/include/caffe/blob.hpp:150:17:   required from ‘int caffe::Blob<Dtype>::LegacyShape(int) const [with Dtype = float]’
+/home/mpc/ssdcaffe/distribute/include/caffe/blob.hpp:134:51:   required from ‘int caffe::Blob<Dtype>::channels() const [with Dtype = float]’
+/home/mpc/GenesisAutoware/ros/src/computing/perception/detection/packages/cv_tracker/nodes/ssd/ssd_detector.cpp:54:40:   required from here
+/home/mpc/ssdcaffe/distribute/include/caffe/blob.hpp:56:23: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+     for (int i = 0; i < shape_.size(); ++i) {
+                       ^
+computing/perception/detection/packages/cv_tracker/CMakeFiles/ssd_unc.dir/build.make:86: recipe for target 'computing/perception/detection/packages/cv_tracker/CMakeFiles/ssd_unc.dir/nodes/ssd/ssd_detector.cpp.o' failed
+make[2]: *** [computing/perception/detection/packages/cv_tracker/CMakeFiles/ssd_unc.dir/nodes/ssd/ssd_detector.cpp.o] Error 1
+make[2]: *** Waiting for unfinished jobs....
+[ 96%] Linking CXX executable /home/mpc/GenesisAutoware/ros/devel/lib/ndt_localizer/tf_mapping
+[ 96%] Built target queue_counter
+[ 96%] Linking CXX executable /home/mpc/GenesisAutoware/ros/devel/lib/ndt_localizer/lazy_ndt_mapping
+[ 96%] Built target tf_mapping
+[ 97%] Built target ray_ground_filter
+[ 97%] Automatic MOC and RCC for target kf_contour_tracker
+[ 97%] Built target kf_contour_tracker_autogen
+[ 97%] Automatic MOC and RCC for target vscan_lidar_track
+[ 97%] Built target vscan_lidar_track_autogen
+[ 97%] Automatic MOC and RCC for target obj_fusion
+[ 97%] Built target obj_fusion_autogen
+[ 97%] Automatic MOC and RCC for target kf_lidar_track
+[ 97%] Built target kf_lidar_track_autogen
+[ 97%] Automatic MOC and RCC for target vscan_filling
+[ 97%] Built target vscan_filling_autogen
+[ 97%] Automatic MOC and RCC for target euclidean_cluster
+[ 97%] Built target euclidean_cluster_autogen
+[ 97%] Automatic MOC and RCC for target pf_lidar_track
+[ 97%] Built target pf_lidar_track_autogen
+[ 97%] Automatic MOC and RCC for target svm_lidar_detect
+[ 97%] Built target svm_lidar_detect_autogen
+[ 97%] Automatic MOC and RCC for target euclidean_lidar_track
+[ 97%] Built target euclidean_lidar_track_autogen
+[ 97%] Built target op_trajectory_generator
+[ 97%] Automatic MOC, UIC and RCC for target region_tlr
+[ 97%] Built target region_tlr_autogen
+[ 97%] Automatic MOC, UIC and RCC for target roi_extractor
+[ 97%] Built target roi_extractor_autogen
+[ 98%] Built target tlr_tuner
+[ 98%] Built target label_maker
+computing/perception/detection/packages/cv_tracker/CMakeFiles/ssd_unc.dir/build.make:62: recipe for target 'computing/perception/detection/packages/cv_tracker/CMakeFiles/ssd_unc.dir/nodes/ssd/ssd_node.cpp.o' failed
+make[2]: *** [computing/perception/detection/packages/cv_tracker/CMakeFiles/ssd_unc.dir/nodes/ssd/ssd_node.cpp.o] Error 1
+CMakeFiles/Makefile2:19945: recipe for target 'computing/perception/detection/packages/cv_tracker/CMakeFiles/ssd_unc.dir/all' failed
+make[1]: *** [computing/perception/detection/packages/cv_tracker/CMakeFiles/ssd_unc.dir/all] Error 2
+make[1]: *** Waiting for unfinished jobs....
+[ 98%] Building CXX object computing/perception/detection/packages/road_wizard/CMakeFiles/region_tlr_ssd.dir/nodes/region_tlr_ssd/traffic_light_recognizer.cpp.o
+[ 98%] Building CXX object computing/perception/detection/packages/road_wizard/CMakeFiles/region_tlr_ssd.dir/nodes/region_tlr_ssd/region_tlr_ssd.cpp.o
+[ 98%] Built target ndt_matching
+[ 98%] Built target ndt_matching_omp
+[ 98%] Built target ndt_mapping
+[ 98%] Built target ndt_mapping_omp
+[ 98%] Built target approximate_ndt_mapping
+In file included from /usr/local/cuda/include/channel_descriptor.h:62:0,
+                 from /usr/local/cuda/include/cuda_runtime.h:90,
+                 from /home/mpc/ssdcaffe/distribute/include/caffe/util/device_alternate.hpp:36,
+                 from /home/mpc/ssdcaffe/distribute/include/caffe/common.hpp:19,
+                 from /home/mpc/ssdcaffe/distribute/include/caffe/blob.hpp:8,
+                 from /home/mpc/ssdcaffe/distribute/include/caffe/caffe.hpp:7,
+                 from /home/mpc/GenesisAutoware/ros/src/computing/perception/detection/packages/road_wizard/nodes/region_tlr_ssd/traffic_light_recognizer.h:7,
+                 from /home/mpc/GenesisAutoware/ros/src/computing/perception/detection/packages/road_wizard/nodes/region_tlr_ssd/traffic_light_recognizer.cpp:1:
+/usr/local/cuda/include/cuda_runtime_api.h:1683:101: error: use of enum ‘cudaDeviceP2PAttr’ without previous declaration
+ extern __host__ __cudart_builtin__ cudaError_t CUDARTAPI cudaDeviceGetP2PAttribute(int *value, enum cudaDeviceP2PAttr attr, int srcDevice, int dstDevice);
+                                                                                                     ^
+/usr/local/cuda/include/cuda_runtime_api.h:2930:102: error: use of enum ‘cudaFuncAttribute’ without previous declaration
+ extern __host__ __cudart_builtin__ cudaError_t CUDARTAPI cudaFuncSetAttribute(const void *func, enum cudaFuncAttribute attr, int value);
+                                                                                                      ^
+In file included from /usr/local/cuda/include/channel_descriptor.h:62:0,
+                 from /usr/local/cuda/include/cuda_runtime.h:90,
+                 from /home/mpc/ssdcaffe/distribute/include/caffe/util/device_alternate.hpp:36,
+                 from /home/mpc/ssdcaffe/distribute/include/caffe/common.hpp:19,
+                 from /home/mpc/ssdcaffe/distribute/include/caffe/blob.hpp:8,
+                 from /home/mpc/ssdcaffe/distribute/include/caffe/caffe.hpp:7,
+                 from /home/mpc/GenesisAutoware/ros/src/computing/perception/detection/packages/road_wizard/nodes/region_tlr_ssd/traffic_light_recognizer.h:7,
+                 from /home/mpc/GenesisAutoware/ros/src/computing/perception/detection/packages/road_wizard/nodes/region_tlr_ssd/traffic_light_recognizer.cpp:1:
+/usr/local/cuda/include/cuda_runtime_api.h:5770:92: error: use of enum ‘cudaMemoryAdvise’ without previous declaration
+ extern __host__ cudaError_t CUDARTAPI cudaMemAdvise(const void *devPtr, size_t count, enum cudaMemoryAdvise advice, int device);
+                                                                                            ^
+/usr/local/cuda/include/cuda_runtime_api.h:5827:98: error: use of enum ‘cudaMemRangeAttribute’ without previous declaration
+ extern __host__ cudaError_t CUDARTAPI cudaMemRangeGetAttribute(void *data, size_t dataSize, enum cudaMemRangeAttribute attribute, const void *devPtr, size_t count);
+                                                                                                  ^
+/usr/local/cuda/include/cuda_runtime_api.h:5864:102: error: use of enum ‘cudaMemRangeAttribute’ without previous declaration
+ extern __host__ cudaError_t CUDARTAPI cudaMemRangeGetAttributes(void **data, size_t *dataSizes, enum cudaMemRangeAttribute *attributes, size_t numAttributes, const void *devPtr, size_t count);
+                                                                                                      ^
+[ 98%] Built target lazy_ndt_mapping
+In file included from /usr/local/cuda/include/channel_descriptor.h:62:0,
+                 from /usr/local/cuda/include/cuda_runtime.h:90,
+                 from /home/mpc/ssdcaffe/distribute/include/caffe/util/device_alternate.hpp:36,
+                 from /home/mpc/ssdcaffe/distribute/include/caffe/common.hpp:19,
+                 from /home/mpc/ssdcaffe/distribute/include/caffe/blob.hpp:8,
+                 from /home/mpc/ssdcaffe/distribute/include/caffe/caffe.hpp:7,
+                 from /home/mpc/GenesisAutoware/ros/src/computing/perception/detection/packages/road_wizard/nodes/region_tlr_ssd/traffic_light_recognizer.h:7,
+                 from /home/mpc/GenesisAutoware/ros/src/computing/perception/detection/packages/road_wizard/nodes/region_tlr_ssd/region_tlr_ssd.h:14,
+                 from /home/mpc/GenesisAutoware/ros/src/computing/perception/detection/packages/road_wizard/nodes/region_tlr_ssd/region_tlr_ssd.cpp:1:
+/usr/local/cuda/include/cuda_runtime_api.h:1683:101: error: use of enum ‘cudaDeviceP2PAttr’ without previous declaration
+ extern __host__ __cudart_builtin__ cudaError_t CUDARTAPI cudaDeviceGetP2PAttribute(int *value, enum cudaDeviceP2PAttr attr, int srcDevice, int dstDevice);
+                                                                                                     ^
+/usr/local/cuda/include/cuda_runtime_api.h:2930:102: error: use of enum ‘cudaFuncAttribute’ without previous declaration
+ extern __host__ __cudart_builtin__ cudaError_t CUDARTAPI cudaFuncSetAttribute(const void *func, enum cudaFuncAttribute attr, int value);
+                                                                                                      ^
+In file included from /usr/local/cuda/include/channel_descriptor.h:62:0,
+                 from /usr/local/cuda/include/cuda_runtime.h:90,
+                 from /home/mpc/ssdcaffe/distribute/include/caffe/util/device_alternate.hpp:36,
+                 from /home/mpc/ssdcaffe/distribute/include/caffe/common.hpp:19,
+                 from /home/mpc/ssdcaffe/distribute/include/caffe/blob.hpp:8,
+                 from /home/mpc/ssdcaffe/distribute/include/caffe/caffe.hpp:7,
+                 from /home/mpc/GenesisAutoware/ros/src/computing/perception/detection/packages/road_wizard/nodes/region_tlr_ssd/traffic_light_recognizer.h:7,
+                 from /home/mpc/GenesisAutoware/ros/src/computing/perception/detection/packages/road_wizard/nodes/region_tlr_ssd/region_tlr_ssd.h:14,
+                 from /home/mpc/GenesisAutoware/ros/src/computing/perception/detection/packages/road_wizard/nodes/region_tlr_ssd/region_tlr_ssd.cpp:1:
+/usr/local/cuda/include/cuda_runtime_api.h:5770:92: error: use of enum ‘cudaMemoryAdvise’ without previous declaration
+ extern __host__ cudaError_t CUDARTAPI cudaMemAdvise(const void *devPtr, size_t count, enum cudaMemoryAdvise advice, int device);
+                                                                                            ^
+/usr/local/cuda/include/cuda_runtime_api.h:5827:98: error: use of enum ‘cudaMemRangeAttribute’ without previous declaration
+ extern __host__ cudaError_t CUDARTAPI cudaMemRangeGetAttribute(void *data, size_t dataSize, enum cudaMemRangeAttribute attribute, const void *devPtr, size_t count);
+                                                                                                  ^
+/usr/local/cuda/include/cuda_runtime_api.h:5864:102: error: use of enum ‘cudaMemRangeAttribute’ without previous declaration
+ extern __host__ cudaError_t CUDARTAPI cudaMemRangeGetAttributes(void **data, size_t *dataSizes, enum cudaMemRangeAttribute *attributes, size_t numAttributes, const void *devPtr, size_t count);
+                                                                                                      ^
+In file included from /home/mpc/ssdcaffe/distribute/include/caffe/caffe.hpp:7:0,
+                 from /home/mpc/GenesisAutoware/ros/src/computing/perception/detection/packages/road_wizard/nodes/region_tlr_ssd/traffic_light_recognizer.h:7,
+                 from /home/mpc/GenesisAutoware/ros/src/computing/perception/detection/packages/road_wizard/nodes/region_tlr_ssd/traffic_light_recognizer.cpp:1:
+/home/mpc/ssdcaffe/distribute/include/caffe/blob.hpp: In instantiation of ‘std::__cxx11::string caffe::Blob<Dtype>::shape_string() const [with Dtype = float; std::__cxx11::string = std::__cxx11::basic_string<char>]’:
+/home/mpc/ssdcaffe/distribute/include/caffe/blob.hpp:121:49:   required from ‘int caffe::Blob<Dtype>::CanonicalAxisIndex(int) const [with Dtype = float]’
+/home/mpc/ssdcaffe/distribute/include/caffe/blob.hpp:72:37:   required from ‘int caffe::Blob<Dtype>::shape(int) const [with Dtype = float]’
+/home/mpc/ssdcaffe/distribute/include/caffe/blob.hpp:150:17:   required from ‘int caffe::Blob<Dtype>::LegacyShape(int) const [with Dtype = float]’
+/home/mpc/ssdcaffe/distribute/include/caffe/blob.hpp:134:51:   required from ‘int caffe::Blob<Dtype>::channels() const [with Dtype = float]’
+/home/mpc/GenesisAutoware/ros/src/computing/perception/detection/packages/road_wizard/nodes/region_tlr_ssd/traffic_light_recognizer.cpp:41:41:   required from here
+/home/mpc/ssdcaffe/distribute/include/caffe/blob.hpp:56:23: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+     for (int i = 0; i < shape_.size(); ++i) {
+                       ^
+computing/perception/detection/packages/road_wizard/CMakeFiles/region_tlr_ssd.dir/build.make:86: recipe for target 'computing/perception/detection/packages/road_wizard/CMakeFiles/region_tlr_ssd.dir/nodes/region_tlr_ssd/traffic_light_recognizer.cpp.o' failed
+make[2]: *** [computing/perception/detection/packages/road_wizard/CMakeFiles/region_tlr_ssd.dir/nodes/region_tlr_ssd/traffic_light_recognizer.cpp.o] Error 1
+make[2]: *** Waiting for unfinished jobs....
+computing/perception/detection/packages/road_wizard/CMakeFiles/region_tlr_ssd.dir/build.make:62: recipe for target 'computing/perception/detection/packages/road_wizard/CMakeFiles/region_tlr_ssd.dir/nodes/region_tlr_ssd/region_tlr_ssd.cpp.o' failed
+make[2]: *** [computing/perception/detection/packages/road_wizard/CMakeFiles/region_tlr_ssd.dir/nodes/region_tlr_ssd/region_tlr_ssd.cpp.o] Error 1
+CMakeFiles/Makefile2:39468: recipe for target 'computing/perception/detection/packages/road_wizard/CMakeFiles/region_tlr_ssd.dir/all' failed
+make[1]: *** [computing/perception/detection/packages/road_wizard/CMakeFiles/region_tlr_ssd.dir/all] Error 2
+Makefile:140: recipe for target 'all' failed
+make: *** [all] Error 2
+Invoking "make -j8 -l8" failed
+
