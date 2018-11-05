@@ -61,7 +61,7 @@ lr = tf.placeholder(tf.float32)
 #%%
 
 ################## PRIMAL NN TRAINING ##############################
-neuron_size = 2
+neuron_size = 10
 neuron_sizeML = neuron_size                             # Can vary size of the intermediate layer as well
 
 W_1 = tf.Variable(tf.random_uniform([neuron_size,insize]))
