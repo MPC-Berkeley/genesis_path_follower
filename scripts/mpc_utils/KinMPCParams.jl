@@ -17,7 +17,7 @@ module KinMPCParams
 	platform = "abby" 		# GXZ's laptop
 	# platform = "nuvo"		# Black Genesis
 
-	dt      = 0.20			# model discretization time, td (s)
+	dt      = 0.2			# model discretization time, td (s)
 	# dt 		= 0.1
 
 	N       = 8				# horizon
