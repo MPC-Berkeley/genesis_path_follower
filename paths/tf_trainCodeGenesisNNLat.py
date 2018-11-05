@@ -12,9 +12,6 @@ import IPython
 from sklearn.preprocessing import StandardScaler
 from sklearn import preprocessing
 import math
-# import IPython
-
-#import h5py
 
 def normalize(x, mean, std, eps=1e-8):
     return (x - mean) / (std + eps)
@@ -23,27 +20,12 @@ def unnormalize(x, mean, std):
     return x * std + mean
 
 #%% We have imported all dependencies
-df = sio.loadmat('NN_test_trainingDataLat100k_PrimalDual2.mat',squeeze_me=True, struct_as_record=False) # read data set using pandas
+df = sio.loadmat('NN_test_RandtrainingDataLat_Trafo2.mat',squeeze_me=True, struct_as_record=False) # read data set using pandas
 # df = sio.loadmat('NN_test_trainingDataLatRFS.mat',squeeze_me=True, struct_as_record=False) # read data set using pandas
 x_data = df['inputParam_lat']
 y_data = df['outputParamDdf_lat']
 x_data_t = x_data
 y_data_t = y_data
-#IPython.embed()
-#x_data = normalize(x_data, norm='l2', axis=0, copy=True, return_norm=False)
-#y_data = normalize(y_data, norm='l2', axis=0, copy=True, return_norm=False)
-#IPython.embed()
-#scaler.tranform(x_data)
-#scaler.tranform(y_data)
-# x_data = preprocessing.scale(x_data)
-# y_data = preprocessing.scale(y_data)
-#scalerx = preprocessing.StandardScaler().fit(x_data)
-#IPython.embed()
-#x_data = normalize(x_data, np.mean(x_data, 0), np.std(x_data, 0))
-#x_data_test = scalerx.transform(x_data) sanity check
-#scalery = preprocessing.StandardScaler().fit(y_data)
-#y_data = normalize(y_data, np.mean(y_data, 0), np.std(y_data, 0)) 
-# y_dataDual = df['outputParamDual_lat']
 
 ###### TRY REMOVING #######
 # x_data, y_data, y_dataDual = shuffle(x_data, y_data, y_dataDual)
@@ -79,7 +61,7 @@ lr = tf.placeholder(tf.float32)
 #%%
 
 ################## PRIMAL NN TRAINING ##############################
-neuron_size = 30
+neuron_size = 2
 neuron_sizeML = neuron_size                             # Can vary size of the intermediate layer as well
 
 W_1 = tf.Variable(tf.random_uniform([neuron_size,insize]))
@@ -114,7 +96,7 @@ output = tf.add(tf.matmul(W_O,layer_2), b_O)
 # optimizer = tf.train.GradientDescentOptimizer(0.05) TO REDUCE OSCILLATION?
 
 # cost = tf.reduce_mean(tf.square(output-ys))            # our mean squared error cost function
-cost = tf.losses.mean_squared_error(output, ys)#tf.reduce_mean(tf.squared_difference(output, ys))#+ tf.abs(output - ys) )
+cost = tf.losses.mean_squared_error(output, ys)          #tf.reduce_mean(tf.squared_difference(output, ys))#+ tf.abs(output - ys) )
 
 train = tf.train.AdamOptimizer(lr).minimize(cost)      # GD and proximal GD working bad! Adam and RMS well.
 
@@ -150,16 +132,6 @@ with tf.Session() as sess:
          c_test.append(sess.run(cost, feed_dict={xs:np.transpose(x_test),ys:np.transpose(y_test)}))
          print('Epoch :',i,'Cost Train :',c_t[i], 'Cost Test :',c_test[i], 'learning rate',learning_rate)
 
-     # print('**********NN************')
-     # print(unnormalize(sess.run(output, {xs: x_test[5,:].reshape(insize,1)}),np.mean(y_data, 0) , np.std(y_data, 0)))
-     # # print(x_test[2,:])
-     # print('**********REAL************')
-     # print(y_data_t_test[5,:])
-     # print('**********NN************')
-     # print(sess.run(output, {xs: unx_test[7,:].reshape(insize,1)}))
-     # #print(x_test[2,:])
-     # print('**********REAL************')
-     # print(y_data_t_test[7,:])
 #%% Saving weight matrices 
      vj={}
      vj['W1'] = sess.run(W_1)
@@ -168,9 +140,8 @@ with tf.Session() as sess:
      vj['b1'] = sess.run(b_1)
      vj['b2'] = sess.run(b_2)
      vj['b0'] = sess.run(b_O)
-     #vj['b3'] = sess.run(b_3)
+     sio.savemat('trained_weightsPrimalLatTrafo2.mat',vj)
      # sio.savemat('trained_weightsPrimalLat.mat',vj)
-     sio.savemat('trained_weightsPrimalLatOffset.mat',vj)
 
 
 ################################ Plotting the Primal NN Train Quality
