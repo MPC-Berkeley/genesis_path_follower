@@ -55,7 +55,7 @@ module KinMPCParams
 	epsi_ub		=  0.1					# changed from RFS data  	
 	
 	curv_lb  	=  -0.1
-	curv_ub 	=  0.01			
+	curv_ub 	=   0.1			
 	vpred_lb   =  0
 	vpred_ub   =  12					
 	
