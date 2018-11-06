@@ -334,7 +334,7 @@ while ii <= 1
 
 
 # 	#########################################################################
-
+#   #########################################################################
  	# TRAFO 2 with z variables
  	beq_gurobi_updated = repmat(g_tilde,N);
 	beq_gurobi_updated[1:nx_tilde] = beq_gurobi_updated[1:nx_tilde] + A_tilde*x_tilde_0 	# PARAMETER: depends on x0
@@ -359,7 +359,6 @@ while ii <= 1
 	if !(status == :Optimal)
  		@goto label1 
  	end
-
 	obj_primal2 = getobjectivevalue(mdl2)
 	z_opt = getvalue(z)
 
@@ -386,17 +385,15 @@ end
 println("===========================================")
 # println("max a-residual:  $(maximum(a_res_all))")
 println("max dA-residual:  $(maximum(dA_res_all))")
-
 println("max dA-residual2: $(maximum(dA_res_all2))")
-
 println("max dA-residual Trafo1 + Trafo2: $(maximum(ddf_res_12))")
 
 
 println(" ")
 
 
-println("max obj_diff (difference btw Trafo1 and Trafo2): $(maximum(obj_diff))")
-println("max Rel obj_diff (difference btw Trafo1 and Trafo2): $(maximum(obj_diffRel))")
+# println("max obj_diff (difference btw Trafo1 and Trafo2): $(maximum(obj_diff))")
+# println("max Rel obj_diff (difference btw Trafo1 and Trafo2): $(maximum(obj_diffRel))")
 
 println(" ")
 
