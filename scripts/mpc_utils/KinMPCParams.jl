@@ -56,7 +56,9 @@ module KinMPCParams
 	
 	curv_lb  	=  -0.1
 	curv_ub 	=   0.1			
-	vpred_lb   =  0
-	vpred_ub   =  12					
+	vpred_lb    =  0
+	vpred_ub    =  20	
+	dfprev_ub	=  0.2
+	dfprev_lb	= -0.2			
 	
 end

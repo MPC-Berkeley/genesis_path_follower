@@ -35,8 +35,8 @@ ey_lb = KinMPCParams.ey_lb
 ey_ub = KinMPCParams.ey_ub
 epsi_lb = KinMPCParams.epsi_lb
 epsi_ub = KinMPCParams.epsi_ub
-dfprev_lb = -KinMPCParams.df_max
-dfprev_ub =  KinMPCParams.df_max
+dfprev_lb = -KinMPCParams.dfprev_ub
+dfprev_ub =  KinMPCParams.dfprev_lb
 
 v_lb = KinMPCParams.vpred_lb 
 v_ub = KinMPCParams.vpred_ub
@@ -220,7 +220,7 @@ println("primal status errors:  $(primStatusError)")
 println("dual status errors:  $(dualStatusError)")
 
 
-matwrite("NN_test_RandtrainingDataLat_Trafo2.mat", Dict(
+matwrite("NN_test_CPGDay1_RandDataLat10kTrafo2.mat", Dict(
 	"inputParam_lat" => inputParam_lat,
 	"outputParamDf_lat" => outputParamDf_lat,
 	"outputParamDdf_lat" => outputParamDdf_lat,
