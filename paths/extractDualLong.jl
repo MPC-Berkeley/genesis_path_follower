@@ -175,6 +175,7 @@ optVal_long = zeros(num_DataPoints)
 obj_diff = zeros(num_DataPoints)
 obj_diffRel = zeros(num_DataPoints)
 dA_res_all2 = zeros(num_DataPoints)
+ddf_res_12  = zeros(num_DataPoints) 	# computes differences in Optimizers
 
 
 
@@ -183,6 +184,18 @@ outputParamDual_long = zeros(num_DataPoints, N*(nf+ng))
 dual_Fx = []
 dual_Fu = []
 L_test_opt = []
+
+a_pred_opt = []
+a_pred_opt2 = []
+
+ey_pred_opt = []
+ey_pred_opt2 = []
+
+epsi_pred_opt = []
+epsi_pred_opt2 = []
+
+f_gurobi_updated = []
+z_opt = []
 
 # inputParam_long = zeros(num_DataPoints,3+2*N)
 # outputParamDacc_long = zeros(num_DataPoints, N*(nu))
@@ -194,7 +207,7 @@ for refC = 1:N
 	s_ub_ref[1,refC] = 3 + 2*(refC-1) 					# Increments of 2 along horizon 
 end
 
-while ii <= num_DataPoints
+while ii <= 1
 	
 	# Save only feasible points. 
 	# extract appropriate parameters	
@@ -297,6 +310,8 @@ while ii <= num_DataPoints
 	x_tilde_vec_opt = getvalue(x_tilde_vec)
 	dA_pred_opt = getvalue(u_tilde_vec)
 	a_pred_opt = x_tilde_vec_opt[3:nx+nu:end]
+	ey_pred_opt = x_tilde_vec_opt[1:nx+nu:end]
+	epsi_pred_opt = x_tilde_vec_opt[2:nx+nu:end]
 
 	## store the primal solution too as output gonna change now 
 	# outputParamDacc_long[ii,:] =  	dA_pred_opt
@@ -321,7 +336,7 @@ while ii <= num_DataPoints
 # 	#########################################################################
 
  	# TRAFO 2 with z variables
- 	beq_gurobi_updated = repmat(g_tilde,N,1);
+ 	beq_gurobi_updated = repmat(g_tilde,N);
 	beq_gurobi_updated[1:nx_tilde] = beq_gurobi_updated[1:nx_tilde] + A_tilde*x_tilde_0 	# PARAMETER: depends on x0
 	u_tilde_ref = zeros(N*nu) 	# want to minimize deltaU = u_k - u_{k-1}
 	z_gurobi_ref = zeros(N*n_uxu) 	# reference point for z_gurobi ; PARAMETER!
@@ -335,21 +350,31 @@ while ii <= num_DataPoints
 	mdl2 = Model(solver=GurobiSolver(Presolve=0, LogToConsole=0))
 	@variable(mdl2, z[1:N*n_uxu])  	# decision variable; contains everything
 	@objective(mdl2, Min, z'*H_gurobi*z + f_gurobi_updated'*z)
-	constr_eq = @constraint(mdl2, Aeq_gurobi*z .== squeeze(beq_gurobi_updated,2))
+	constr_eq = @constraint(mdl2, Aeq_gurobi*z .== beq_gurobi_updated)
 	constr_ub = @constraint(mdl2, z .<= squeeze(ub_gurobi,2))
 	constr_lb = @constraint(mdl2, -z .<= -squeeze(lb_gurobi,2))
 
 	tic()
 	status = solve(mdl2)
+	if !(status == :Optimal)
+ 		@goto label1 
+ 	end
+
 	obj_primal2 = getobjectivevalue(mdl2)
 	z_opt = getvalue(z)
 
 	dA_pred_opt2 = z_opt[1:n_uxu:end]
+	a_pred_opt2 = z_opt[4:n_uxu:end]
+	ey_pred_opt2 = z_opt[2:n_uxu:end]
+	epsi_pred_opt2 = z_opt[3:n_uxu:end]
 
-	obj_diff[ii] = norm(obj_primal-obj_primal2)
+	
+	obj_diff[ii] = obj_primal-obj_primal2
 	obj_diffRel[ii] = norm(obj_primal-obj_primal2)/norm(obj_primal2)
 
 	dA_res_all2[ii] = norm(dA_pred_opt2 - dAcc_stored)
+
+	ddf_res_12[ii] = norm(dA_pred_opt2 - dA_pred_opt)
 
 
  	ii = ii + 1 
@@ -363,6 +388,9 @@ println("===========================================")
 println("max dA-residual:  $(maximum(dA_res_all))")
 
 println("max dA-residual2: $(maximum(dA_res_all2))")
+
+println("max dA-residual Trafo1 + Trafo2: $(maximum(ddf_res_12))")
+
 
 println(" ")
 
