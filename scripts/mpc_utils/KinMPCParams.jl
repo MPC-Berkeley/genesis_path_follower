@@ -51,13 +51,13 @@ module KinMPCParams
     ## The below are all for random data generation for NN train 
 	ey_lb       = -1					# -1.5
 	ey_ub		=  1					# 1	
-	epsi_lb     = -0.1					# -0.2
-	epsi_ub		=  0.1					#  0.2  	
+	epsi_lb     = -1					# -0.2
+	epsi_ub		=  1					#  0.2  	
 	
-	curv_lb  	=  -0.1
+	curv_lb  	=   0
 	curv_ub 	=   0.1					# +-0.15			
 	vpred_lb    =  0
-	vpred_ub    =  12					# 22 	
+	vpred_ub    =  20					# 22 	
 	dfprev_ub	=  0.5
 	dfprev_lb	= -0.5			
 	
