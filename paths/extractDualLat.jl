@@ -44,13 +44,13 @@ curv_ub = KinMPCParams.curv_ub
  
 
 ############## load all data ##############
-latData = matread("CPG_day1_test1_trainingData.mat")   				# bad
+# latData = matread("CPG_day1_test1_trainingData.mat")   				# bad
 # latData = matread("testSimDataDebugExtracted.mat")   				# bad
 # latData = matread("NN_test_trainingData.mat")   					# bad
 # latData = matread("exp1_trainingData.mat") 						# bad
 # latData = matread("NN_test_trainingDataLat10k_PrimalDual2.mat")	# bad
 # latData = matread("NN_test_RandtrainingDataLat_Trafo2.mat")   			# bad
-latData = matread("NN_test_CPGDay1_TotalDataLatTrafo2.mat")   				# bad
+latData = matread("NN_test_CPGDay2_RandDataLat100kTrafo2.mat")   				# bad
 
 
 # inputParam_lat = np.hstack((ey_curr.T, epsi_curr.T ,df_prev.T, v_pred, c_pred))
