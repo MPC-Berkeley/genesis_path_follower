@@ -15,7 +15,7 @@ __precompile__()
 module KinMPCParams
 
 	platform = "abby" 		# GXZ's laptop
-	# platform = "nuvo"		# Black Genesis
+	platform = "nuvo"		# Black Genesis
 
 	dt      = 0.2			# model discretization time, td (s)
 	# dt 		= 0.1
