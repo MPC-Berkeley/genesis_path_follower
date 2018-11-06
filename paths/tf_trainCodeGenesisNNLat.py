@@ -20,7 +20,7 @@ def unnormalize(x, mean, std):
     return x * std + mean
 
 #%% We have imported all dependencies
-df = sio.loadmat('NN_test_CPGDay1_TotalDataLatTrafo2.mat',squeeze_me=True, struct_as_record=False) # read data set using pandas
+df = sio.loadmat('NN_test_CPGDay2_RandDataLat30kTrafo2.mat',squeeze_me=True, struct_as_record=False) # read data set using pandas
 # df = sio.loadmat('NN_test_trainingDataLatRFS.mat',squeeze_me=True, struct_as_record=False) # read data set using pandas
 x_data = df['inputParam_lat']
 y_data = df['outputParamDdf_lat']
@@ -113,7 +113,7 @@ with tf.Session() as sess:
      train_count = len(x_train)
 
      N_EPOCHS = 250
-     BATCH_SIZE = 100
+     BATCH_SIZE = 32
      max_learning_rate = 0.003
      min_learning_rate = 0.0001
      #learning_rate = 0.0001
@@ -140,7 +140,7 @@ with tf.Session() as sess:
      vj['b1'] = sess.run(b_1)
      vj['b2'] = sess.run(b_2)
      vj['b0'] = sess.run(b_O)
-     sio.savemat('trained_weightsPrimalLat_CPGDay1.mat',vj)
+     sio.savemat('trained_weightsPrimalLat_CPGDay2.mat',vj)
      # sio.savemat('trained_weightsPrimalLatTrafo2.mat',vj)
      # sio.savemat('trained_weightsPrimalLat.mat',vj)
 
