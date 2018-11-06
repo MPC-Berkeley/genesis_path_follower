@@ -20,7 +20,7 @@ def unnormalize(x, mean, std):
     return x * std + mean
 
 #%% We have imported all dependencies
-df = sio.loadmat('NN_test_CPGDay2BacktoDay1Tune_RandDataLat10kTrafo2.mat',squeeze_me=True, struct_as_record=False) # read data set using pandas
+df = sio.loadmat('NN_test_CPGDay2BacktoDay1Tune_RandDataLat100kTrafo2.mat',squeeze_me=True, struct_as_record=False) # read data set using pandas
 # df = sio.loadmat('NN_test_trainingDataLatRFS.mat',squeeze_me=True, struct_as_record=False) # read data set using pandas
 x_data = df['inputParam_lat']
 y_data = df['outputParamDdf_lat']
@@ -112,7 +112,7 @@ with tf.Session() as sess:
      inds = np.arange(x_train.shape[0])
      train_count = len(x_train)
 
-     N_EPOCHS = 300
+     N_EPOCHS = 100
      BATCH_SIZE = 32
      max_learning_rate = 0.003
      min_learning_rate = 0.0001
@@ -140,7 +140,8 @@ with tf.Session() as sess:
      vj['b1'] = sess.run(b_1)
      vj['b2'] = sess.run(b_2)
      vj['b0'] = sess.run(b_O)
-     sio.savemat('trained_weightsPrimalLat10k_CPGDay2BacktoDay1Tune.mat',vj)
+     sio.savemat('trained_weightsPrimalLat100k_CPGDay2BacktoDay1Tune.mat',vj)
+    # sio.savemat('trained_weightsPrimalLat10k_CPGDay2BacktoDay1Tune.mat',vj)
     # sio.savemat('trained_weightsPrimalLat100k_CPGDay2.mat',vj)
     # sio.savemat('trained_weightsPrimalLatTrafo2.mat',vj)
     # sio.savemat('trained_weightsPrimalLat.mat',vj)
