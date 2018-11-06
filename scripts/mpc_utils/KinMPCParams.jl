@@ -54,7 +54,7 @@ module KinMPCParams
 	epsi_lb     = -1					# -0.2
 	epsi_ub		=  1					#  0.2  	
 	
-	curv_lb  	=   0
+	curv_lb  	=   -0.1
 	curv_ub 	=   0.1					# +-0.15			
 	vpred_lb    =  0
 	vpred_ub    =  20					# 22 	
