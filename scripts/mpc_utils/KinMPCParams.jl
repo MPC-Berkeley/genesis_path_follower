@@ -49,15 +49,15 @@ module KinMPCParams
 	ddf_max 	= 0.5					# change in steering
 
     ## The below are all for random data generation for NN train 
-	ey_lb       = -1.5
-	ey_ub		=  1.5	
-	epsi_lb     = -0.2
-	epsi_ub		=  0.2					# changed from RFS data  	
+	ey_lb       = -1					# -1.5
+	ey_ub		=  1					# 1	
+	epsi_lb     = -0.1					# -0.2
+	epsi_ub		=  0.1					#  0.2  	
 	
-	curv_lb  	=  -0.15
-	curv_ub 	=   0.15			
+	curv_lb  	=  -0.1
+	curv_ub 	=   0.1					# +-0.15			
 	vpred_lb    =  0
-	vpred_ub    =  22	
+	vpred_ub    =  12					# 22 	
 	dfprev_ub	=  0.5
 	dfprev_lb	= -0.5			
 	
