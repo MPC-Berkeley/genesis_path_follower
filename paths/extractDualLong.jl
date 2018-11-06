@@ -161,7 +161,6 @@ f_tilde_vec = repmat(f_tilde,N)
 
 ######################## ITERATE OVER parameters ################
 # build problem
-num_DataPoints = 1000
 num_DataPoints = size(inputParam_long,1)
 
 solv_time_all = zeros(num_DataPoints)
@@ -207,7 +206,7 @@ for refC = 1:N
 	s_ub_ref[1,refC] = 3 + 2*(refC-1) 					# Increments of 2 along horizon 
 end
 
-while ii <= 1
+while ii <= num_DataPoints
 	
 	# Save only feasible points. 
 	# extract appropriate parameters	

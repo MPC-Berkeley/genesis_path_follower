@@ -382,9 +382,6 @@ module GPSKinMPCPathFollowerFrenetLinLongNN
 		
 	end
 
-	
-
-
 
 	# only reference functions need to be updated
 	function updateMatrices(s_ref::Array{Float64,1}, v_ref::Array{Float64,1})
@@ -434,7 +431,7 @@ module GPSKinMPCPathFollowerFrenetLinLongNN
 		is_opt_NN = (flag_XUfeas==1) && (primNN_obj[1] - dualNN_obj[1] <= 0.1)
 		is_opt_NN = (flag_XUfeas==1)
 
-		is_opt_NN = false 	# always use GUROBI
+		# is_opt_NN = false 	# always use GUROBI
 
 		if is_opt_NN
 			# println("****** IS FEASIBLE: $(is_opt_NN) ******")
