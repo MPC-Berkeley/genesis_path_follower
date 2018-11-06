@@ -39,11 +39,11 @@ module GPSKinMPCPathFollowerFrenetLinLatNN
 
 	# saved place is different
 	if KinMPCParams.platform == "nuvo"
-		primalNN_Data 	= matread("../GenesisAutoware/ros/src/genesis_path_follower/paths/trained_weightsPrimalLatTrafo2.mat")
+		primalNN_Data 	= matread("../GenesisAutoware/ros/src/genesis_path_follower/paths/trained_weightsPrimalLat_CPGDay1.mat")
 		dualNN_Data 	= matread("../GenesisAutoware/ros/src/genesis_path_follower/paths/trained_weightsDualLat.mat")
 
 	elseif KinMPCParams.platform == "abby"
-		primalNN_Data 	= matread("../catkin_ws/src/genesis_path_follower/paths/trained_weightsPrimalLatTrafo2.mat")
+		primalNN_Data 	= matread("../catkin_ws/src/genesis_path_follower/paths/trained_weightsPrimalLat_CPGDay1.mat")
 		dualNN_Data 	= matread("../catkin_ws/src/genesis_path_follower/paths/trained_weightsDualLat.mat")
 	
 	else
@@ -429,7 +429,7 @@ module GPSKinMPCPathFollowerFrenetLinLatNN
 
 		# is_opt_NN = (flag_XUfeas==1) && (primNN_obj[1] - dualNN_obj[1] <= 0.1)
 		is_opt_NN = (flag_XUfeas==1)
-		is_opt_NN = false
+		# is_opt_NN = false
 
 		if is_opt_NN
 			println("****** LAT IS FEASIBLE: $(is_opt_NN) ******")
