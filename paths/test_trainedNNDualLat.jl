@@ -23,7 +23,7 @@ L_a 	= KinMPCParams.L_a				# from CoG to front axle (according to Jongsang)
 L_b 	= KinMPCParams.L_b				# from CoG to rear axle (according to Jongsang)
 
 ############## load all NN Matrices ##############
-primalNN_Data 	= matread("trained_weightsPrimalLatOffset.mat")
+primalNN_Data 	= matread("trained_weightsPrimalLat30k_CPGDay2BacktoDay1Tune.mat")
 dualNN_Data 	= matread("trained_weightsDualLat.mat")		 
 
 # read out NN primal/Dual weights
@@ -45,11 +45,11 @@ bout_DLat = dualNN_Data["b0D"]
 
 
 ####################### debugging code ###################################
-test_Data = matread("NN_test_trainingDataLat10k_PrimalDual2.mat")
+test_Data = matread("NN_test_CPGDay2BacktoDay1Tune_RandDataLat30kTrafo2.mat")
 # test_Data = matread("NN_test_trainingDataLat10k_PrimalDual2.mat")
 test_inputParams = test_Data["inputParam_lat"]
 test_outputParamDdf = test_Data["outputParamDdf_lat"]
-test_inputParams = test_inputParams[12:13,:]
+# test_inputParams = test_inputParams[50:1550,:]
 
 
 num_DataPoints = size(test_inputParams,1)
@@ -161,7 +161,7 @@ while iii <= num_DataPoints
 	v_pred = params[4:4+N-1]
 	c_pred = params[12:end]
 
-
+	
 	# system dynamics A, B, g
 	A_updated = zeros(nx, nx, N)
 	B_updated = zeros(nx, nu, N)
@@ -195,36 +195,35 @@ while iii <= num_DataPoints
 	    A_tilde_vec[1+(ii-1)*(nx+nu):ii*(nx+nu),:] = A_tmp 	#A_tilde^ii
 	end
 
-	B_tilde_vec = zeros(N*(nx+nu), nu*N)
-	for ii = 0 : N-1
-	    for jj = 0 : ii-1
-	    	A_tmp = eye(nx+nu)	# used to emulate A_tilde^(ii-jj)
-	    	for kk = 1 : (ii-jj)
-	    		A_tmp = A_tilde_updated[:,:,kk+1]*A_tmp
-	    	end
-	        B_tilde_vec[1+ii*(nx+nu):(ii+1)*(nx+nu), 1+jj*nu:  (jj+1)*nu] = A_tmp*B_tilde_updated[:,:,jj+1] 	# A_tilde^(ii-jj)*B_tilde
-	    end
-	    B_tilde_vec[1+ii*(nx+nu):(ii+1)*(nx+nu), 1+ii*nu:(ii+1)*nu] = B_tilde_updated[:,:,ii+1]
+
+	# new CORRECT construction method
+	B_tilde_vec2 = zeros(N*(nx+nu), nu*N)
+	B_tilde_vec2[1:(nx+nu),1:nu] = B_tilde_updated[:,:,1] 	# for stage 1: x1 = ... + B0 * u0  + ...
+	for ii = 2 : N  # for stages x2, ...
+		B_tilde_vec2[(ii-1)*(nx+nu)+1 : ii*(nx+nu) , :] = A_tilde_updated[:,:,ii] * B_tilde_vec2[(ii-2)*(nx+nu)+1 : (ii-1)*(nx+nu) , :]
+		B_tilde_vec2[(ii-1)*(nx+nu)+1 : ii*(nx+nu) , (ii-1)*nu+1:ii*nu] = B_tilde_updated[:,:,ii]
 	end
 
 	nw=nx+nu
-	E_tilde_vec = zeros(N*(nx+nu), nw*N)
-	for ii = 0 : N-1
-	    for jj = 0 : ii-1
-	    	A_tmp = eye(nx+nu) 	# simulates A_tilde^(ii-jj)
-	    	for kk = 1 : (ii-jj)
-	    		A_tmp = A_tilde_updated[:,:,kk+1]*A_tmp
-	    	end
-	        E_tilde_vec[1+ii*(nx+nu):(ii+1)*(nx+nu), 1+jj*nw:  (jj+1)*nw] = A_tmp * eye(nx+nu)    # A_tilde^(ii-jj)*eye(nx+nu)
-	    end
-	    E_tilde_vec[1+ii*(nx+nu):(ii+1)*(nx+nu), 1+ii*nw:(ii+1)*nw] = eye(nx+nu)
+
+
+	# new approach: CORRECT
+	E_tilde_vec2 = zeros(N*(nx+nu), nw*N)
+	E_tilde_vec2[1:(nx+nu) , 1:nw] = eye(nw) 	# for x1
+	for ii = 2 : N 		# for x2, x3, ...
+		E_tilde_vec2[(ii-1)*nw+1 : ii*nw  , :  ] = 	A_tilde_updated[:,:,ii] * E_tilde_vec2[(ii-2)*nw+1 : (ii-1)*nw  , :  ]
+		E_tilde_vec2[(ii-1)*nw+1 : ii*nw , (ii-1)*nw+1 : ii*nw ] = eye(nw)
 	end
+
+	# println("--- Differences E_tilde_vec and E_tilde_vec2: $(norm(E_tilde_vec - E_tilde_vec2))")
+
+	E_tilde_vec = E_tilde_vec2
+	B_tilde_vec = B_tilde_vec2
 
 	g_tilde_vec = zeros(N*(nx+nu))
 	for ii = 1 : N
 		g_tilde_vec[1+(ii-1)*(nx+nu) : ii*(nx+nu)] = g_tilde_updated[:,ii]
 	end
-
 
 	################## BEGIN extract Primal NN solution ##################
 	tic()

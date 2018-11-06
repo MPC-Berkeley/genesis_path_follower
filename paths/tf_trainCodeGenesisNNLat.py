@@ -20,7 +20,7 @@ def unnormalize(x, mean, std):
     return x * std + mean
 
 #%% We have imported all dependencies
-df = sio.loadmat('NN_test_CPGDay2_RandDataLat100kTrafo2.mat',squeeze_me=True, struct_as_record=False) # read data set using pandas
+df = sio.loadmat('NN_test_CPGDay2BacktoDay1Tune_RandDataLat30kTrafo2.mat',squeeze_me=True, struct_as_record=False) # read data set using pandas
 # df = sio.loadmat('NN_test_trainingDataLatRFS.mat',squeeze_me=True, struct_as_record=False) # read data set using pandas
 x_data = df['inputParam_lat']
 y_data = df['outputParamDdf_lat']
@@ -140,9 +140,10 @@ with tf.Session() as sess:
      vj['b1'] = sess.run(b_1)
      vj['b2'] = sess.run(b_2)
      vj['b0'] = sess.run(b_O)
-     sio.savemat('trained_weightsPrimalLat100k_CPGDay2.mat',vj)
-     # sio.savemat('trained_weightsPrimalLatTrafo2.mat',vj)
-     # sio.savemat('trained_weightsPrimalLat.mat',vj)
+     sio.savemat('trained_weightsPrimalLat30k_CPGDay2BacktoDay1Tune.mat',vj)
+    # sio.savemat('trained_weightsPrimalLat100k_CPGDay2.mat',vj)
+    # sio.savemat('trained_weightsPrimalLatTrafo2.mat',vj)
+    # sio.savemat('trained_weightsPrimalLat.mat',vj)
 
 
 ################################ Plotting the Primal NN Train Quality
