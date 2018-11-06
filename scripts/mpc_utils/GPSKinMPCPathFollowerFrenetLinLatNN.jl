@@ -39,11 +39,11 @@ module GPSKinMPCPathFollowerFrenetLinLatNN
 
 	# saved place is different
 	if KinMPCParams.platform == "nuvo"
-		primalNN_Data 	= matread("../GenesisAutoware/ros/src/genesis_path_follower/paths/trained_weightsPrimalLat_CPGDay1.mat")
+		primalNN_Data 	= matread("../GenesisAutoware/ros/src/genesis_path_follower/paths/trained_weightsPrimalLatTrafo2.mat")
 		dualNN_Data 	= matread("../GenesisAutoware/ros/src/genesis_path_follower/paths/trained_weightsDualLat.mat")
 
 	elseif KinMPCParams.platform == "abby"
-		primalNN_Data 	= matread("../catkin_ws/src/genesis_path_follower/paths/trained_weightsPrimalLat_CPGDay1.mat")
+		primalNN_Data 	= matread("../catkin_ws/src/genesis_path_follower/paths/trained_weightsPrimalLatTrafo2.mat")
 		dualNN_Data 	= matread("../catkin_ws/src/genesis_path_follower/paths/trained_weightsDualLat.mat")
 	
 	else
@@ -391,6 +391,8 @@ module GPSKinMPCPathFollowerFrenetLinLatNN
 		x_tilde_NN_vec = A_tilde_vec*x_tilde_0 + B_tilde_vec*u_tilde_NN_vec + E_tilde_vec*g_tilde_vec
 
 		xu_tilde_NN_res = [ maximum(F_tilde_vec*x_tilde_NN_vec - f_tilde_vec) ; maximum(Fu_tilde_vec*u_tilde_NN_vec - fu_tilde_vec) ]  # should be <= 0
+		
+
 		flag_XUfeas = 0
 		if maximum(xu_tilde_NN_res) <= 0  	# infeasible if bigger than zero/threshold
 			flag_XUfeas = 1
@@ -429,7 +431,7 @@ module GPSKinMPCPathFollowerFrenetLinLatNN
 
 		# is_opt_NN = (flag_XUfeas==1) && (primNN_obj[1] - dualNN_obj[1] <= 0.1)
 		is_opt_NN = (flag_XUfeas==1)
-		# is_opt_NN = false
+		# is_opt_NN = true
 
 		if is_opt_NN
 			println("****** LAT IS FEASIBLE: $(is_opt_NN) ******")

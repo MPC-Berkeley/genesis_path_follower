@@ -171,6 +171,13 @@ dual_gap = zeros(num_DataPoints)
 Reldual_gap = zeros(num_DataPoints)
 optVal_long = zeros(num_DataPoints)
 
+
+obj_diff = zeros(num_DataPoints)
+obj_diffRel = zeros(num_DataPoints)
+dA_res_all2 = zeros(num_DataPoints)
+
+
+
 outputParamDual_long = zeros(num_DataPoints, N*(nf+ng))
 
 dual_Fx = []
@@ -325,16 +332,16 @@ while ii <= num_DataPoints
 	f_gurobi_updated = -2*H_gurobi*z_gurobi_ref
 
 
-	mdl = Model(solver=GurobiSolver(Presolve=0, LogToConsole=0))
-	@variable(mdl, z[1:N*n_uxu])  	# decision variable; contains everything
-	@objective(mdl, Min, z'*H_gurobi*z + f_gurobi_updated'*z)
-	constr_eq = @constraint(mdl, Aeq_gurobi*z .== squeeze(beq_gurobi_updated,2))
-	constr_ub = @constraint(mdl, z .<= squeeze(ub_gurobi,2))
-	constr_lb = @constraint(mdl, -z .<= -squeeze(lb_gurobi,2))
+	mdl2 = Model(solver=GurobiSolver(Presolve=0, LogToConsole=0))
+	@variable(mdl2, z[1:N*n_uxu])  	# decision variable; contains everything
+	@objective(mdl2, Min, z'*H_gurobi*z + f_gurobi_updated'*z)
+	constr_eq = @constraint(mdl2, Aeq_gurobi*z .== squeeze(beq_gurobi_updated,2))
+	constr_ub = @constraint(mdl2, z .<= squeeze(ub_gurobi,2))
+	constr_lb = @constraint(mdl2, -z .<= -squeeze(lb_gurobi,2))
 
 	tic()
-	status = solve(mdl)
-	obj_primal2 = getobjectivevalue(mdl)
+	status = solve(mdl2)
+	obj_primal2 = getobjectivevalue(mdl2)
 	z_opt = getvalue(z)
 
 	dA_pred_opt2 = z_opt[1:n_uxu:end]
@@ -345,12 +352,6 @@ while ii <= num_DataPoints
 	dA_res_all2[ii] = norm(dA_pred_opt2 - dAcc_stored)
 
 
-
-
-
-
-
-
  	ii = ii + 1 
 
  	@label label1
@@ -358,10 +359,16 @@ end
 
 
 println("===========================================")
-println("max a-residual:  $(maximum(a_res_all))")
+# println("max a-residual:  $(maximum(a_res_all))")
 println("max dA-residual:  $(maximum(dA_res_all))")
 
-printl("max dA-residual2: $(maximum(dA_res_all2))")
+println("max dA-residual2: $(maximum(dA_res_all2))")
+
+println(" ")
+
+
+println("max obj_diff (difference btw Trafo1 and Trafo2): $(maximum(obj_diff))")
+println("max Rel obj_diff (difference btw Trafo1 and Trafo2): $(maximum(obj_diffRel))")
 
 println(" ")
 
@@ -373,10 +380,6 @@ println("min dual_gap:  $(minimum(dual_gap))")
 println("max Rel dual_gap:  $(minimum(Reldual_gap))")
 println("min Rel dual_gap:  $(minimum(Reldual_gap))")
 
-println(" ")
-
-println("max obj_diff (difference btw Trafo1 and Trafo2): $(maximum(obj_diff))")
-println("max Rel obj_diff (difference btw Trafo1 and Trafo2): $(maximum(obj_diffRel))")
 
 
 #save data
