@@ -1,0 +1,9 @@
+Day 1 CPG: Nov 5 2018
+
+1. Managed to collect two laps of Gurobi Lin/Lat data (pretest OK, 3rd round shut down) at 50Hz
+2. Ran 2 sim rounds with Gurobi Lin/Lat at 20 Hz
+3. Issue with car again (heat?)
+4. trained_weightsPrimalLatTrafo2.mat seems OK, but has offset and trend for left curve
+
+
+Day 2 CPG: Nov 6 2018
