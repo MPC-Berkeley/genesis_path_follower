@@ -79,7 +79,7 @@ f_tilde_vec = repmat(f_tilde,N)
 
 ######################## ITERATE OVER saved parameters ################
 # build problem
-num_DataPoints = 10000								# Training data count 
+num_DataPoints = 30000								# Training data count 
 # num_DataPoints = size(inputParam_lat,1)
 
 solv_time_all = zeros(num_DataPoints)
@@ -220,7 +220,7 @@ println("primal status errors:  $(primStatusError)")
 println("dual status errors:  $(dualStatusError)")
 
 
-matwrite("NN_test_CPGDay1_RandDataLat10kTrafo2.mat", Dict(
+matwrite("NN_test_CPGDay2_RandDataLat30kTrafo2.mat", Dict(
 	"inputParam_lat" => inputParam_lat,
 	"outputParamDf_lat" => outputParamDf_lat,
 	"outputParamDdf_lat" => outputParamDdf_lat,
