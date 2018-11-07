@@ -123,7 +123,7 @@ Qdual_tmp = 0.5*(Qdual_tmp+Qdual_tmp') + 0e-5*eye(N*(nf+ng))
 
 ######################## ITERATE OVER parameters ################
 # build problem
-num_DataPoints = 1e3
+num_DataPoints = 2e3
 
 ## Load Ranges of params 
 ds_lb = KinMPCParams.ds_lb		# from exp and sim data
