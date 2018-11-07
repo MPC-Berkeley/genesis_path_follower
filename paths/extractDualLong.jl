@@ -27,18 +27,16 @@ longData = matread("NN_test_trainingData.mat")
 # longData = matread("testSimDataDebugExtracted.mat")   				# bad
 
 
-
-
 inputParam_long = longData["inputParam_long"]   # np.hstack((s_curr.T, v_curr.T ,a_prev.T, s_ref, v_ref ))
 outputParamAcc_long = longData["outputParamAcc_long"]
 outputParamDacc_long = longData["outputParamDacc_long"]
 
 ## Load Ranges of params 
 
- v_lb = KinMPCParams.v_min 
- v_ub = KinMPCParams.v_max
- aprev_lb = -KinMPCParams.a_max
- aprev_ub =  KinMPCParams.a_max
+v_lb = KinMPCParams.v_min 
+v_ub = KinMPCParams.v_max
+aprev_lb = -KinMPCParams.a_max
+aprev_ub =  KinMPCParams.a_max
  
 ###### Merge random data with extra data from vehicle path following    
 # inputParam_long =  [s_train_rand v_train_rand aprev_train_rand s_ref_train_rand v_ref_train_rand ]
@@ -107,7 +105,6 @@ end
 # end
 # println("difference B_tilde: $(norm(B_tilde_vec - B_tilde_vec2))") 	# 1e-16
 
-
 H_gurobi = kmpcLinLong.H_gurobi
 n_uxu = kmpcLinLong.n_uxu
 f_gurobi_init = kmpcLinLong.f_gurobi_init
@@ -115,6 +112,21 @@ Aeq_gurobi = kmpcLinLong.Aeq_gurobi
 ub_gurobi = kmpcLinLong.ub_gurobi
 lb_gurobi = kmpcLinLong.lb_gurobi
 
+########## make all state constraints inactive for TEST ##########
+# u_tilde_lb = -kmpcLinLong.a_dmax*kmpcLinLong.dt
+# u_tilde_ub = kmpcLinLong.a_dmax*kmpcLinLong.dt
+
+# largeNumber = 1e5
+# x_lb = [-largeNumber	# make sure car doesnt travel more than largeNumber [m]
+# 			v_min		]
+# x_ub = [	largeNumber
+# 			v_max		]
+
+# x_tilde_lb = [x_lb ; u_lb]
+# x_tilde_ub = [x_ub ; u_ub]
+
+# lb_gurobi = repmat([u_tilde_lb ; x_tilde_lb], N, 1)		# (deltaU, X, U)
+# ub_gurobi = repmat([u_tilde_ub ; x_tilde_ub], N, 1)		# (deltaU, X, U)
 
 nw=nx+nu
 E_tilde_vec = zeros(N*(nx+nu), nw*N)
@@ -152,16 +164,20 @@ fu_tilde_vec = repmat(fu_tilde,N)
 # Appended State constraints (tilde)
 F_tilde = [eye(nx+nu) ; -eye(nx+nu)]
 f_tilde = [x_tilde_ub ; -x_tilde_lb]
+
+# remove useless/inactive constraints
+# F_tilde = F_tilde[[2,3,5,6],:] 		# ignore constraint on s
+# f_tilde = f_tilde[[2,3,5,6]]
 nf = length(f_tilde);
 
 # Concatenate appended state (tilde) constraints
+# NO input constraints
 F_tilde_vec = kron(eye(N), F_tilde)
 f_tilde_vec = repmat(f_tilde,N)   
 
 
 ######################## ITERATE OVER parameters ################
 # build problem
-num_DataPoints = 1000
 num_DataPoints = size(inputParam_long,1)
 
 solv_time_all = zeros(num_DataPoints)
@@ -207,7 +223,7 @@ for refC = 1:N
 	s_ub_ref[1,refC] = 3 + 2*(refC-1) 					# Increments of 2 along horizon 
 end
 
-while ii <= 1
+while ii <= num_DataPoints
 	
 	# Save only feasible points. 
 	# extract appropriate parameters	

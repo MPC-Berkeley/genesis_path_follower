@@ -22,6 +22,8 @@
 		- tracks (s_ref, v_ref)
 		- NOTE: BOX constraint on "s" (using largeNumber) is not well-implemented atm
 =#
+## STATE CONSTRAINTS RELAXED
+
 
 
 module GPSKinMPCPathFollowerFrenetLinLongNN
@@ -34,7 +36,7 @@ module GPSKinMPCPathFollowerFrenetLinLongNN
 	import KinMPCParams 		# load basic parameters such as N, dt, L_a, L_b that is shared among the controllers
 
 	println("Creating longitudinal kinematic bicycle model in NN...")
-	# println(pwd())
+	println(pwd())
 
 	if KinMPCParams.platform == "nuvo"
 		primalNN_Data 	= matread("../GenesisAutoware/ros/src/genesis_path_follower/paths/trained_weightsPrimalLong.mat")
@@ -103,12 +105,12 @@ module GPSKinMPCPathFollowerFrenetLinLongNN
 	a_dmax = KinMPCParams.a_dmax 	# jerk bound, m/s^3
 
 	x_lb = [	-largeNumber	# make sure car doesnt travel more than largeNumber [m]
-				v_min		]
+				v_min		]  	# v_min
 	x_ub = [	largeNumber
-				v_max		]
+				v_max		] 		# v_max
 
-	u_lb = -a_max
-	u_ub = a_max
+	u_lb = -a_max					# -a_max
+	u_ub = a_max 					# a_max
 
 	dU_lb = -a_dmax*dt 	# double check if *dt is needed (or not)
 	dU_ub = a_dmax*dt
@@ -382,9 +384,6 @@ module GPSKinMPCPathFollowerFrenetLinLongNN
 		
 	end
 
-	
-
-
 
 	# only reference functions need to be updated
 	function updateMatrices(s_ref::Array{Float64,1}, v_ref::Array{Float64,1})
@@ -434,7 +433,7 @@ module GPSKinMPCPathFollowerFrenetLinLongNN
 		is_opt_NN = (flag_XUfeas==1) && (primNN_obj[1] - dualNN_obj[1] <= 0.1)
 		is_opt_NN = (flag_XUfeas==1)
 
-		# is_opt_NN = false 	# always use GUROBI
+		is_opt_NN = false 	# always use GUROBI
 
 		if is_opt_NN
 			# println("****** IS FEASIBLE: $(is_opt_NN) ******")
