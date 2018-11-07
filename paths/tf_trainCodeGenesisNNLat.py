@@ -61,7 +61,7 @@ lr = tf.placeholder(tf.float32)
 #%%
 
 ################## PRIMAL NN TRAINING ##############################
-neuron_size = 10
+neuron_size = 8
 neuron_sizeML = neuron_size                             # Can vary size of the intermediate layer as well
 
 W_1 = tf.Variable(tf.random_uniform([neuron_size,insize]))
@@ -112,9 +112,9 @@ with tf.Session() as sess:
      inds = np.arange(x_train.shape[0])
      train_count = len(x_train)
 
-     N_EPOCHS = 100
+     N_EPOCHS = 200
      BATCH_SIZE = 32
-     max_learning_rate = 0.003
+     max_learning_rate = 0.001
      min_learning_rate = 0.0001
      #learning_rate = 0.0001
      decay_speed = 1200000.0
