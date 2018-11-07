@@ -24,7 +24,7 @@ L_b 	= KinMPCParams.L_b				# from CoG to rear axle (according to Jongsang)
 
 ############## load all data ##############
 # longData = matread("NN_test_trainingData.mat")
-longData = matread("NN_test_CPGDay3_RandTrainingDataLong1k.mat")   				# bad
+longData = matread("NN_test_CPGDay3_RandTrainingDataLong10k.mat")   				# bad
 
 
 inputParam_long = longData["inputParam_long"]   # np.hstack((s_curr.T, v_curr.T ,a_prev.T, s_ref, v_ref ))
