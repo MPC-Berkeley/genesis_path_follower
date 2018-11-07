@@ -24,10 +24,10 @@ module KinMPCParams
 	dt      = 0.2			# model discretization time, td (s)
 	# dt 		= 0.1
 
-	N       = 8				# horizon
+	N       = 3				# horizon
 	# N		= 16
 
-	L_a 	= 1.5213		# from CoG to front axle (according to Jongsang)
+	L_a 	= 1.5313		# from CoG to front axle (according to Jongsang)
 	L_b 	= 1.4987		# from CoG to rear axle (according to Jongsang)
 
 	# longitudinal parameters
@@ -38,8 +38,8 @@ module KinMPCParams
 	C_acc 	= 0
 	C_dacc 	= 11;		    # 20 too high; 10 OK for med speed; 10 a big jerky for high speed; 13 too high
 	v_min 	= -largeNumber 	# 0.0				# vel bounds (m/s)
-	v_max 	= largeNumber		# 20.0	
-	a_max 	= largeNumber	# 2.0				# acceleration and deceleration bound, m/s^2
+	v_max 	=  largeNumber		# 20.0	
+	a_max 	=  largeNumber	# 2.0				# acceleration and deceleration bound, m/s^2
 	a_dmax 	= 1.5			# jerk bound, m/s^3
 
 	# lateral parameters
@@ -58,7 +58,7 @@ module KinMPCParams
 	epsi_lb     = -1					# -0.2
 	epsi_ub		=  1					#  0.2  	
 	
-	curv_lb  	=   -0.1
+	curv_lb  	=  -0.1
 	curv_ub 	=   0.1					# +-0.15			
 	vpred_lb    =  0
 	vpred_ub    =  20					# 22 	

@@ -23,7 +23,7 @@ L_a 	= KinMPCParams.L_a				# from CoG to front axle (according to Jongsang)
 L_b 	= KinMPCParams.L_b				# from CoG to rear axle (according to Jongsang)
 
 ############## load all NN Matrices ##############
-primalNN_Data 	= matread("trained_weightsPrimalLat100k_CPGDay2BacktoDay1Tune.mat")
+primalNN_Data 	= matread("trained_weightsPrimalLat10k_CPGDay3N3.mat")
 dualNN_Data 	= matread("trained_weightsDualLat.mat")		 
 
 # read out NN primal/Dual weights
@@ -45,7 +45,7 @@ bout_DLat = dualNN_Data["b0D"]
 
 
 ####################### debugging code ###################################
-test_Data = matread("NN_test_CPGDay2BacktoDay1Tune_RandDataLat10kTrafo2.mat")
+test_Data = matread("NN_test_CPGDay3_N3RandDataLat10kTrafo2.mat")
 # test_Data = matread("NN_test_trainingDataLat10k_PrimalDual2.mat")
 test_inputParams = test_Data["inputParam_lat"]
 test_outputParamDdf = test_Data["outputParamDdf_lat"]
@@ -152,27 +152,32 @@ while iii <= num_DataPoints
  	u_0 = dfprev_lb + (dfprev_ub-dfprev_lb)*rand(1) 		
 	v_pred = v_lb + (v_ub-v_lb)*rand(1,N)						#  Along horizon 
 	c_pred = curv_lb + (curv_ub-curv_lb)*rand(1,N)				#  Along horizon 
+	
+	### param merge 
+	vc_pred = v_pred.*c_pred
+	############################
 
  	# stack everything together
-	params = [ey_0  epsi_0  u_0  v_pred  c_pred]' 				# stack to 19x1 matrix
+	params = [ey_0  epsi_0  u_0  v_pred  vc_pred]' 				# stack to 19x1 matrix
 
 	# load stuff
 	params = test_inputParams[iii,:]
 	v_pred = params[4:4+N-1]
-	c_pred = params[12:end]
+	vc_pred = params[4+N:end]									# param merge 
 
 	
 	# system dynamics A, B, g
 	A_updated = zeros(nx, nx, N)
 	B_updated = zeros(nx, nu, N)
 	g_updated = zeros(nx, N)
+	
 	for i = 1 : N
 		A_updated[:,:,i] = [	1	dt*v_pred[i] 
 								0		1			]
 		B_updated[:,:,i] = [	dt*v_pred[i]*L_b/(L_a+L_b) 
 								dt*v_pred[i]/(L_a + L_b)	]
 		g_updated[:,i] = [ 0	# column vector
-						-dt*v_pred[i]*c_pred[i] 	]
+						-dt*vc_pred[i]]	# param merge 
 	end
 	
 	# x_tilde transformation
@@ -234,6 +239,17 @@ while iii <= num_DataPoints
 	z2 = max.(W1_PLat*z1 + b1_PLat, 0)
 
 	u_tilde_NN_vec = Wout_PLat*z2 + bout_PLat 
+
+
+	## Project this to make it feasible. Otherwise bad 
+	for u_len = 1:length(u_tilde_NN_vec)
+		if u_tilde_NN_vec[u_len] > u_tilde_ub
+			u_tilde_NN_vec[u_len] = u_tilde_ub
+		elseif u_tilde_NN_vec[u_len] < u_tilde_lb
+			u_tilde_NN_vec[u_len] = u_tilde_lb
+		end
+	end
+	##################################################
 	
 	# compute NN predicted state
 	x_tilde_0 = params[1:3] 	
@@ -276,12 +292,12 @@ while iii <= num_DataPoints
 
 
 	# calls the NN with two Hidden Layers
-	z1D = max.(Wi_DLat*params + bi_DLat, 0)
-	z2D = max.(W1_DLat*z1D + b1_DLat, 0)
-	lambda_tilde_NN_orig = Wout_DLat*z2D + bout_DLat
-	lambda_tilde_NN_vec = max.(Wout_DLat*z2D + bout_DLat, 0)  	#Delta-Acceleration
+	# z1D = max.(Wi_DLat*params + bi_DLat, 0)
+	# z2D = max.(W1_DLat*z1D + b1_DLat, 0)
+	# lambda_tilde_NN_orig = Wout_DLat*z2D + bout_DLat
+	# lambda_tilde_NN_vec = max.(Wout_DLat*z2D + bout_DLat, 0)  	#Delta-Acceleration
 
-	dualObj_NN = -1/2 * lambda_tilde_NN_vec'*Qdual_tmp*lambda_tilde_NN_vec - (C_dual*(Q_dual\c_dual)+d_dual)'*lambda_tilde_NN_vec - 1/2*c_dual'*(Q_dual\c_dual) + const_dual
+	# dualObj_NN = -1/2 * lambda_tilde_NN_vec'*Qdual_tmp*lambda_tilde_NN_vec - (C_dual*(Q_dual\c_dual)+d_dual)'*lambda_tilde_NN_vec - 1/2*c_dual'*(Q_dual\c_dual) + const_dual
 	
 	################## BEGIN extract Dual NN solution ##################
 
@@ -318,12 +334,12 @@ while iii <= num_DataPoints
 	RelPrimandOnline_gap[iii] = (primObj_NN[1] - obj_primal)/obj_primal
  # 	###########################################################	
 
-	DualOnline_gap[iii] = obj_primal - dualObj_NN[1]
-	RelDualOnline_gap[iii] = (obj_primal - dualObj_NN[1])/obj_primal
+	# DualOnline_gap[iii] = obj_primal - dualObj_NN[1]
+	# RelDualOnline_gap[iii] = (obj_primal - dualObj_NN[1])/obj_primal
  # 	###########################################################	
 
-	dual_gap[iii] = primObj_NN[1] - dualObj_NN[1]
-	Reldual_gap[iii] = (primObj_NN[1] - dualObj_NN[1])/obj_primal
+	# dual_gap[iii] = primObj_NN[1] - dualObj_NN[1]
+	# Reldual_gap[iii] = (primObj_NN[1] - dualObj_NN[1])/obj_primal
 
  	iii = iii + 1 
 
@@ -348,17 +364,17 @@ println("max Rel onlineNN_gap:  $(maximum(RelPrimandOnline_gap))")
 println("min Rel onlineNN_gap:  $(minimum(RelPrimandOnline_gap))")
 println("avg Rel onlineNN_gap:  $(mean(RelPrimandOnline_gap))")
 
-println(" ")
+# println(" ")
 
-println("max onlineDualNN_gap:  $(maximum(DualOnline_gap))")
-println("min onlineDualNN_gap:  $(minimum(DualOnline_gap))")
-println("avg onlineDualNN_gap:  $(mean(DualOnline_gap))")
+# println("max onlineDualNN_gap:  $(maximum(DualOnline_gap))")
+# println("min onlineDualNN_gap:  $(minimum(DualOnline_gap))")
+# println("avg onlineDualNN_gap:  $(mean(DualOnline_gap))")
 
-println(" ")
+# println(" ")
 
-println("max Rel onlineDualNN_gap:  $(maximum(RelDualOnline_gap))")
-println("min Rel onlineDualNN_gap:  $(minimum(RelDualOnline_gap))")
-println("avg Rel onlineDualNN_gap:  $(mean(RelDualOnline_gap))")
+# println("max Rel onlineDualNN_gap:  $(maximum(RelDualOnline_gap))")
+# println("min Rel onlineDualNN_gap:  $(minimum(RelDualOnline_gap))")
+# println("avg Rel onlineDualNN_gap:  $(mean(RelDualOnline_gap))")
 
 println(" ")
 
