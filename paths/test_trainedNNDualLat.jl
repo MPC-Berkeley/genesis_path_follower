@@ -23,7 +23,7 @@ L_a 	= KinMPCParams.L_a				# from CoG to front axle (according to Jongsang)
 L_b 	= KinMPCParams.L_b				# from CoG to rear axle (according to Jongsang)
 
 ############## load all NN Matrices ##############
-primalNN_Data 	= matread("trained_weightsPrimalLat10k_CPGDay2ParamMerge.mat")
+primalNN_Data 	= matread("trained_weightsPrimalLat10k_CPGDay2ParamMergeConRelaxed.mat")
 dualNN_Data 	= matread("trained_weightsDualLat.mat")		 
 
 # read out NN primal/Dual weights
@@ -45,7 +45,7 @@ bout_DLat = dualNN_Data["b0D"]
 
 
 ####################### debugging code ###################################
-test_Data = matread("NN_test_CPGDay2ParamMerge_RandDataLat10kTrafo2.mat")
+test_Data = matread("NN_test_CPGDay2ParamMergeConRelaxed_RandDataLat10kTrafo2.mat")
 # test_Data = matread("NN_test_trainingDataLat10k_PrimalDual2.mat")
 test_inputParams = test_Data["inputParam_lat"]
 test_outputParamDdf = test_Data["outputParamDdf_lat"]
@@ -238,6 +238,17 @@ while iii <= num_DataPoints
 	z2 = max.(W1_PLat*z1 + b1_PLat, 0)
 
 	u_tilde_NN_vec = Wout_PLat*z2 + bout_PLat 
+
+
+	## Project this to make it feasible. Otherwise bad 
+	for u_len = 1:length(u_tilde_NN_vec)
+		if u_tilde_NN_vec[u_len] > u_tilde_ub
+			u_tilde_NN_vec[u_len] = u_tilde_ub
+		elseif u_tilde_NN_vec[u_len] < u_tilde_lb
+			u_tilde_NN_vec[u_len] = u_tilde_lb
+		end
+	end
+	##################################################
 	
 	# compute NN predicted state
 	x_tilde_0 = params[1:3] 	

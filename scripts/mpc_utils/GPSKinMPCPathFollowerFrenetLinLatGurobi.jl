@@ -73,11 +73,10 @@ module GPSKinMPCPathFollowerFrenetLinLatGurobi
 
 
 	# define cost functions
-    C_ey = 5.0				# lateral deviation
-    C_epsi = 1.0			# heading deviation
-    C_epsi = 0.0
-	C_df	 = 0.0	    # 150	    # tire angle input
-	C_ddf	 = 1000.0	# 3e4	    # derivative of tire angle input
+    C_ey = KinMPCParams.C_ey				# lateral deviation
+    C_epsi = KinMPCParams.C_epsi			# heading deviation
+	C_df   = KinMPCParams.C_df	            # tire angle input
+	C_ddf	 = KinMPCParams.C_ddf	        # derivative of tire angle input
 
 	Q = diagm([C_ey ; C_epsi])	# state cost
 	R = C_df 					# input cost
@@ -86,13 +85,14 @@ module GPSKinMPCPathFollowerFrenetLinLatGurobi
 
 	# define (box) constraints
 	largeNumber = 1e2;		# use this number for variables that are not upper/lower bounded
+	
 	ey_min = -largeNumber
 	ey_max = largeNumber
 	epsi_min = -largeNumber
 	epsi_max = largeNumber
 
-	df_max = 0.5	# steering
-	ddf_max = 0.5	# change in steering
+	df_max = KinMPCParams.df_max	# steering
+	ddf_max = KinMPCParams.ddf_max	# change in steering
 
 	# collect constraint
 	x_lb = [	ey_min

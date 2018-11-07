@@ -20,7 +20,7 @@ def unnormalize(x, mean, std):
     return x * std + mean
 
 #%% We have imported all dependencies
-df = sio.loadmat('NN_test_CPGDay2ParamMerge_RandDataLat10kTrafo2.mat',squeeze_me=True, struct_as_record=False) # read data set using pandas
+df = sio.loadmat('NN_test_CPGDay2ParamMergeConRelaxed_RandDataLat10kTrafo2.mat',squeeze_me=True, struct_as_record=False) # read data set using pandas
 # df = sio.loadmat('NN_test_trainingDataLatRFS.mat',squeeze_me=True, struct_as_record=False) # read data set using pandas
 x_data = df['inputParam_lat']
 y_data = df['outputParamDdf_lat']
@@ -139,7 +139,8 @@ with tf.Session() as sess:
      vj['b1'] = sess.run(b_1)
      vj['b2'] = sess.run(b_2)
      vj['b0'] = sess.run(b_O)
-     sio.savemat('trained_weightsPrimalLat10k_CPGDay2ParamMerge.mat',vj)
+     sio.savemat('trained_weightsPrimalLat10k_CPGDay2ParamMergeConRelaxed.mat',vj)
+    # sio.savemat('trained_weightsPrimalLat10k_CPGDay2ParamMerge.mat',vj)
     # sio.savemat('trained_weightsPrimalLat100k_CPGDay2BacktoDay1Tune.mat',vj)
     # sio.savemat('trained_weightsPrimalLat10k_CPGDay2BacktoDay1Tune.mat',vj)
     # sio.savemat('trained_weightsPrimalLat100k_CPGDay2.mat',vj)
