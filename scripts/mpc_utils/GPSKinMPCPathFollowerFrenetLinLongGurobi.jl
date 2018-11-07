@@ -22,6 +22,7 @@
 		- tracks (s_ref, v_ref)
 		- NOTE: BOX constraint on "s" (using largeNumber) is not well-implemented atm
 =#
+###### ALL STATE CONSTRAINTS RELAXED
 
 
 module GPSKinMPCPathFollowerFrenetLinLongGurobi
@@ -72,18 +73,18 @@ module GPSKinMPCPathFollowerFrenetLinLongGurobi
 
 	# define (box) constraints
 	largeNumber = 1e5;		# use this number for variables that are not upper/lower bounded
-	v_min = 0.0				# vel bounds (m/s)
-	v_max = 20.0	
-	a_max = 2.0				# acceleration and deceleration bound, m/s^2
-	a_dmax = 1.5			# jerk bound, m/s^3
+	v_min = KinMPCParams.v_min				# vel bounds (m/s)
+	v_max = KinMPCParams.v_max	
+	a_max = KinMPCParams.a_max				# acceleration and deceleration bound, m/s^2
+	a_dmax = KinMPCParams.a_dmax			# jerk bound, m/s^3
 
-	x_lb = [	-largeNumber	# make sure car doesnt travel more than largeNumber [m]
-				v_min		]
-	x_ub = [	largeNumber
-				v_max		]
+	x_lb = [		-largeNumber	# make sure car doesnt travel more than largeNumber [m]
+				    -v_min	] 		# v_min
+	x_ub = [		largeNumber
+					v_max		]
 
-	u_lb = -a_max
-	u_ub = a_max
+	u_lb = -a_max #-a_max
+	u_ub =  a_max  # a_max
 
 	dU_lb = -a_dmax*dt 	# double check if *dt is needed (or not)
 	dU_ub = a_dmax*dt
