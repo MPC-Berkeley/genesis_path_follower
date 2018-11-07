@@ -24,7 +24,7 @@ module KinMPCParams
 	dt      = 0.2			# model discretization time, td (s)
 	# dt 		= 0.1
 
-	N       = 3				# horizon
+	N       = 8				# horizon
 	# N		= 16
 
 	L_a 	= 1.5313		# from CoG to front axle (according to Jongsang)

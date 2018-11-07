@@ -281,18 +281,27 @@ function pub_loop(acc_pub_obj, steer_pub_obj, mpc_path_pub_obj)
 			# dualNN_obj = 0
 			# xu_tilde_NN_res = 0
 
+			println("trump1")
+
+
 			if (is_opt_long==1) && (solMode_long=="NN")
 				num_NN_long = num_NN_long + 1
 			end
 			solv_time_long_gurobi1_all[it_num+1] = solv_time_long_gurobi1
 
 
+			println("trump2")
+
 			df_opt_gurobi, df_pred_gurobi, ey_pred_gurobi, epsi_pred_gurobi, ddf_pred_gurobi, solv_time_lat_gurobi1, is_opt_lat, solMode_lat, primNN_Lat_obj, dualNN_lat_obj, xu_tilde_lat_NN_res = kmpcLinLatNN.get_NNsolution(ey_curr, epsi_curr, df_opt, s_pred_gurobi, v_pred_gurobi, K_coeff)
 			# df_opt_gurobi, df_pred_gurobi, ddf_pred_gurobi, ey_pred_gurobi, epsi_pred_gurobi, solv_time_lat_gurobi1, is_opt_lat = kmpcLinLatNN.solve_gurobi(ey_curr, epsi_curr, df_opt, s_pred_gurobi, v_pred_gurobi, K_coeff)
+			
+			println("trump3")
+
 			if (is_opt_lat==1) && (solMode_lat=="NN")
 				num_NN_lat = num_NN_lat + 1
 			end
-			num_NN_lat
+
+			# num_NN_lat
 			solv_time_lat_gurobi1_all[it_num+1] = solv_time_lat_gurobi1
 
 
@@ -306,6 +315,9 @@ function pub_loop(acc_pub_obj, steer_pub_obj, mpc_path_pub_obj)
 			log_str_lat = @sprintf("Solve Status Lat. Gurobi: %s, SA: %.3f, SolvTimeLat:  %.3f", is_opt_lat, df_opt_gurobi, solv_time_lat_gurobi1)
 		    loginfo(log_str_lat)
 
+			println("trump4")
+
+
 		    a_prev = a_opt    		# store previous acceleration (not super clean)
 			a_opt = a_opt_gurobi	# update new acceleration
 			df_prev = df_opt		# store previous acceleration
@@ -316,6 +328,9 @@ function pub_loop(acc_pub_obj, steer_pub_obj, mpc_path_pub_obj)
 		    	it_num = it_num + 1;
 		    	continue					
 		    end
+
+   			println("trump5")
+
 
 			publish( acc_pub_obj,   Float32Msg(a_opt) )
 			publish( steer_pub_obj, Float32Msg(df_opt) )
