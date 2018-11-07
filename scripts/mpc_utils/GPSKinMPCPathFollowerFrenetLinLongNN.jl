@@ -311,27 +311,18 @@ module GPSKinMPCPathFollowerFrenetLinLongNN
 	function eval_DualNN(params::Array{Float64,1})
 		global x_tilde_ref
 
-		println("111")
-
-
 		tic()
 		x_tilde_0 = [ 0; params[1:2] ]
-				println("1111")
 
 		# some terms can be pre-computed
 		c_dual = (2*x_tilde_0'*A_tilde_vec'*Q_tilde_vec*B_tilde_vec + 2*g_tilde_vec'*E_tilde_vec'*Q_tilde_vec*B_tilde_vec +
     	      - 2*x_tilde_ref'*Q_tilde_vec*B_tilde_vec)'
-
-		println("bbbb")
 
 		const_dual = x_tilde_0'*A_tilde_vec'*Q_tilde_vec*A_tilde_vec*x_tilde_0 + 2*x_tilde_0'*A_tilde_vec'*Q_tilde_vec*E_tilde_vec*g_tilde_vec +
                   + g_tilde_vec'*E_tilde_vec'*Q_tilde_vec*E_tilde_vec*g_tilde_vec +
                   - 2*x_tilde_0'*A_tilde_vec'*Q_tilde_vec*x_tilde_ref - 2*g_tilde_vec'*E_tilde_vec'*Q_tilde_vec*x_tilde_ref +
                   + x_tilde_ref'*Q_tilde_vec*x_tilde_ref
         
-		println("222")
-
-
 	    # d_dual = [f_tilde_vec - F_tilde_vec*A_tilde_vec*x_tilde_0 - F_tilde_vec*E_tilde_vec*g_tilde_vec;  fu_tilde_vec]
 	    d_dual = fu_tilde_vec
 
@@ -342,7 +333,6 @@ module GPSKinMPCPathFollowerFrenetLinLongNN
 		lambda_tilde_NN_vec = max.(Wout_DLong*z2 + bout_DLong, 0)  	#Delta-Acceleration
 
 		dualObj_NN = -1/2 * lambda_tilde_NN_vec'*Qdual_tmp*lambda_tilde_NN_vec - (C_dual*(Q_dual\c_dual)+d_dual)'*lambda_tilde_NN_vec - 1/2*c_dual'*(Q_dual\c_dual) + const_dual
-		println("333")
 
 		time_NN = toq()
 
@@ -365,8 +355,6 @@ module GPSKinMPCPathFollowerFrenetLinLongNN
 		z2 = max.(W1_PLong*z1      + b1_PLong, 0)
 		u_tilde_NN_vec = Wout_PLong*z2 + bout_PLong  	#Delta-Acceleration
 
-		println("aaa")
-
 		# project
 		u_tilde_NN_vec = min.(u_tilde_NN_vec, u_tilde_ub)
 		u_tilde_NN_vec = max.(u_tilde_NN_vec, u_tilde_lb)
@@ -374,7 +362,6 @@ module GPSKinMPCPathFollowerFrenetLinLongNN
 		# compute NN predicted state
 		x_tilde_0 = [ 0; params[1:2] ] 	
 		x_tilde_NN_vec = A_tilde_vec*x_tilde_0 + B_tilde_vec*u_tilde_NN_vec + E_tilde_vec*g_tilde_vec
-		println("bbb")
 
 		## verify feasibility
 		# xu_tilde_NN_res = [ maximum(F_tilde_vec*x_tilde_NN_vec - f_tilde_vec) ; maximum(Fu_tilde_vec*u_tilde_NN_vec - fu_tilde_vec) ]  # should be <= 0
@@ -392,7 +379,6 @@ module GPSKinMPCPathFollowerFrenetLinLongNN
 		# println("primObj_NN: $(size(primObj_NN)")
 
 		solvTime_NN = toq()
-		println("ccc")
 
 		a_opt_NN = 	x_tilde_NN_vec[3]
 		a_pred_NN = x_tilde_NN_vec[3:(nx+nu):end]
@@ -403,7 +389,6 @@ module GPSKinMPCPathFollowerFrenetLinLongNN
 		# println(size(u_tilde_NN_vec))
 		# println(size(squeeze(u_tilde_NN_vec,1)))
 		# println(size(squeeze(u_tilde_NN_vec,2)))
-		println("ddd")
 
 		return primObj_NN, xu_tilde_NN_res, flag_XUfeas, a_opt_NN, a_pred_NN, s_pred_NN, v_pred_NN, squeeze(u_tilde_NN_vec,2), solvTime_NN
 		
@@ -455,29 +440,21 @@ module GPSKinMPCPathFollowerFrenetLinLongNN
 		# println("primal NN obj: $(primNN_obj)")
 		# println("dual NN obj: $(dualNN_obj)")
 
-		println("xxxx")
 
+		# is_opt_NN = (flag_XUfeas==1) && ( primNN_obj[1] - dualNN_obj[1] <= 0.1)
+		# is_opt_NN = (flag_XUfeas==1) && ( (primNN_obj[1] - dualNN_obj[1])/(mean([primNN_obj[1], dualNN_obj[1]])) <= 0.1 )
+		# is_opt_NN = (flag_XUfeas==1) && ( (primNN_obj[1] - dualNN_obj[1])/(mean([primNN_obj[1], primNN_obj[1]])) <= 0.1 )
+		is_opt_NN = (flag_XUfeas==1) && ( (primNN_obj[1] - dualNN_obj[1])/(mean([dualNN_obj[1], dualNN_obj[1]])) <= 0.1 )
 
-		is_opt_NN = (flag_XUfeas==1) && (primNN_obj[1] - dualNN_obj[1] <= 0.1)
-
-		is_opt_NN = (flag_XUfeas==1)
-
-				println(is_opt_NN)
-
-		println("yyyy")
-
+		# is_opt_NN = (flag_XUfeas==1)
 		# is_opt_NN = false 	# always use GUROBI
 
-		println(is_opt_NN)
 
 		if is_opt_NN
-			# println("****** IS FEASIBLE: $(is_opt_NN) ******")
+			println("****** LONG FEAS & OPT: $(is_opt_NN) ******")
 			solMode = "NN"
 			# needs a bit of work
 			# a_opt_NN, a_pred_NN, s_pred_NN, v_pred_NN, dA_pred_NN, solvTime_NN, is_opt_NN = solve_gurobi(s_0, v_0, u_0, s_ref, v_ref)
-			println("momo")
-
-
 			return 	a_opt_NN, a_pred_NN, s_pred_NN+s_0_true, v_pred_NN, dA_pred_NN, solvTime_primNN + solvTime_dualNN, is_opt_NN, solMode, primNN_obj, dualNN_obj,xu_tilde_NN_res
 
 		else  	## NN solution not good
@@ -485,8 +462,6 @@ module GPSKinMPCPathFollowerFrenetLinLongNN
 			primNN_obj = []
 			dualNN_obj = []
 			xu_tilde_NN_res = []
-					println("gxz")
-
 			a_opt_gurobi, a_pred_gurobi, s_pred_gurobi, v_pred_gurobi, dA_pred_gurobi, solv_time_long_gurobi1, is_opt_long = solve_gurobi(s_0, v_0, u_0, s_ref, v_ref)
 			return a_opt_gurobi, a_pred_gurobi, s_pred_gurobi+s_0_true, v_pred_gurobi, dA_pred_gurobi, solv_time_long_gurobi1, is_opt_long, solMode, primNN_obj, dualNN_obj,xu_tilde_NN_res
 		end 
