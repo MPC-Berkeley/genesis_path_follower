@@ -39,13 +39,13 @@ module GPSKinMPCPathFollowerFrenetLinLongNN
 	println(pwd())
 
 	if KinMPCParams.platform == "nuvo"
-		primalNN_Data 	= matread("../GenesisAutoware/ros/src/genesis_path_follower/paths/trained_weightsPrimalLong.mat")
-		dualNN_Data 	= matread("../GenesisAutoware/ros/src/genesis_path_follower/paths/trained_weightsDualLongRegDual1e-7.mat")
+		primalNN_Data 	= matread("../GenesisAutoware/ros/src/genesis_path_follower/paths/goodNNs/trained_weightsPrimalLong1k_CPGDay3.mat")
+		dualNN_Data 	= matread("../GenesisAutoware/ros/src/genesis_path_follower/paths/goodNNs/trained_weightsDualLong1k_CPGDay3.mat")
 	elseif KinMPCParams.platform == "abby"
-		primalNN_Data 	= matread("../catkin_ws/src/genesis_path_follower/paths/trained_weightsPrimalLong.mat")
-		dualNN_Data 	= matread("../catkin_ws/src/genesis_path_follower/paths/trained_weightsDualLongRegDual1e-7.mat")
+		primalNN_Data 	= matread("../catkin_ws/src/genesis_path_follower/paths/goodNNs/trained_weightsPrimalLong1k_CPGDay3.mat")
+		dualNN_Data 	= matread("../catkin_ws/src/genesis_path_follower/paths/goodNNs/trained_weightsDualLong1k_CPGDay3.mat")
 	else
-		println("Lat NN Data not found")
+		println("Lat NN Data not found!!!")
 	end
 	# read out NN primal weights
 	Wi_PLong = primalNN_Data["W1"]
@@ -55,12 +55,12 @@ module GPSKinMPCPathFollowerFrenetLinLongNN
 	Wout_PLong = primalNN_Data["W0"]
 	bout_PLong = primalNN_Data["b0"]
 
-	Wi_DLong = dualNN_Data["W1D"]
-	bi_DLong = dualNN_Data["b1D"]
-	W1_DLong = dualNN_Data["W2D"]
-	b1_DLong = dualNN_Data["b2D"]
-	Wout_DLong = dualNN_Data["W0D"]
-	bout_DLong = dualNN_Data["b0D"]
+	Wi_DLong = dualNN_Data["W1"]
+	bi_DLong = dualNN_Data["b1"]
+	W1_DLong = dualNN_Data["W2"]
+	b1_DLong = dualNN_Data["b2"]
+	Wout_DLong = dualNN_Data["W0"]
+	bout_DLong = dualNN_Data["b0"]
 
 	# ====================== general problem formulation is given by ======================
 	# x_{k+1} = A x_k + B u_k + g_k
@@ -290,19 +290,21 @@ module GPSKinMPCPathFollowerFrenetLinLongNN
 	fu_tilde_vec = repmat(fu_tilde,N)
 
 	# Appended State constraints (tilde)
-	F_tilde = [eye(nx+nu) ; -eye(nx+nu)]
-	f_tilde = [x_tilde_ub ; -x_tilde_lb]
-	nf = length(f_tilde);
+	# F_tilde = [eye(nx+nu) ; -eye(nx+nu)]
+	# f_tilde = [x_tilde_ub ; -x_tilde_lb]
+	# nf = length(f_tilde);
+	nf = 0
 
 	# Concatenate appended state (tilde) constraints
-	F_tilde_vec = kron(eye(N), F_tilde)
-	f_tilde_vec = repmat(f_tilde,N)   
+	# F_tilde_vec = kron(eye(N), F_tilde)
+	# f_tilde_vec = repmat(f_tilde,N)   
 
 	# these variables will be updated with current states
 	x_tilde_ref = []
 
 	Q_dual = 2*(B_tilde_vec'*Q_tilde_vec*B_tilde_vec + R_tilde_vec);
-    C_dual = [F_tilde_vec*B_tilde_vec; Fu_tilde_vec]		        # Adding state constraints 
+    # C_dual = [F_tilde_vec*B_tilde_vec; Fu_tilde_vec]		        # Adding state constraints 
+    C_dual = Fu_tilde_vec		        # Adding state constraints 
     Qdual_tmp = C_dual*(Q_dual\(C_dual'))
     Qdual_tmp = 0.5*(Qdual_tmp+Qdual_tmp') + 0e-5*eye(N*(nf+ng))
 
@@ -314,7 +316,7 @@ module GPSKinMPCPathFollowerFrenetLinLongNN
 		global x_tilde_ref
 
 		tic()
-		x_tilde_0 = params[1:3]
+		x_tilde_0 = [ 0; params[1:2] ]
 		
 		# some terms can be pre-computed
 		c_dual = (2*x_tilde_0'*A_tilde_vec'*Q_tilde_vec*B_tilde_vec + 2*g_tilde_vec'*E_tilde_vec'*Q_tilde_vec*B_tilde_vec +
@@ -325,7 +327,8 @@ module GPSKinMPCPathFollowerFrenetLinLongNN
                   - 2*x_tilde_0'*A_tilde_vec'*Q_tilde_vec*x_tilde_ref - 2*g_tilde_vec'*E_tilde_vec'*Q_tilde_vec*x_tilde_ref +
                   + x_tilde_ref'*Q_tilde_vec*x_tilde_ref
         
-	    d_dual = [f_tilde_vec - F_tilde_vec*A_tilde_vec*x_tilde_0 - F_tilde_vec*E_tilde_vec*g_tilde_vec;  fu_tilde_vec]
+	    # d_dual = [f_tilde_vec - F_tilde_vec*A_tilde_vec*x_tilde_0 - F_tilde_vec*E_tilde_vec*g_tilde_vec;  fu_tilde_vec]
+	    d_dual = fu_tilde_vec
 
    		# calls the NN with two Hidden Layers
 		z1 = max.(Wi_DLong*params + bi_DLong, 0)
@@ -345,8 +348,10 @@ module GPSKinMPCPathFollowerFrenetLinLongNN
 
 		global x_tilde_ref 	# not sure if needed
 
-		s_0 = params[1]
-		v_0 = params[2]
+		# s_0 = params[1]
+		# v_0 = params[2]
+		s_0 = 0
+		v_0 = params[1]
 
 		tic()
 
@@ -355,15 +360,20 @@ module GPSKinMPCPathFollowerFrenetLinLongNN
 		z2 = max.(W1_PLong*z1      + b1_PLong, 0)
 		u_tilde_NN_vec = Wout_PLong*z2 + bout_PLong  	#Delta-Acceleration
 
+		# project
+		u_tilde_NN_vec = min.(u_tilde_NN_vec, u_tilde_ub)
+		u_tilde_NN_vec = max.(u_tilde_NN_vec, u_tilde_lb)
+
 		# compute NN predicted state
-		x_tilde_0 = params[1:3] 	
+		x_tilde_0 = [ 0; params[1:2] ] 	
 		x_tilde_NN_vec = A_tilde_vec*x_tilde_0 + B_tilde_vec*u_tilde_NN_vec + E_tilde_vec*g_tilde_vec
 
 		## verify feasibility
-		# xu_tilde_NN_res = [ maximum(F_tilde_vec*x_tilde_NN_vec - f_tilde_vec) ; maximum(Fu_tilde_vec*x_tilde_NN_vec - fu_tilde_vec) ]  # should be <= 0
-		xu_tilde_NN_res = [ maximum(F_tilde_vec*x_tilde_NN_vec - f_tilde_vec) ; maximum(Fu_tilde_vec*u_tilde_NN_vec - fu_tilde_vec) ]  # should be <= 0
+		# xu_tilde_NN_res = [ maximum(F_tilde_vec*x_tilde_NN_vec - f_tilde_vec) ; maximum(Fu_tilde_vec*u_tilde_NN_vec - fu_tilde_vec) ]  # should be <= 0
+		xu_tilde_NN_res = maximum(Fu_tilde_vec*u_tilde_NN_vec - fu_tilde_vec)
+
 		flag_XUfeas = 0
-		if maximum(xu_tilde_NN_res) <= 0  	# infeasible if bigger than zero/threshold
+		if maximum(xu_tilde_NN_res) <= 1e-5  	# infeasible if bigger than zero/threshold
 			flag_XUfeas = 1
 		end
 
@@ -425,7 +435,8 @@ module GPSKinMPCPathFollowerFrenetLinLongNN
 		updateMatrices(s_ref, v_ref)
 
 		# stack everything together
-		params = [s_0 ; v_0 ; u_0 ; s_ref[2:end] ; v_ref[2:end]] 	# stack to 19x1 matrix
+		# params = [s_0 ; v_0 ; u_0 ; s_ref[2:end] ; v_ref[2:end]] 	# stack to 19x1 matrix
+		params = [v_0 ; u_0 ; s_ref[2:end] ; v_ref[2:end]] 	# stack to 19x1 matrix
 
 		# eval NN solution
 		primNN_obj, xu_tilde_NN_res, flag_XUfeas, a_opt_NN, a_pred_NN, s_pred_NN, v_pred_NN, dA_pred_NN, solvTime_primNN = eval_PrimalNN(params)
@@ -438,7 +449,7 @@ module GPSKinMPCPathFollowerFrenetLinLongNN
 		is_opt_NN = (flag_XUfeas==1) && (primNN_obj[1] - dualNN_obj[1] <= 0.1)
 		is_opt_NN = (flag_XUfeas==1)
 
-		is_opt_NN = false 	# always use GUROBI
+		# is_opt_NN = false 	# always use GUROBI
 
 		if is_opt_NN
 			# println("****** IS FEASIBLE: $(is_opt_NN) ******")
