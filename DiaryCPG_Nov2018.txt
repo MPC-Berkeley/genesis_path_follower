@@ -7,3 +7,7 @@ Day 1 CPG: Nov 5 2018
 
 
 Day 2 CPG: Nov 6 2018
+
+1. trained primal lat network with old upper and lower parameter bounds
+2. ran tests (med and fast) with long pNN and lat pNN
+3. Trying to get better test results and also working on dual

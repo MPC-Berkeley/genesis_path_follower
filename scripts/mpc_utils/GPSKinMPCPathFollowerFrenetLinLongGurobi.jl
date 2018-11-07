@@ -62,10 +62,10 @@ module GPSKinMPCPathFollowerFrenetLinLongGurobi
 	g = zeros(nx)
 
 	# define cost functions
-    C_s = 20			# track progress
-	C_v = 10;			# ref velocity tracking weight			
-	C_acc = 0
-	C_dacc = 11;		# 20 too high; 10 OK for med speed; 10 a big jerky for high speed; 13 too high
+    C_s = KinMPCParams.C_s			# track progress
+	C_v = KinMPCParams.C_v			# ref velocity tracking weight			
+	C_acc = KinMPCParams.C_acc
+	C_dacc = KinMPCParams.C_dacc		# 20 too high; 10 OK for med speed; 10 a big jerky for high speed; 13 too high
 
 	Q = diagm([C_s ; C_v])	# create diagonal matrix
 	R = C_acc
@@ -79,7 +79,7 @@ module GPSKinMPCPathFollowerFrenetLinLongGurobi
 	a_dmax = KinMPCParams.a_dmax			# jerk bound, m/s^3
 
 	x_lb = [		-largeNumber	# make sure car doesnt travel more than largeNumber [m]
-				    -v_min	] 		# v_min
+				    v_min	] 		# v_min
 	x_ub = [		largeNumber
 					v_max		]
 

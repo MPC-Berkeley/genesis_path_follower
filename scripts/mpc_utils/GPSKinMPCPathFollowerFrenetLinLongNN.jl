@@ -203,6 +203,8 @@ module GPSKinMPCPathFollowerFrenetLinLongNN
 	lb_gurobi = repmat([u_tilde_lb ; x_tilde_lb], N, 1)		# (deltaU, X, U)
 	ub_gurobi = repmat([u_tilde_ub ; x_tilde_ub], N, 1)		# (deltaU, X, U)
 
+	# println(ub_gurobi)
+	# println(lb_gurobi)
 
 	# build equality matrix (most MALAKA task ever)
 	nu_tilde = nu
@@ -214,10 +216,13 @@ module GPSKinMPCPathFollowerFrenetLinLongNN
 		Aeq_gurobi[ (i-1)*nx_tilde+1 : i*nx_tilde  , (i-2)*(nu_tilde+nx_tilde)+(nu_tilde)+1 : (i-2)*(nu_tilde+nx_tilde)+nu_tilde+(nx_tilde+nu_tilde+nx_tilde)    ] = [-A_tilde -B_tilde eye(nx_tilde)]
 	end
 
+	println(Aeq_gurobi)
+
 	# right-hand-size of equality constraint
 	beq_gurobi = repmat(g_tilde,N,1);
 	beq_gurobi[1:nx_tilde] = beq_gurobi[1:nx_tilde] + A_tilde*x_tilde_0_init 	# PARAMETER: depends on x0
 
+	println(beq_gurobi)
 
 	# ================ Solve Problem =================== 
     tic()

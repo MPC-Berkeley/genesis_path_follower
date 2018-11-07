@@ -23,29 +23,24 @@ L_a 	= KinMPCParams.L_a				# from CoG to front axle (according to Jongsang)
 L_b 	= KinMPCParams.L_b				# from CoG to rear axle (according to Jongsang)
 
 ############## load all data ##############
-longData = matread("NN_test_trainingData.mat")
-# longData = matread("testSimDataDebugExtracted.mat")   				# bad
+# longData = matread("NN_test_trainingData.mat")
+longData = matread("NN_test_CPGDay3_RandTrainingDataLong1k.mat")   				# bad
 
 
 inputParam_long = longData["inputParam_long"]   # np.hstack((s_curr.T, v_curr.T ,a_prev.T, s_ref, v_ref ))
-outputParamAcc_long = longData["outputParamAcc_long"]
+# outputParamAcc_long = longData["outputParamAcc_long"]
 outputParamDacc_long = longData["outputParamDacc_long"]
+outputParamDual_long = longData["outputParamDual_long"]
+outputParamOptVal_long = longData["optVal_long"]
 
-## Load Ranges of params 
-
-v_lb = KinMPCParams.v_min 
-v_ub = KinMPCParams.v_max
-aprev_lb = -KinMPCParams.a_max
-aprev_ub =  KinMPCParams.a_max
- 
 ###### Merge random data with extra data from vehicle path following    
 # inputParam_long =  [s_train_rand v_train_rand aprev_train_rand s_ref_train_rand v_ref_train_rand ]
 
-s_curr_all = inputParam_long[:,1]
-v_curr_all = inputParam_long[:,2]
-a_prev_all = inputParam_long[:,3]
-s_ref_all =  inputParam_long[:,4:4+N-1]
-v_ref_all =  inputParam_long[:,12:end]								# All data appended 
+# s_curr_all = inputParam_long[:,1] 	% always 0
+v_curr_all = inputParam_long[:,1]
+a_prev_all = inputParam_long[:,2]
+s_ref_all =  inputParam_long[:,3:3+N-1]
+v_ref_all =  inputParam_long[:,3+N:end]								# All data appended 
 
 # input reference
 u_ref_init = kmpcLinLong.u_ref_init									# if not used, set cost to zeros
@@ -67,6 +62,13 @@ u_tilde_ub = kmpcLinLong.u_tilde_ub
 Q_tilde = kmpcLinLong.Q_tilde
 R_tilde = kmpcLinLong.R_tilde
 
+H_gurobi = kmpcLinLong.H_gurobi
+n_uxu = kmpcLinLong.n_uxu
+f_gurobi_init = kmpcLinLong.f_gurobi_init
+Aeq_gurobi = kmpcLinLong.Aeq_gurobi
+ub_gurobi = kmpcLinLong.ub_gurobi
+lb_gurobi = kmpcLinLong.lb_gurobi
+
 
 # build equality matrix (most MALAKA task ever)
 nu_tilde = kmpcLinLong.nu_tilde
@@ -80,14 +82,6 @@ for ii = 1 : N
     A_tilde_vec[1+(ii-1)*(nx+nu):ii*(nx+nu),:] = A_tilde^ii
 end
 
-# A_tilde_vec2 = zeros(N*(nx+nu), (nx+nu))
-# A_tmp = eye(nx+nu)  	# tmp variable used to store the ``powers of A_tilde"
-# for ii = 1 : N
-# 	A_tmp = A_tilde*A_tmp
-#     A_tilde_vec2[1+(ii-1)*(nx+nu):ii*(nx+nu),:] = A_tmp 	#A_tilde^ii
-# end
-# println("difference A_tilde: $(norm(A_tilde_vec - A_tilde_vec2))") 	# 1e-16
-
 B_tilde_vec = zeros(N*(nx+nu), nu*N)
 for ii = 0 : N-1
     for jj = 0 : ii-1
@@ -96,37 +90,6 @@ for ii = 0 : N-1
     B_tilde_vec[1+ii*(nx+nu):(ii+1)*(nx+nu), 1+ii*nu:(ii+1)*nu] = B_tilde
 end
 
-# # different approach, should be same as above
-# B_tilde_vec2 = zeros(N*(nx+nu), nu*N)
-# B_tilde_vec2[1:(nx+nu),1:nu] = B_tilde 	# for stage 1: x1 = ... + B0 * u0  + ...
-# for ii = 2 : N  # for stages x2, ...
-# 	B_tilde_vec2[(ii-1)*(nx+nu)+1 : ii*(nx+nu) , :] = A_tilde * B_tilde_vec2[(ii-2)*(nx+nu)+1 : (ii-1)*(nx+nu) , :]
-# 	B_tilde_vec2[(ii-1)*(nx+nu)+1 : ii*(nx+nu) , (ii-1)*nu+1:ii*nu] = B_tilde
-# end
-# println("difference B_tilde: $(norm(B_tilde_vec - B_tilde_vec2))") 	# 1e-16
-
-H_gurobi = kmpcLinLong.H_gurobi
-n_uxu = kmpcLinLong.n_uxu
-f_gurobi_init = kmpcLinLong.f_gurobi_init
-Aeq_gurobi = kmpcLinLong.Aeq_gurobi
-ub_gurobi = kmpcLinLong.ub_gurobi
-lb_gurobi = kmpcLinLong.lb_gurobi
-
-########## make all state constraints inactive for TEST ##########
-# u_tilde_lb = -kmpcLinLong.a_dmax*kmpcLinLong.dt
-# u_tilde_ub = kmpcLinLong.a_dmax*kmpcLinLong.dt
-
-# largeNumber = 1e5
-# x_lb = [-largeNumber	# make sure car doesnt travel more than largeNumber [m]
-# 			v_min		]
-# x_ub = [	largeNumber
-# 			v_max		]
-
-# x_tilde_lb = [x_lb ; u_lb]
-# x_tilde_ub = [x_ub ; u_ub]
-
-# lb_gurobi = repmat([u_tilde_lb ; x_tilde_lb], N, 1)		# (deltaU, X, U)
-# ub_gurobi = repmat([u_tilde_ub ; x_tilde_ub], N, 1)		# (deltaU, X, U)
 
 nw=nx+nu
 E_tilde_vec = zeros(N*(nx+nu), nw*N)
@@ -138,20 +101,7 @@ for ii = 0 : N-1
     E_tilde_vec[1+ii*(nx+nu):(ii+1)*(nx+nu), 1+ii*nw:(ii+1)*nw] = eye(nx+nu)
 end
 
-# E_tilde_vec2 = zeros(N*(nx+nu), nw*N)
-# E_tilde_vec2[1:(nx+nu) , 1:nw] = eye(nw) 	# for x1
-# for ii = 2 : N 		# for x2, x3, ...
-# 	E_tilde_vec2[(ii-1)*nw+1 : ii*nw  , :  ] = 	A_tilde * E_tilde_vec2[(ii-2)*nw+1 : (ii-1)*nw  , :  ]
-# 	E_tilde_vec2[(ii-1)*nw+1 : ii*nw , (ii-1)*nw+1 : ii*nw ] = eye(nw)
-# end
-# println("difference E_tilde: $(norm(E_tilde_vec - E_tilde_vec2))")		# 1e-16
-
-
-
 g_tilde_vec = repmat(g_tilde,N)
-
-
-u_ref_init = zeros(N,1)	# if not used, set cost to zeros
 
 # build constraints
 Fu_tilde = [eye(nu) ; -eye(nu)]
@@ -162,18 +112,19 @@ Fu_tilde_vec = kron(eye(N), Fu_tilde)
 fu_tilde_vec = repmat(fu_tilde,N)
 
 # Appended State constraints (tilde)
-F_tilde = [eye(nx+nu) ; -eye(nx+nu)]
-f_tilde = [x_tilde_ub ; -x_tilde_lb]
+# F_tilde = [eye(nx+nu) ; -eye(nx+nu)]
+# f_tilde = [x_tilde_ub ; -x_tilde_lb]
 
 # remove useless/inactive constraints
 # F_tilde = F_tilde[[2,3,5,6],:] 		# ignore constraint on s
 # f_tilde = f_tilde[[2,3,5,6]]
-nf = length(f_tilde);
+# nf = length(f_tilde);
+nf = 0
 
 # Concatenate appended state (tilde) constraints
 # NO input constraints
-F_tilde_vec = kron(eye(N), F_tilde)
-f_tilde_vec = repmat(f_tilde,N)   
+# F_tilde_vec = kron(eye(N), F_tilde)
+# f_tilde_vec = repmat(f_tilde,N)   
 
 
 ######################## ITERATE OVER parameters ################
@@ -181,68 +132,35 @@ f_tilde_vec = repmat(f_tilde,N)
 num_DataPoints = size(inputParam_long,1)
 
 solv_time_all = zeros(num_DataPoints)
-a_res_all = zeros(num_DataPoints)
+
 dA_res_all = zeros(num_DataPoints)
-dual_gap = zeros(num_DataPoints)
-Reldual_gap = zeros(num_DataPoints)
-optVal_long = zeros(num_DataPoints)
-
-
-obj_diff = zeros(num_DataPoints)
-obj_diffRel = zeros(num_DataPoints)
 dA_res_all2 = zeros(num_DataPoints)
-ddf_res_12  = zeros(num_DataPoints) 	# computes differences in Optimizers
+dual_res_all = zeros(num_DataPoints)
+
+optVal_res_all = zeros(num_DataPoints)
+relOptVal_res_all = zeros(num_DataPoints)
 
 
+dual_gap 	= zeros(num_DataPoints)
+Reldual_gap = zeros(num_DataPoints)
 
-outputParamDual_long = zeros(num_DataPoints, N*(nf+ng))
 
-dual_Fx = []
-dual_Fu = []
-L_test_opt = []
+beq_gurobi_updated = []
 
-a_pred_opt = []
-a_pred_opt2 = []
 
-ey_pred_opt = []
-ey_pred_opt2 = []
-
-epsi_pred_opt = []
-epsi_pred_opt2 = []
-
-f_gurobi_updated = []
-z_opt = []
-
-# inputParam_long = zeros(num_DataPoints,3+2*N)
-# outputParamDacc_long = zeros(num_DataPoints, N*(nu))
-# outputParamAcc_long  = zeros(num_DataPoints, N*(nu))
-s_ub_ref = zeros(1,N)
-ii = 1
-
-for refC = 1:N
-	s_ub_ref[1,refC] = 3 + 2*(refC-1) 					# Increments of 2 along horizon 
-end
-
+ii=1
 while ii <= num_DataPoints
 	
-	# Save only feasible points. 
-	# extract appropriate parameters	
- # 	s_0 = -1 + 2*rand(1)								# Normalized to 0 now apparently  
- # 	v_0 = v_lb + (v_ub-v_lb)*rand(1) 
- # 	u_0 = aprev_lb + (aprev_ub-aprev_lb)*rand(1) 		
-	# s_ref = rand(1)*s_ub_ref							# Vary along horizon 
- # 	v_ref = v_lb + (v_ub-v_lb)*rand(1,N)				
- 
 	# these are the stored solution
-	s_0 = s_curr_all[ii]
+	s_0 = 0 				# set to zero b/c normalized
 	v_0 = v_curr_all[ii]
 	u_0 = a_prev_all[ii]
 	s_ref = s_ref_all[ii,:]
 	v_ref = v_ref_all[ii,:]
 
-	acc_stored = outputParamAcc_long[ii,:]			
-	dAcc_stored = outputParamDacc_long[ii,:]			
-
+	dAcc_stored = outputParamDacc_long[ii,:]	
+	obj_stored = outputParamOptVal_long[ii]
+	dual_stored = outputParamDual_long[ii,:]		
 
 	x_ref = zeros(N*nx,1)
 	for i = 1 : N
@@ -259,35 +177,25 @@ while ii <= num_DataPoints
 	u0 = u_0 				# it's really u_{-1}
 	x_tilde_0 = [x0 ; u0]	# initial state of system; PARAMETER
 
+	################################################
 	# solve primal problem
-	# use it to test consistency
 	mdl = Model(solver=GurobiSolver(Presolve=0, LogToConsole=0))
 	@variable(mdl, x_tilde_vec[1:N*(nx+nu)])  	# decision variable; contains everything
 	@variable(mdl, u_tilde_vec[1:N*nu] )
 	@objective(mdl, Min, (x_tilde_vec-x_tilde_ref)'*Q_tilde_vec*(x_tilde_vec-x_tilde_ref) + u_tilde_vec'*R_tilde_vec*u_tilde_vec)
 	constr_eq = @constraint(mdl, x_tilde_vec .== A_tilde_vec*x_tilde_0 + B_tilde_vec*u_tilde_vec + E_tilde_vec*g_tilde_vec)
-	constr_Fx = @constraint(mdl, F_tilde_vec*x_tilde_vec .<= f_tilde_vec)
+	# constr_Fx = @constraint(mdl, F_tilde_vec*x_tilde_vec .<= f_tilde_vec)
 	constr_Fu = @constraint(mdl, Fu_tilde_vec*u_tilde_vec .<= fu_tilde_vec)
 
-	tic()
 	status = solve(mdl)
-	obj_primal = getobjectivevalue(mdl)
 
  	if !(status == :Optimal)
+		println("****** PROBLEM IN PRIMAL ******")
  		@goto label1 
  	end
 
-
-
-# 	#### extract dual variables ####
-# 	### seems to be wrong 
-# 	# dual_eq = getdual(constr_eq)
-# 	# dual_Fx = getdual(constr_Fx)
-# 	# dual_Fu = getdual(constr_Fu)
-# 	# dual_ineq = [dual_Fx; dual_Fu]
-
-	#### compute dual cost ####
-	#### get dual variables ###
+	################################################
+	#### extract dual variables ####
 	Q_dual = 2*(B_tilde_vec'*Q_tilde_vec*B_tilde_vec + R_tilde_vec);
      
     c_dual = (2*x_tilde_0'*A_tilde_vec'*Q_tilde_vec*B_tilde_vec + 2*g_tilde_vec'*E_tilde_vec'*Q_tilde_vec*B_tilde_vec +
@@ -298,13 +206,13 @@ while ii <= num_DataPoints
                   - 2*x_tilde_0'*A_tilde_vec'*Q_tilde_vec*x_tilde_ref - 2*g_tilde_vec'*E_tilde_vec'*Q_tilde_vec*x_tilde_ref +
                   + x_tilde_ref'*Q_tilde_vec*x_tilde_ref
         
-    C_dual = [F_tilde_vec*B_tilde_vec; Fu_tilde_vec]	# Adding state constraints 
-    d_dual = [f_tilde_vec - F_tilde_vec*A_tilde_vec*x_tilde_0 - F_tilde_vec*E_tilde_vec*g_tilde_vec;  fu_tilde_vec]
+    # C_dual = [F_tilde_vec*B_tilde_vec; Fu_tilde_vec ]	# Adding state constraints 
+    # d_dual = [f_tilde_vec - F_tilde_vec*A_tilde_vec*x_tilde_0 - F_tilde_vec*E_tilde_vec*g_tilde_vec;  fu_tilde_vec]
+    C_dual = Fu_tilde_vec	# Adding state constraints 
+    d_dual = fu_tilde_vec
     Qdual_tmp = C_dual*(Q_dual\(C_dual'))
     Qdual_tmp = 0.5*(Qdual_tmp+Qdual_tmp') + 0e-5*eye(N*(nf+ng))
     
-    # L_test = dual_ineq
-
 	# Solve the dual problem online to match cost 
     mdlD = Model(solver=GurobiSolver(Presolve=0, LogToConsole=0))
 	@variable(mdlD, L_test[1:N*(nf+ng)])  	# decision variable; contains everything
@@ -312,46 +220,13 @@ while ii <= num_DataPoints
 	@constraint(mdlD, -L_test .<= 0)
 
 	statusD = solve(mdlD)
-
-	 	if !(statusD == :Optimal)
- 			@goto label1 
- 		end
+ 	if !(statusD == :Optimal)
+		println("****** PROBLEM IN DUAL ******")
+		@goto label1 
+	end
 	
-	# inputParam_long[ii,:] = [s_0 v_0 u_0 s_ref v_ref]
-
-	optVal_long[ii] = obj_primal
-	solv_time_all[ii] = toq()
-
-	# extract solution
-	x_tilde_vec_opt = getvalue(x_tilde_vec)
-	dA_pred_opt = getvalue(u_tilde_vec)
-	a_pred_opt = x_tilde_vec_opt[3:nx+nu:end]
-	ey_pred_opt = x_tilde_vec_opt[1:nx+nu:end]
-	epsi_pred_opt = x_tilde_vec_opt[2:nx+nu:end]
-
-	## store the primal solution too as output gonna change now 
-	# outputParamDacc_long[ii,:] =  	dA_pred_opt
-	# outputParamAcc_long[ii,:]  = 	a_pred_opt
- 	###########################################################	
-
-	obj_dualOnline = getobjectivevalue(mdlD)
-
-# 	#### compare solution with stored solutions ####
-	a_res_all[ii] = norm(a_pred_opt - acc_stored)
-	dA_res_all[ii] = norm(dA_pred_opt - dAcc_stored)
-
-
-	# extract solution
-	L_test_opt = getvalue(L_test)
-	outputParamDual_long[ii,:] = L_test_opt
-
-	dual_gap[ii] = (obj_primal - obj_dualOnline)
-	Reldual_gap[ii] = (obj_primal - obj_dualOnline)/obj_primal
-
-
-# 	#########################################################################
-#   #########################################################################
- 	# TRAFO 2 with z variables
+	################################################
+	######## Trafo 2 ########## 
  	beq_gurobi_updated = repmat(g_tilde,N);
 	beq_gurobi_updated[1:nx_tilde] = beq_gurobi_updated[1:nx_tilde] + A_tilde*x_tilde_0 	# PARAMETER: depends on x0
 	u_tilde_ref = zeros(N*nu) 	# want to minimize deltaU = u_k - u_{k-1}
@@ -373,53 +248,70 @@ while ii <= num_DataPoints
 	tic()
 	status = solve(mdl2)
 	if !(status == :Optimal)
+		println(status)
+		println("PROBLEM IN Z-TRAFO")
  		@goto label1 
  	end
-	obj_primal2 = getobjectivevalue(mdl2)
+
+
+	################################################
+	# extract data for comparison
+	# comparison of objective
+	optVal_res_all[ii] = norm(getobjectivevalue(mdl) - obj_stored)
+	relOptVal_res_all[ii] = optVal_res_all[ii] / obj_stored
+
+	# comparison of optimizers
+	dA_pred_opt = getvalue(u_tilde_vec)
+	dA_res_all[ii] = norm(dA_pred_opt - dAcc_stored)
+
 	z_opt = getvalue(z)
-
 	dA_pred_opt2 = z_opt[1:n_uxu:end]
-	a_pred_opt2 = z_opt[4:n_uxu:end]
-	ey_pred_opt2 = z_opt[2:n_uxu:end]
-	epsi_pred_opt2 = z_opt[3:n_uxu:end]
-
-	
-	obj_diff[ii] = obj_primal-obj_primal2
-	obj_diffRel[ii] = norm(obj_primal-obj_primal2)/norm(obj_primal2)
-
 	dA_res_all2[ii] = norm(dA_pred_opt2 - dAcc_stored)
 
-	ddf_res_12[ii] = norm(dA_pred_opt2 - dA_pred_opt)
+	L_test_opt = getvalue(L_test)
+	dual_res_all[ii] = norm(L_test_opt - dual_stored)
+
+	# sanity checks
+
+	dual_gap[ii] = (getobjectivevalue(mdl) - getobjectivevalue(mdlD))
+	Reldual_gap[ii] = dual_gap[ii] / getobjectivevalue(mdl)
 
 
+	@label label1
  	ii = ii + 1 
 
- 	@label label1
 end
 
-
 println("===========================================")
-# println("max a-residual:  $(maximum(a_res_all))")
+println("max optVal residual: $(maximum(optVal_res_all))")
+println("min optVal residual: $(minimum(optVal_res_all))")
+println("avg optVal residual: $(mean(optVal_res_all))")
+
+println(" ")
+
+println("max rel optVal residual: $(maximum(relOptVal_res_all))")
+println("min rel optVal residual: $(minimum(relOptVal_res_all))")
+println("avg rel optVal residual: $(mean(relOptVal_res_all))")
+
+println(" ")
+
 println("max dA-residual:  $(maximum(dA_res_all))")
 println("max dA-residual2: $(maximum(dA_res_all2))")
-println("max dA-residual Trafo1 + Trafo2: $(maximum(ddf_res_12))")
+println("max dual-residual: $(maximum(dual_res_all))")
 
 
 println(" ")
 
 
-# println("max obj_diff (difference btw Trafo1 and Trafo2): $(maximum(obj_diff))")
-# println("max Rel obj_diff (difference btw Trafo1 and Trafo2): $(maximum(obj_diffRel))")
-
-println(" ")
-
-
-println("max solv-time (excl modelling time):  $(maximum(solv_time_all[3:end]))")
-println("avg solv-time (excl modelling time):  $(mean(solv_time_all[3:end]))")
 println("max dual_gap:  $(maximum(dual_gap))")
 println("min dual_gap:  $(minimum(dual_gap))")
+println("avg dual_gap:  $(mean(dual_gap))")
+
+println(" ")
+
 println("max Rel dual_gap:  $(minimum(Reldual_gap))")
 println("min Rel dual_gap:  $(minimum(Reldual_gap))")
+println("avg Rel dual_gap:  $(mean(Reldual_gap))")
 
 
 

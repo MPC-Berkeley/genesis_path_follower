@@ -274,6 +274,13 @@ function pub_loop(acc_pub_obj, steer_pub_obj, mpc_path_pub_obj)
 
 			# a_opt=u0 ; a_pred = (u_0, u_1, ... u_{N-1})
 			a_opt_gurobi, a_pred_gurobi, s_pred_gurobi, v_pred_gurobi, dA_pred_gurobi, solv_time_long_gurobi1, is_opt_long, solMode_long, primNN_obj, dualNN_obj, xu_tilde_NN_res = kmpcLinLongNN.get_NNsolution(s_curr, v_curr, a_opt, s_ref, v_ref)
+			
+			# a_opt_gurobi, a_pred_gurobi, s_pred_gurobi, v_pred_gurobi, dA_pred_gurobi, solv_time_long_gurobi1, is_opt_long = GPSKinMPCPathFollowerFrenetLinLongGurobi.solve_gurobi(s_curr, v_curr, a_opt, s_ref, v_ref)
+			# solMode_long = " "
+			# primNN_obj = 0
+			# dualNN_obj = 0
+			# xu_tilde_NN_res = 0
+
 			if (is_opt_long==1) && (solMode_long=="NN")
 				num_NN_long = num_NN_long + 1
 			end
