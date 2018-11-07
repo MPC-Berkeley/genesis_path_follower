@@ -38,7 +38,7 @@ lb_gurobi = kmpcLinLat.lb_gurobi
 # latData = matread("exp1_trainingData.mat") 						# bad
 # latData = matread("NN_test_trainingDataLat10k_PrimalDual2.mat")	# bad
 # latData = matread("NN_test_RandtrainingDataLat_Trafo2.mat")   			# bad
-latData = matread("NN_test_CPGDay2ParamMergeConRelaxed_RandDataLat10kTrafo2.mat")   				# bad
+latData = matread("NN_test_CPGDay3_N3RandDataLat10kTrafo2.mat")   				# bad
 
 
 # inputParam_lat = np.hstack((ey_curr.T, epsi_curr.T ,df_prev.T, v_pred, c_pred))
@@ -53,7 +53,7 @@ df_prev_all = inputParam_lat[:,3]
 v_pred_all = inputParam_lat[:,4:4+N-1]
 
 ### Param Merge Here
-vc_pred_all = inputParam_lat[:,12:end]
+vc_pred_all = inputParam_lat[:,4+N:end]
 #########################################
 
 ### Load MPC data ###

@@ -224,7 +224,7 @@ println("primal status errors:  $(primStatusError)")
 println("dual status errors:  $(dualStatusError)")
 
 
-matwrite("NN_test_CPGDay2ParamMergeConRelaxed_RandDataLat10kTrafo2.mat", Dict(
+matwrite("NN_test_CPGDay3_N3RandDataLat10kTrafo2.mat", Dict(
 	"inputParam_lat" => inputParam_lat,
 	"outputParamDf_lat" => outputParamDf_lat,
 	"outputParamDdf_lat" => outputParamDdf_lat,

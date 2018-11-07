@@ -24,10 +24,10 @@ module KinMPCParams
 	dt      = 0.2			# model discretization time, td (s)
 	# dt 		= 0.1
 
-	N       = 8				# horizon
+	N       = 3				# horizon
 	# N		= 16
 
-	L_a 	= 1.5213		# from CoG to front axle (according to Jongsang)
+	L_a 	= 1.5313		# from CoG to front axle (according to Jongsang)
 	L_b 	= 1.4987		# from CoG to rear axle (according to Jongsang)
 
 	# longitudinal parameters

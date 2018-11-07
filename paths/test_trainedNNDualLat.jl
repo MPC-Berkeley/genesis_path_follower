@@ -23,7 +23,7 @@ L_a 	= KinMPCParams.L_a				# from CoG to front axle (according to Jongsang)
 L_b 	= KinMPCParams.L_b				# from CoG to rear axle (according to Jongsang)
 
 ############## load all NN Matrices ##############
-primalNN_Data 	= matread("trained_weightsPrimalLat10k_CPGDay2ParamMergeConRelaxed.mat")
+primalNN_Data 	= matread("trained_weightsPrimalLat10k_CPGDay3N3.mat")
 dualNN_Data 	= matread("trained_weightsDualLat.mat")		 
 
 # read out NN primal/Dual weights
@@ -45,7 +45,7 @@ bout_DLat = dualNN_Data["b0D"]
 
 
 ####################### debugging code ###################################
-test_Data = matread("NN_test_CPGDay2ParamMergeConRelaxed_RandDataLat10kTrafo2.mat")
+test_Data = matread("NN_test_CPGDay3_N3RandDataLat10kTrafo2.mat")
 # test_Data = matread("NN_test_trainingDataLat10k_PrimalDual2.mat")
 test_inputParams = test_Data["inputParam_lat"]
 test_outputParamDdf = test_Data["outputParamDdf_lat"]
@@ -163,13 +163,14 @@ while iii <= num_DataPoints
 	# load stuff
 	params = test_inputParams[iii,:]
 	v_pred = params[4:4+N-1]
-	vc_pred = params[12:end]									# param merge 
+	vc_pred = params[4+N:end]									# param merge 
 
 	
 	# system dynamics A, B, g
 	A_updated = zeros(nx, nx, N)
 	B_updated = zeros(nx, nu, N)
 	g_updated = zeros(nx, N)
+	
 	for i = 1 : N
 		A_updated[:,:,i] = [	1	dt*v_pred[i] 
 								0		1			]
@@ -291,12 +292,12 @@ while iii <= num_DataPoints
 
 
 	# calls the NN with two Hidden Layers
-	z1D = max.(Wi_DLat*params + bi_DLat, 0)
-	z2D = max.(W1_DLat*z1D + b1_DLat, 0)
-	lambda_tilde_NN_orig = Wout_DLat*z2D + bout_DLat
-	lambda_tilde_NN_vec = max.(Wout_DLat*z2D + bout_DLat, 0)  	#Delta-Acceleration
+	# z1D = max.(Wi_DLat*params + bi_DLat, 0)
+	# z2D = max.(W1_DLat*z1D + b1_DLat, 0)
+	# lambda_tilde_NN_orig = Wout_DLat*z2D + bout_DLat
+	# lambda_tilde_NN_vec = max.(Wout_DLat*z2D + bout_DLat, 0)  	#Delta-Acceleration
 
-	dualObj_NN = -1/2 * lambda_tilde_NN_vec'*Qdual_tmp*lambda_tilde_NN_vec - (C_dual*(Q_dual\c_dual)+d_dual)'*lambda_tilde_NN_vec - 1/2*c_dual'*(Q_dual\c_dual) + const_dual
+	# dualObj_NN = -1/2 * lambda_tilde_NN_vec'*Qdual_tmp*lambda_tilde_NN_vec - (C_dual*(Q_dual\c_dual)+d_dual)'*lambda_tilde_NN_vec - 1/2*c_dual'*(Q_dual\c_dual) + const_dual
 	
 	################## BEGIN extract Dual NN solution ##################
 
@@ -333,12 +334,12 @@ while iii <= num_DataPoints
 	RelPrimandOnline_gap[iii] = (primObj_NN[1] - obj_primal)/obj_primal
  # 	###########################################################	
 
-	DualOnline_gap[iii] = obj_primal - dualObj_NN[1]
-	RelDualOnline_gap[iii] = (obj_primal - dualObj_NN[1])/obj_primal
+	# DualOnline_gap[iii] = obj_primal - dualObj_NN[1]
+	# RelDualOnline_gap[iii] = (obj_primal - dualObj_NN[1])/obj_primal
  # 	###########################################################	
 
-	dual_gap[iii] = primObj_NN[1] - dualObj_NN[1]
-	Reldual_gap[iii] = (primObj_NN[1] - dualObj_NN[1])/obj_primal
+	# dual_gap[iii] = primObj_NN[1] - dualObj_NN[1]
+	# Reldual_gap[iii] = (primObj_NN[1] - dualObj_NN[1])/obj_primal
 
  	iii = iii + 1 
 
@@ -363,17 +364,17 @@ println("max Rel onlineNN_gap:  $(maximum(RelPrimandOnline_gap))")
 println("min Rel onlineNN_gap:  $(minimum(RelPrimandOnline_gap))")
 println("avg Rel onlineNN_gap:  $(mean(RelPrimandOnline_gap))")
 
-println(" ")
+# println(" ")
 
-println("max onlineDualNN_gap:  $(maximum(DualOnline_gap))")
-println("min onlineDualNN_gap:  $(minimum(DualOnline_gap))")
-println("avg onlineDualNN_gap:  $(mean(DualOnline_gap))")
+# println("max onlineDualNN_gap:  $(maximum(DualOnline_gap))")
+# println("min onlineDualNN_gap:  $(minimum(DualOnline_gap))")
+# println("avg onlineDualNN_gap:  $(mean(DualOnline_gap))")
 
-println(" ")
+# println(" ")
 
-println("max Rel onlineDualNN_gap:  $(maximum(RelDualOnline_gap))")
-println("min Rel onlineDualNN_gap:  $(minimum(RelDualOnline_gap))")
-println("avg Rel onlineDualNN_gap:  $(mean(RelDualOnline_gap))")
+# println("max Rel onlineDualNN_gap:  $(maximum(RelDualOnline_gap))")
+# println("min Rel onlineDualNN_gap:  $(minimum(RelDualOnline_gap))")
+# println("avg Rel onlineDualNN_gap:  $(mean(RelDualOnline_gap))")
 
 println(" ")
 

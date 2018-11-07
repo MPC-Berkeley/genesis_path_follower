@@ -20,7 +20,7 @@ def unnormalize(x, mean, std):
     return x * std + mean
 
 #%% We have imported all dependencies
-df = sio.loadmat('NN_test_CPGDay2ParamMergeConRelaxed_RandDataLat10kTrafo2.mat',squeeze_me=True, struct_as_record=False) # read data set using pandas
+df = sio.loadmat('NN_test_CPGDay3_N3RandDataLat10kTrafo2.mat',squeeze_me=True, struct_as_record=False) # read data set using pandas
 # df = sio.loadmat('NN_test_trainingDataLatRFS.mat',squeeze_me=True, struct_as_record=False) # read data set using pandas
 x_data = df['inputParam_lat']
 y_data = df['outputParamDdf_lat']
@@ -61,7 +61,7 @@ lr = tf.placeholder(tf.float32)
 #%%
 
 ################## PRIMAL NN TRAINING ##############################
-neuron_size = 10
+neuron_size = 20
 neuron_sizeML = neuron_size                             # Can vary size of the intermediate layer as well
 
 W_1 = tf.Variable(tf.random_uniform([neuron_size,insize]))
@@ -111,8 +111,8 @@ with tf.Session() as sess:
      inds = np.arange(x_train.shape[0])
      train_count = len(x_train)
 
-     N_EPOCHS = 500
-     BATCH_SIZE = 32
+     N_EPOCHS = 1000
+     BATCH_SIZE = 100
      max_learning_rate = 0.001
      min_learning_rate = 0.0001
      #learning_rate = 0.0001
@@ -139,7 +139,7 @@ with tf.Session() as sess:
      vj['b1'] = sess.run(b_1)
      vj['b2'] = sess.run(b_2)
      vj['b0'] = sess.run(b_O)
-     sio.savemat('trained_weightsPrimalLat10k_CPGDay2ParamMergeConRelaxed.mat',vj)
+     sio.savemat('trained_weightsPrimalLat10k_CPGDay3N3.mat',vj)
     # sio.savemat('trained_weightsPrimalLat10k_CPGDay2ParamMerge.mat',vj)
     # sio.savemat('trained_weightsPrimalLat100k_CPGDay2BacktoDay1Tune.mat',vj)
     # sio.savemat('trained_weightsPrimalLat10k_CPGDay2BacktoDay1Tune.mat',vj)
