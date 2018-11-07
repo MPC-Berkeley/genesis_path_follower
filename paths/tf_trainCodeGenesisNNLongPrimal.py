@@ -15,7 +15,7 @@ def unnormalize(x, mean, std):
     return x * std + mean
 
 #%% We have imported all dependencies
-df = sio.loadmat('NN_test_CPGDay3_RandTrainingDataLong1k.mat',squeeze_me=True, struct_as_record=False) # read data set using pandas
+df = sio.loadmat('NN_test_CPGDay3_RandTrainingDataLong10k.mat',squeeze_me=True, struct_as_record=False) # read data set using pandas
 # df = sio.loadmat('NN_test_trainingDataLatRFS.mat',squeeze_me=True, struct_as_record=False) # read data set using pandas
 x_data = df['inputParam_long']
 y_data = df['outputParamDacc_long']
@@ -48,8 +48,8 @@ insize =  x_data.shape[1]
 outsize = y_data.shape[1]                               # Dimension of primal output data 
 # outsizeD = y_dataDual.shape[1]                        # Dimension of dual output data 
 
-xs = tf.placeholder(tf.float32, [insize, None])#tf.placeholder("float")
-ys = tf.placeholder(tf.float32, [outsize, None])#tf.placeholder("float")
+xs = tf.placeholder(tf.float32, [insize, None])         #tf.placeholder("float")
+ys = tf.placeholder(tf.float32, [outsize, None])        #tf.placeholder("float")
 lr = tf.placeholder(tf.float32)
 
 # ysD = tf.placeholder("float")
@@ -107,7 +107,7 @@ with tf.Session() as sess:
      inds = np.arange(x_train.shape[0])
      train_count = len(x_train)
 
-     N_EPOCHS = 3000
+     N_EPOCHS = 500
      BATCH_SIZE = 32
      max_learning_rate = 0.01
      min_learning_rate = 0.001
@@ -135,7 +135,7 @@ with tf.Session() as sess:
      vj['b1'] = sess.run(b_1)
      vj['b2'] = sess.run(b_2)
      vj['b0'] = sess.run(b_O)
-     sio.savemat('trained_weightsPrimalLong1k_CPGDay3.mat',vj)
+     sio.savemat('trained_weightsPrimalLong10k_CPGDay3.mat',vj)
 
 
 ################################ Plotting the Primal NN Train Quality
