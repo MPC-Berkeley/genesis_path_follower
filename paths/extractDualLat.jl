@@ -28,19 +28,6 @@ H_gurobi = kmpcLinLat.H_gurobi
 f_gurobi_init = kmpcLinLat.f_gurobi_init
 ub_gurobi = kmpcLinLat.ub_gurobi
 lb_gurobi = kmpcLinLat.lb_gurobi
-
-## Load Ranges of params 
-ey_lb = KinMPCParams.ey_lb
-ey_ub = KinMPCParams.ey_ub
-epsi_lb = KinMPCParams.epsi_lb
-epsi_ub = KinMPCParams.epsi_ub
-dfprev_lb = -KinMPCParams.df_max
-dfprev_ub =  KinMPCParams.df_max
-
-v_lb = KinMPCParams.v_min 
-v_ub = KinMPCParams.v_max
-curv_lb = KinMPCParams.curv_lb
-curv_ub = KinMPCParams.curv_ub
  
 
 ############## load all data ##############
@@ -51,7 +38,7 @@ curv_ub = KinMPCParams.curv_ub
 # latData = matread("exp1_trainingData.mat") 						# bad
 # latData = matread("NN_test_trainingDataLat10k_PrimalDual2.mat")	# bad
 # latData = matread("NN_test_RandtrainingDataLat_Trafo2.mat")   			# bad
-latData = matread("NN_test_CPGDay2_RandDataLat100kTrafo2.mat")   				# bad
+latData = matread("NN_test_CPGDay2ParamMerge_RandDataLat10kTrafo2.mat")   				# bad
 
 
 # inputParam_lat = np.hstack((ey_curr.T, epsi_curr.T ,df_prev.T, v_pred, c_pred))
@@ -64,8 +51,10 @@ ey_curr_all = inputParam_lat[:,1]
 epsi_curr_all = inputParam_lat[:,2]
 df_prev_all = inputParam_lat[:,3]
 v_pred_all = inputParam_lat[:,4:4+N-1]
-c_pred_all = inputParam_lat[:,12:end]
 
+### Param Merge Here
+vc_pred_all = inputParam_lat[:,12:end]
+#########################################
 
 ### Load MPC data ###
 x_tilde_lb = kmpcLinLat.x_tilde_lb
@@ -137,7 +126,11 @@ ey_0 = []
 epsi_0 = []
 u_0 = []
 v_pred = []
-c_pred = []
+
+########### Param Merge Here
+vc_pred = []
+############################
+
 df_stored = []
 ddf_stored = []
 
@@ -148,23 +141,14 @@ L_test_opt = []
 iii = 1
 
 while iii <= num_DataPoints
-	
-	# Save only feasible points. 
-	# extract appropriate parameters	
-	# RANDOM data extraction
- # 	ey_0 = ey_lb + (ey_ub-ey_lb)*rand(1)				
- # 	epsi_0 = epsi_lb + (epsi_ub-epsi_lb)*rand(1) 
- # 	u_0 = dfprev_lb + (dfprev_ub-dfprev_lb)*rand(1) 		
-	# v_pred = v_lb + (v_ub-v_lb)*rand(1,N)						#  Along horizon 
-	# c_pred = curv_lb + (curv_ub-curv_lb)*rand(1,N)				#  Along horizon 
- 	
+	 	
 
 	###### stored data #####
 	ey_0 = ey_curr_all[iii]
 	epsi_0 = epsi_curr_all[iii]
 	u_0 = df_prev_all[iii]
 	v_pred = v_pred_all[iii,:]
-	c_pred = c_pred_all[iii,:]
+	vc_pred = vc_pred_all[iii,:]
  	# load data to check if solution identical
 	df_stored = outputParamDf_lat[iii,:]
 	ddf_stored = outputParamDdf_lat[iii,:]
@@ -185,7 +169,7 @@ while iii <= num_DataPoints
 		B_updated[:,:,i] = [	dt*v_pred[i]*L_b/(L_a+L_b) 
 								dt*v_pred[i]/(L_a + L_b)	]
 		g_updated[:,i] = [ 0	# column vector
-						-dt*v_pred[i]*c_pred[i] 	]
+						-dt*vc_pred[i] ] #param merge
 	end
 	
 	# x_tilde transformation

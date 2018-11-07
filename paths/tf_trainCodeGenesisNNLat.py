@@ -20,7 +20,7 @@ def unnormalize(x, mean, std):
     return x * std + mean
 
 #%% We have imported all dependencies
-df = sio.loadmat('NN_test_CPGDay2BacktoDay1Tune_RandDataLat100kTrafo2.mat',squeeze_me=True, struct_as_record=False) # read data set using pandas
+df = sio.loadmat('NN_test_CPGDay2ParamMerge_RandDataLat10kTrafo2.mat',squeeze_me=True, struct_as_record=False) # read data set using pandas
 # df = sio.loadmat('NN_test_trainingDataLatRFS.mat',squeeze_me=True, struct_as_record=False) # read data set using pandas
 x_data = df['inputParam_lat']
 y_data = df['outputParamDdf_lat']
@@ -61,7 +61,7 @@ lr = tf.placeholder(tf.float32)
 #%%
 
 ################## PRIMAL NN TRAINING ##############################
-neuron_size = 8
+neuron_size = 10
 neuron_sizeML = neuron_size                             # Can vary size of the intermediate layer as well
 
 W_1 = tf.Variable(tf.random_uniform([neuron_size,insize]))
@@ -74,7 +74,6 @@ W_2 = tf.Variable(tf.random_uniform([neuron_sizeML,neuron_size]))
 b_2 = tf.Variable(tf.random_uniform([neuron_sizeML,1]))
 layer_2 = tf.add(tf.matmul(W_2,layer_1), b_2)
 layer_2 = tf.nn.relu(layer_2)
-
 
 # layer 2 multiplying and adding bias then activation function
 W_O = tf.Variable(tf.random_uniform([outsize,neuron_sizeML]))
@@ -96,9 +95,9 @@ output = tf.add(tf.matmul(W_O,layer_2), b_O)
 # optimizer = tf.train.GradientDescentOptimizer(0.05) TO REDUCE OSCILLATION?
 
 # cost = tf.reduce_mean(tf.square(output-ys))            # our mean squared error cost function
-cost = tf.losses.mean_squared_error(output, ys)          #tf.reduce_mean(tf.squared_difference(output, ys))#+ tf.abs(output - ys) )
 
-train = tf.train.AdamOptimizer(lr).minimize(cost)      # GD and proximal GD working bad! Adam and RMS well.
+cost = tf.losses.mean_squared_error(output, ys)          # tf.reduce_mean(tf.squared_difference(output, ys))#+ tf.abs(output - ys) )
+train = tf.train.AdamOptimizer(lr).minimize(cost)        # GD and proximal GD working bad! Adam and RMS well.
 
 c_t = []
 c_test = []
@@ -112,7 +111,7 @@ with tf.Session() as sess:
      inds = np.arange(x_train.shape[0])
      train_count = len(x_train)
 
-     N_EPOCHS = 200
+     N_EPOCHS = 500
      BATCH_SIZE = 32
      max_learning_rate = 0.001
      min_learning_rate = 0.0001
@@ -140,7 +139,8 @@ with tf.Session() as sess:
      vj['b1'] = sess.run(b_1)
      vj['b2'] = sess.run(b_2)
      vj['b0'] = sess.run(b_O)
-     sio.savemat('trained_weightsPrimalLat100k_CPGDay2BacktoDay1Tune.mat',vj)
+     sio.savemat('trained_weightsPrimalLat10k_CPGDay2ParamMerge.mat',vj)
+    # sio.savemat('trained_weightsPrimalLat100k_CPGDay2BacktoDay1Tune.mat',vj)
     # sio.savemat('trained_weightsPrimalLat10k_CPGDay2BacktoDay1Tune.mat',vj)
     # sio.savemat('trained_weightsPrimalLat100k_CPGDay2.mat',vj)
     # sio.savemat('trained_weightsPrimalLatTrafo2.mat',vj)

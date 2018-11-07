@@ -79,7 +79,7 @@ f_tilde_vec = repmat(f_tilde,N)
 
 ######################## ITERATE OVER saved parameters ################
 # build problem
-num_DataPoints = 1e5								# Training data count 
+num_DataPoints = 1e4								# Training data count 
 # num_DataPoints = size(inputParam_lat,1)
 
 solv_time_all = zeros(num_DataPoints)
@@ -87,7 +87,7 @@ optVal_long = zeros(num_DataPoints)
 
 inputParam_lat = 	  zeros(num_DataPoints,3+2*N)
 outputParamDual_lat = zeros(num_DataPoints, N*(nf+ng))
-outputParamDf_lat = zeros(num_DataPoints, N*(nu))
+outputParamDf_lat   = zeros(num_DataPoints, N*(nu))
 outputParamDdf_lat  = zeros(num_DataPoints, N*(nu))
 
 status = []
@@ -121,7 +121,11 @@ while iii <= num_DataPoints
  	u_0 = dfprev_lb + (dfprev_ub-dfprev_lb)*rand(1) 		
 	v_pred = v_lb + (v_ub-v_lb)*rand(1,N)						#  Along horizon 
 	c_pred = curv_lb + (curv_ub-curv_lb)*rand(1,N)				#  Along horizon 
- 	
+
+	# Appending parameters here Geokkhge style
+	vc_pred = v_pred.*c_pred
+ 	###########################################
+
  	# build problem (only the updated parts)
 	x0 = [ey_0 ; epsi_0]
 	u0 = u_0 				# it's really u_{-1}
@@ -137,7 +141,7 @@ while iii <= num_DataPoints
 		B_updated[:,:,i] = [	dt*v_pred[i]*L_b/(L_a+L_b) 
 								dt*v_pred[i]/(L_a + L_b)	]
 		g_updated[:,i] = [ 0	# column vector
-						-dt*v_pred[i]*c_pred[i] 	]
+						-dt*vc_pred[i] 	]
 	end
 	
 	# x_tilde transformation
@@ -206,7 +210,7 @@ while iii <= num_DataPoints
 	epsi_pred_opt2 = z_opt[3:n_uxu:end] 		# does not include v0 
 
 	# store the primal solution too as output gonna change now 
-	inputParam_lat[iii,:] = [ey_0 epsi_0 u_0 v_pred c_pred]
+	inputParam_lat[iii,:] = [ey_0 epsi_0 u_0 v_pred vc_pred]
 	outputParamDf_lat[iii,:]   = df_pred_opt2
 	outputParamDdf_lat[iii,:]  = ddf_pred_opt2
  
@@ -220,7 +224,7 @@ println("primal status errors:  $(primStatusError)")
 println("dual status errors:  $(dualStatusError)")
 
 
-matwrite("NN_test_CPGDay2BacktoDay1Tune_RandDataLat100kTrafo2.mat", Dict(
+matwrite("NN_test_CPGDay2ParamMerge_RandDataLat10kTrafo2.mat", Dict(
 	"inputParam_lat" => inputParam_lat,
 	"outputParamDf_lat" => outputParamDf_lat,
 	"outputParamDdf_lat" => outputParamDdf_lat,
