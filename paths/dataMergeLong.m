@@ -6,11 +6,7 @@ load('CPG_day1_test1_trainingData.mat');
 tmpinLong1 = inputParam_long;
 tmpoutAcc1 = outputParamAcc_long;
 tmpoutDacc1 = outputParamDacc_long;
-%%
-% load('NN_test_CPGDay1_RandDataLat10kTrafo2.mat');
-% tmpinLong2 = inputParam_long;
-% tmpoutAcc2 = outputParamAcc_long;
-% tmpoutDacc2 = outputParamDacc_long;
+
 %%
 load('CPG_day1_test2_trainingData.mat');
 tmpinLong3 = inputParam_long;
