@@ -74,7 +74,7 @@ class LanekeepingPublisher():
 		self.controlInput = ControlInput()
 
 		#Initialize map matching object - use closest style
-		self.mapMatch = MapMatch(self.path, "closest")
+		self.mapMatch = MapMatch(self.path, "embed")
 		
 
 		#Enable steering
