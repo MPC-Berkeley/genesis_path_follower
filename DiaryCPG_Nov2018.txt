@@ -15,6 +15,8 @@ Day 2 CPG: Nov 6 2018
 Day 3: 
 1. tried to do primal-dual NN long
 2. found large rel duality gap, and also v_ref not well generated
+3. ran evening test with 1k and 10k old v_ref long data
+4. found that 
 
 Day 4:
 1. generate random data based on smoothened v_ref using dv

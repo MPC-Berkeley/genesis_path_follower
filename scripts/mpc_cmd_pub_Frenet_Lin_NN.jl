@@ -213,6 +213,10 @@ function pub_loop(acc_pub_obj, steer_pub_obj, mpc_path_pub_obj)
 	solv_time_lat_gurobi1_all = zeros(control_rate/10*6000)		# over Gurobi.jl interface; mean: 2ms, max 4ms
 	solv_time_gurobi_tot_all = zeros(control_rate/10*6000)
 
+	absDualGap = zeros(control_rate/10*6000)
+	relDualGap = zeros(control_rate/10*6000)
+
+
 	num_NN_long = 0		# counter for how often NN was called
 	num_NN_lat = 0
 
@@ -281,6 +285,8 @@ function pub_loop(acc_pub_obj, steer_pub_obj, mpc_path_pub_obj)
 			# dualNN_obj = 0
 			# xu_tilde_NN_res = 0
 
+			absDualGap[it_num+1] = primNN_obj[1] - dualNN_obj[1]
+			relDualGap[it_num+1]  = (primNN_obj[1] - dualNN_obj[1]) / mean([primNN_obj[1], dualNN_obj[1]])
 
 			if (is_opt_long==1) && (solMode_long=="NN")
 				num_NN_long = num_NN_long + 1
@@ -406,6 +412,29 @@ function pub_loop(acc_pub_obj, steer_pub_obj, mpc_path_pub_obj)
 
 				println("--- percentage of NN long called: $(num_NN_long/it_num*100) %---")
 				println("--- percentage of NN lat called: $(num_NN_lat/it_num*100) %---")
+				
+				println(" ")
+				
+				println("--- max abs primal-dual NN gap: $(maximum(absDualGap[1:it_num-1]))")
+				println("--- avg abs primal-dual NN gap: $(mean(absDualGap[1:it_num-1]))")
+				println("--- median abs primal-dual NN gap: $(median(absDualGap[1:it_num-1]))")
+
+				println(" ")
+				
+				println("--- frac of abs gap below 1: $( sum(absDualGap[1:it_num-1].<=1)/(it_num-1)*100 ) %")
+				println("--- frac of abs gap below 2: $( sum(absDualGap[1:it_num-1].<=2)/(it_num-1)*100 ) %")
+				println("--- frac of abs gap below 3: $( sum(absDualGap[1:it_num-1].<=3)/(it_num-1)*100 ) %")
+				println("--- frac of abs gap below 4: $( sum(absDualGap[1:it_num-1].<=4)/(it_num-1)*100 ) %")
+				println("--- frac of abs gap below 5: $( sum(absDualGap[1:it_num-1].<=5)/(it_num-1)*100 ) %")
+				println("--- frac of abs gap below 5: $( sum(absDualGap[1:it_num-1].<=6)/(it_num-1)*100 ) %")
+				println("--- frac of abs gap below 7: $( sum(absDualGap[1:it_num-1].<=7)/(it_num-1)*100 ) %")
+				println("--- frac of abs gap below 8: $( sum(absDualGap[1:it_num-1].<=8)/(it_num-1)*100 ) %")
+				println("--- frac of abs gap below 9: $( sum(absDualGap[1:it_num-1].<=9)/(it_num-1)*100 ) %")
+				println("--- frac of abs gap below 10: $( sum(absDualGap[1:it_num-1].<=10)/(it_num-1)*100 ) %")
+
+				println("--- max rel primal-dual NN gap: $(maximum(relDualGap[1:it_num-1]))")
+				println("--- avg rel primal-dual NN gap: $(mean(relDualGap[1:it_num-1]))")
+				println("--- min rel primal-dual NN gap: $(minimum(relDualGap[1:it_num-1]))")
 
 			end
 			
