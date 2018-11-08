@@ -11,3 +11,11 @@ Day 2 CPG: Nov 6 2018
 1. trained primal lat network with old upper and lower parameter bounds
 2. ran tests (med and fast) with long pNN and lat pNN
 3. Trying to get better test results and also working on dual
+
+Day 3: 
+1. tried to do primal-dual NN long
+2. found large rel duality gap, and also v_ref not well generated
+
+Day 4:
+1. generate random data based on smoothened v_ref using dv
+2. generate 10k data

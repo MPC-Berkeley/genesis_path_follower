@@ -132,22 +132,23 @@ v_ub = KinMPCParams.vpred_ub
 aprev_lb = KinMPCParams.aprev_lb					# max in practice
 aprev_ub = KinMPCParams.aprev_ub
 
+dv_lb = KinMPCParams.dv_lb
+dv_ub = KinMPCParams.dv_ub
+
+
 
 ii = 1
 while ii <= num_DataPoints
 	
+	if mod(ii,100) == 0
+		println("----------- $(ii) ------------")
+	end
+
 	# Save only feasible points. 
 	# generate random samples
 	s_0 = 0												# REMOVE from inputParam b/c normalized to 0  
  	v_0 = v_lb + (v_ub-v_lb)*rand(1) 
  	u_0 = aprev_lb + (aprev_ub-aprev_lb)*rand(1) 
-
- 	# s_ref = zeros(1,N)
- 	# println("$( size(s_ref[1,1]) )")
- 	# println("$( size(rand(1)) )")
- 	# s_ref[1,1] = ds_lb + (ds_ub - ds_lb)*rand(1,1)
- 	# for kk = 2 : N
- 	# end	
 
  	ds_ref = ds_lb + (ds_ub-ds_lb)*rand(1,N)
  	s_ref = zeros(1,N)
@@ -156,7 +157,13 @@ while ii <= num_DataPoints
  		s_ref[kk] = s_ref[kk-1] + ds_ref[kk]
  	end
 
- 	v_ref = v_lb + (v_ub-v_lb)*rand(1,N)				
+
+ 	dv_ref = dv_lb + (dv_ub-dv_lb)*rand(1,N-1)
+ 	v_ref = zeros(1,N)
+ 	v_ref[1] = v_lb + (v_ub-v_lb)*rand()
+ 	for kk = 2 : N
+ 		v_ref[kk] = v_ref[kk-1] + dv_ref[kk-1]
+ 	end		
  
 	x_ref = zeros(N*nx,1)
 	for i = 1 : N
@@ -274,7 +281,7 @@ println("avg Rel dual_gap:  $(mean(Reldual_gap))")
 
 
 ### save data
-matwrite("NN_test_CPGDay3_RandTrainingDataLong10k.mat", Dict(
+matwrite("NN_test_CPGDay4_RandTrainingDataLong10k.mat", Dict(
 	"inputParam_long" => inputParam_long,
 	"outputParamDacc_long" => outputParamDacc_long,
 	"outputParamDual_long" => outputParamDual_long,
