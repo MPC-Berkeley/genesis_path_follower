@@ -39,11 +39,11 @@ module GPSKinMPCPathFollowerFrenetLinLongNN
 	println(pwd())
 
 	if KinMPCParams.platform == "nuvo"
-		primalNN_Data 	= matread("../GenesisAutoware/ros/src/genesis_path_follower/paths/goodNNs/trained_weightsPrimalLong10k_CPGDay3.mat")
-		dualNN_Data 	= matread("../GenesisAutoware/ros/src/genesis_path_follower/paths/goodNNs/trained_weightsDualLong10k_CPGDay3.mat")
+		primalNN_Data 	= matread("../GenesisAutoware/ros/src/genesis_path_follower/paths/goodNNs/trained_weightsPrimalLong1k_CPGDay3.mat")
+		dualNN_Data 	= matread("../GenesisAutoware/ros/src/genesis_path_follower/paths/goodNNs/trained_weightsDualLong1k_CPGDay3.mat")
 	elseif KinMPCParams.platform == "abby"
-		primalNN_Data 	= matread("../catkin_ws/src/genesis_path_follower/paths/goodNNs/trained_weightsPrimalLong10k_CPGDay3.mat")
-		dualNN_Data 	= matread("../catkin_ws/src/genesis_path_follower/paths/goodNNs/trained_weightsDualLong10k_CPGDay3.mat")
+		primalNN_Data 	= matread("../catkin_ws/src/genesis_path_follower/paths/goodNNs/trained_weightsPrimalLong1k_CPGDay3.mat")
+		dualNN_Data 	= matread("../catkin_ws/src/genesis_path_follower/paths/goodNNs/trained_weightsDualLong1k_CPGDay3.mat")
 	else
 		println("Lat NN Data not found!!!")
 	end
@@ -333,7 +333,6 @@ module GPSKinMPCPathFollowerFrenetLinLongNN
 		lambda_tilde_NN_vec = max.(lambda_tilde_NN_vec, 0)  	#Delta-Acceleration
 
 		dualObj_NN = -1/2 * lambda_tilde_NN_vec'*Qdual_tmp*lambda_tilde_NN_vec - (C_dual*(Q_dual\c_dual)+d_dual)'*lambda_tilde_NN_vec - 1/2*c_dual'*(Q_dual\c_dual) + const_dual
-	    println("ccc")
 
 		time_NN = toq()
 
@@ -450,9 +449,9 @@ module GPSKinMPCPathFollowerFrenetLinLongNN
 		# is_opt_NN = (flag_XUfeas==1) && ( (primNN_obj[1] - dualNN_obj[1])/(mean([dualNN_obj[1], dualNN_obj[1]])) <= 0.1 )
 		is_opt_NN = (flag_XUfeas==1) && ( primNN_obj[1] - dualNN_obj[1] <= 100000 )
 
-		println("params: $(params')")
-		println("primNN_obj: $(primNN_obj)")
-		println("dualNN_obj: $(dualNN_obj)")
+		# println("params: $(params')")
+		# println("primNN_obj: $(primNN_obj)")
+		# println("dualNN_obj: $(dualNN_obj)")
 
 
 		# is_opt_NN = (flag_XUfeas==1)
