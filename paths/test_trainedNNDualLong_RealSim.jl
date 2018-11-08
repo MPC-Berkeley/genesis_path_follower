@@ -46,9 +46,6 @@ bout_DLong = dualNN_Data["b0"]
 ####################### debugging code ###################################
 # test_Data = matread("NN_test_CPGDay3_TotalDataLongTrafo2.mat")  	# contains test and sim data
 test_Data = matread("CPG_day1_sim1_trainingData.mat")  				# contains test and sim data
-
-
-
 test_inputParams = test_Data["inputParam_long"]
 
 

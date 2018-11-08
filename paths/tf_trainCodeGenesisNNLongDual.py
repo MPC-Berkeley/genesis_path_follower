@@ -15,7 +15,7 @@ def unnormalize(x, mean, std):
     return x * std + mean
 
 #%% We have imported all dependencies
-df = sio.loadmat('NN_test_CPGDay3_TotalDataLong_complete.mat',squeeze_me=True, struct_as_record=False) # read data set using pandas
+df = sio.loadmat('NN_test_CPGDay4_TotalTrainingDataLong.mat',squeeze_me=True, struct_as_record=False) # read data set using pandas
 # df = sio.loadmat('NN_test_trainingDataLatRFS.mat',squeeze_me=True, struct_as_record=False) # read data set using pandas
 x_data = df['inputParam_long']
 y_data = df['outputParamDual_long']
@@ -107,12 +107,12 @@ with tf.Session() as sess:
      inds = np.arange(x_train.shape[0])
      train_count = len(x_train)
 
-     N_EPOCHS = 30
-     BATCH_SIZE = 32
-     max_learning_rate = 0.01
-     min_learning_rate = 0.001
+     N_EPOCHS = 300
+     BATCH_SIZE = 64
+     max_learning_rate = 0.001
+     min_learning_rate = 0.0001
      #learning_rate = 0.0001
-     decay_speed = 1200000.0
+     decay_speed = 12000000.0
      lr_it = 0
      for i in range(0, N_EPOCHS):        
          
@@ -135,7 +135,7 @@ with tf.Session() as sess:
      vj['b1'] = sess.run(b_1)
      vj['b2'] = sess.run(b_2)
      vj['b0'] = sess.run(b_O)
-     sio.savemat('trained_weightsDualLongComplTrajData_CPGDay3.mat',vj)
+     sio.savemat('trained_weightsDualLongTotalData_CPGDay4.mat',vj)
 
 
 ################################ Plotting the Primal NN Train Quality
