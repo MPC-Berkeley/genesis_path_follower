@@ -15,7 +15,7 @@ def unnormalize(x, mean, std):
     return x * std + mean
 
 #%% We have imported all dependencies
-df = sio.loadmat('NN_test_CPGDay4_BadRand10kAndOneTrajTrainingDataLong.mat',squeeze_me=True, struct_as_record=False) # read data set using pandas
+df = sio.loadmat('NN_test_CPGDay4_BadRand10kAndTwoTrajTrainingDataLong.mat',squeeze_me=True, struct_as_record=False) # read data set using pandas
 # df = sio.loadmat('NN_test_trainingDataLatRFS.mat',squeeze_me=True, struct_as_record=False) # read data set using pandas
 x_data = df['inputParam_long']
 y_data = df['outputParamDual_long']
@@ -135,7 +135,7 @@ with tf.Session() as sess:
      vj['b1'] = sess.run(b_1)
      vj['b2'] = sess.run(b_2)
      vj['b0'] = sess.run(b_O)
-     sio.savemat('trained_weightsDuallLongBadRand10kandOneTrajData_CPGDay4.mat',vj)
+     sio.savemat('trained_weightsDuallLongBadRand10kandTwoTrajData_CPGDay4.mat',vj)
      # sio.savemat('trained_weightsDualLongTotalData_CPGDay4.mat',vj)
 
 
