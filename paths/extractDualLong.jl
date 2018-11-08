@@ -324,7 +324,6 @@ println("min Rel dual_gap:  $(minimum(Reldual_gap))")
 println("avg Rel dual_gap:  $(mean(Reldual_gap))")
 
 
-NN_test_CPGDay3_TotalDataLongTrafo2
 #save data
 matwrite("NN_test_CPGDay3_TotalDataLong_complete.mat", Dict(
 	"inputParam_long" => inputParam_long,
