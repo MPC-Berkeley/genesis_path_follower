@@ -329,14 +329,14 @@ module GPSKinMPCPathFollowerFrenetLinLongNN
    		# calls the NN with two Hidden Layers
 		z1 = max.(Wi_DLong*params + bi_DLong, 0)
 		z2 = max.(W1_DLong*z1 + b1_DLong, 0)
-		lambda_tilde_NN_orig = Wout_DLong*z2 + bout_DLong
-		lambda_tilde_NN_vec = max.(Wout_DLong*z2 + bout_DLong, 0)  	#Delta-Acceleration
+		lambda_tilde_NN_vec = Wout_DLong*z2 + bout_DLong
+		lambda_tilde_NN_vec = max.(lambda_tilde_NN_vec, 0)  	#Delta-Acceleration
 
 		dualObj_NN = -1/2 * lambda_tilde_NN_vec'*Qdual_tmp*lambda_tilde_NN_vec - (C_dual*(Q_dual\c_dual)+d_dual)'*lambda_tilde_NN_vec - 1/2*c_dual'*(Q_dual\c_dual) + const_dual
 
 		time_NN = toq()
 
-		return dualObj_NN, lambda_tilde_NN_orig, time_NN
+		return dualObj_NN, lambda_tilde_NN_vec, time_NN
 	end
 
 
@@ -433,6 +433,9 @@ module GPSKinMPCPathFollowerFrenetLinLongNN
 		# params = [s_0 ; v_0 ; u_0 ; s_ref[2:end] ; v_ref[2:end]] 	# stack to 19x1 matrix
 		params = [v_0 ; u_0 ; s_ref[2:end] ; v_ref[2:end]] 	# stack to 19x1 matrix
 
+		# println("params: $(params')")
+
+
 		# eval NN solution
 		primNN_obj, xu_tilde_NN_res, flag_XUfeas, a_opt_NN, a_pred_NN, s_pred_NN, v_pred_NN, dA_pred_NN, solvTime_primNN = eval_PrimalNN(params)
 		dualNN_obj, lambda_tilde_NN_vec, solvTime_dualNN = eval_DualNN(params)
@@ -443,11 +446,11 @@ module GPSKinMPCPathFollowerFrenetLinLongNN
 
 		# is_opt_NN = (flag_XUfeas==1) && ( primNN_obj[1] - dualNN_obj[1] <= 0.1)
 		# is_opt_NN = (flag_XUfeas==1) && ( (primNN_obj[1] - dualNN_obj[1])/(mean([primNN_obj[1], dualNN_obj[1]])) <= 0.1 )
-		# is_opt_NN = (flag_XUfeas==1) && ( (primNN_obj[1] - dualNN_obj[1])/(mean([primNN_obj[1], primNN_obj[1]])) <= 0.1 )
-		is_opt_NN = (flag_XUfeas==1) && ( (primNN_obj[1] - dualNN_obj[1])/(mean([dualNN_obj[1], dualNN_obj[1]])) <= 0.1 )
+		is_opt_NN = (flag_XUfeas==1) && ( (primNN_obj[1] - dualNN_obj[1])/(mean([primNN_obj[1], primNN_obj[1]])) <= 0.1 )
+		# is_opt_NN = (flag_XUfeas==1) && ( (primNN_obj[1] - dualNN_obj[1])/(mean([dualNN_obj[1], dualNN_obj[1]])) <= 0.1 )
 
 		# is_opt_NN = (flag_XUfeas==1)
-		# is_opt_NN = false 	# always use GUROBI
+		is_opt_NN = false 	# always use GUROBI
 
 
 		if is_opt_NN
