@@ -24,14 +24,13 @@ L_b 	= KinMPCParams.L_b				# from CoG to rear axle (according to Jongsang)
 
 ############## load all data ##############
 # longData = matread("NN_test_trainingData.mat")
-longData = matread("NN_test_CPGDay3_RandTrainingDataLong10k.mat")   				# bad
+longData = matread("NN_test_CPGDay3_TotalDataLongTrafo2.mat")   				# bad
 
 
 inputParam_long = longData["inputParam_long"]   # np.hstack((s_curr.T, v_curr.T ,a_prev.T, s_ref, v_ref ))
-# outputParamAcc_long = longData["outputParamAcc_long"]
 outputParamDacc_long = longData["outputParamDacc_long"]
-outputParamDual_long = longData["outputParamDual_long"]
-outputParamOptVal_long = longData["optVal_long"]
+# outputParamDual_long = longData["outputParamDual_long"]
+# outputParamOptVal_long = longData["optVal_long"]
 
 ###### Merge random data with extra data from vehicle path following    
 # inputParam_long =  [s_train_rand v_train_rand aprev_train_rand s_ref_train_rand v_ref_train_rand ]
@@ -144,12 +143,20 @@ relOptVal_res_all = zeros(num_DataPoints)
 dual_gap 	= zeros(num_DataPoints)
 Reldual_gap = zeros(num_DataPoints)
 
+## these are to generate data from path runs
+outputParamDual_long = zeros(num_DataPoints, N*(nf+ng))
+outputParamDacc_longNew = zeros(num_DataPoints,N*nu)
+optVal_long = zeros(num_DataPoints)
 
 beq_gurobi_updated = []
 
 
 ii=1
 while ii <= num_DataPoints
+
+	if mod(ii,100) == 0
+		println("step: $(ii)")
+	end
 	
 	# these are the stored solution
 	s_0 = 0 				# set to zero b/c normalized
@@ -159,7 +166,7 @@ while ii <= num_DataPoints
 	v_ref = v_ref_all[ii,:]
 
 	dAcc_stored = outputParamDacc_long[ii,:]	
-	obj_stored = outputParamOptVal_long[ii]
+	# obj_stored = outputParamOptVal_long[ii]
 	dual_stored = outputParamDual_long[ii,:]		
 
 	x_ref = zeros(N*nx,1)
@@ -227,55 +234,58 @@ while ii <= num_DataPoints
 	
 	################################################
 	######## Trafo 2 ########## 
- 	beq_gurobi_updated = repmat(g_tilde,N);
-	beq_gurobi_updated[1:nx_tilde] = beq_gurobi_updated[1:nx_tilde] + A_tilde*x_tilde_0 	# PARAMETER: depends on x0
-	u_tilde_ref = zeros(N*nu) 	# want to minimize deltaU = u_k - u_{k-1}
-	z_gurobi_ref = zeros(N*n_uxu) 	# reference point for z_gurobi ; PARAMETER!
-	for i = 1 : N
-		z_gurobi_ref[(i-1)*n_uxu+1 : (i-1)*n_uxu+nu] = u_tilde_ref[(i-1)*nu+1 : i*nu] 		# should be zero for this application
-		z_gurobi_ref[(i-1)*n_uxu+nu+1 : i*n_uxu] = x_tilde_ref[(i-1)*(nx+nu)+1 : i*(nu+nx)]
-	end 
-	f_gurobi_updated = -2*H_gurobi*z_gurobi_ref
+ # 	beq_gurobi_updated = repmat(g_tilde,N);
+	# beq_gurobi_updated[1:nx_tilde] = beq_gurobi_updated[1:nx_tilde] + A_tilde*x_tilde_0 	# PARAMETER: depends on x0
+	# u_tilde_ref = zeros(N*nu) 	# want to minimize deltaU = u_k - u_{k-1}
+	# z_gurobi_ref = zeros(N*n_uxu) 	# reference point for z_gurobi ; PARAMETER!
+	# for i = 1 : N
+	# 	z_gurobi_ref[(i-1)*n_uxu+1 : (i-1)*n_uxu+nu] = u_tilde_ref[(i-1)*nu+1 : i*nu] 		# should be zero for this application
+	# 	z_gurobi_ref[(i-1)*n_uxu+nu+1 : i*n_uxu] = x_tilde_ref[(i-1)*(nx+nu)+1 : i*(nu+nx)]
+	# end 
+	# f_gurobi_updated = -2*H_gurobi*z_gurobi_ref
 
 
-	mdl2 = Model(solver=GurobiSolver(Presolve=0, LogToConsole=0))
-	@variable(mdl2, z[1:N*n_uxu])  	# decision variable; contains everything
-	@objective(mdl2, Min, z'*H_gurobi*z + f_gurobi_updated'*z)
-	constr_eq = @constraint(mdl2, Aeq_gurobi*z .== beq_gurobi_updated)
-	constr_ub = @constraint(mdl2, z .<= squeeze(ub_gurobi,2))
-	constr_lb = @constraint(mdl2, -z .<= -squeeze(lb_gurobi,2))
+	# mdl2 = Model(solver=GurobiSolver(Presolve=0, LogToConsole=0))
+	# @variable(mdl2, z[1:N*n_uxu])  	# decision variable; contains everything
+	# @objective(mdl2, Min, z'*H_gurobi*z + f_gurobi_updated'*z)
+	# constr_eq = @constraint(mdl2, Aeq_gurobi*z .== beq_gurobi_updated)
+	# constr_ub = @constraint(mdl2, z .<= squeeze(ub_gurobi,2))
+	# constr_lb = @constraint(mdl2, -z .<= -squeeze(lb_gurobi,2))
 
-	tic()
-	status = solve(mdl2)
-	if !(status == :Optimal)
-		println(status)
-		println("PROBLEM IN Z-TRAFO")
- 		@goto label1 
- 	end
+	# tic()
+	# status = solve(mdl2)
+	# if !(status == :Optimal)
+	# 	println(status)
+	# 	println("PROBLEM IN Z-TRAFO")
+ # 		@goto label1 
+ # 	end
 
 
 	################################################
 	# extract data for comparison
 	# comparison of objective
-	optVal_res_all[ii] = norm(getobjectivevalue(mdl) - obj_stored)
-	relOptVal_res_all[ii] = optVal_res_all[ii] / obj_stored
+	# optVal_res_all[ii] = norm(getobjectivevalue(mdl) - obj_stored)
+	# relOptVal_res_all[ii] = optVal_res_all[ii] / obj_stored
 
 	# comparison of optimizers
 	dA_pred_opt = getvalue(u_tilde_vec)
+	outputParamDacc_longNew[ii,:] = getvalue(u_tilde_vec)
+
 	dA_res_all[ii] = norm(dA_pred_opt - dAcc_stored)
 
-	z_opt = getvalue(z)
-	dA_pred_opt2 = z_opt[1:n_uxu:end]
-	dA_res_all2[ii] = norm(dA_pred_opt2 - dAcc_stored)
+	# z_opt = getvalue(z)
+	# dA_pred_opt2 = z_opt[1:n_uxu:end]
+	# dA_res_all2[ii] = norm(dA_pred_opt2 - dAcc_stored)
 
 	L_test_opt = getvalue(L_test)
-	dual_res_all[ii] = norm(L_test_opt - dual_stored)
+	outputParamDual_long[ii,:] = L_test_opt
+	# dual_res_all[ii] = norm(L_test_opt - dual_stored)
 
 	# sanity checks
 
 	dual_gap[ii] = (getobjectivevalue(mdl) - getobjectivevalue(mdlD))
 	Reldual_gap[ii] = dual_gap[ii] / getobjectivevalue(mdl)
-
+	optVal_long[ii] = getobjectivevalue(mdl)
 
 	@label label1
  	ii = ii + 1 
@@ -283,21 +293,21 @@ while ii <= num_DataPoints
 end
 
 println("===========================================")
-println("max optVal residual: $(maximum(optVal_res_all))")
-println("min optVal residual: $(minimum(optVal_res_all))")
-println("avg optVal residual: $(mean(optVal_res_all))")
+# println("max optVal residual: $(maximum(optVal_res_all))")
+# println("min optVal residual: $(minimum(optVal_res_all))")
+# println("avg optVal residual: $(mean(optVal_res_all))")
 
 println(" ")
 
-println("max rel optVal residual: $(maximum(relOptVal_res_all))")
-println("min rel optVal residual: $(minimum(relOptVal_res_all))")
-println("avg rel optVal residual: $(mean(relOptVal_res_all))")
+# println("max rel optVal residual: $(maximum(relOptVal_res_all))")
+# println("min rel optVal residual: $(minimum(relOptVal_res_all))")
+# println("avg rel optVal residual: $(mean(relOptVal_res_all))")
 
 println(" ")
 
 println("max dA-residual:  $(maximum(dA_res_all))")
-println("max dA-residual2: $(maximum(dA_res_all2))")
-println("max dual-residual: $(maximum(dual_res_all))")
+# println("max dA-residual2: $(maximum(dA_res_all2))")
+# println("max dual-residual: $(maximum(dual_res_all))")
 
 
 println(" ")
@@ -314,15 +324,14 @@ println("min Rel dual_gap:  $(minimum(Reldual_gap))")
 println("avg Rel dual_gap:  $(mean(Reldual_gap))")
 
 
-
+NN_test_CPGDay3_TotalDataLongTrafo2
 #save data
-# matwrite("NN_test_trainingDataLong10k_RegDual1e-7.mat", Dict(
-# 	"inputParam_long" => inputParam_long,
-# 	"outputParamAcc_long" => outputParamAcc_long,
-# 	"outputParamDacc_long" => outputParamDacc_long,
-# 	"outputParamDual_long" => outputParamDual_long,
-# 	"optVal_long" => optVal_long
-# ))
+matwrite("NN_test_CPGDay3_TotalDataLong_complete.mat", Dict(
+	"inputParam_long" => inputParam_long,
+	"outputParamDacc_long" => outputParamDacc_longNew,
+	"outputParamDual_long" => outputParamDual_long,
+	"optVal_long" => optVal_long
+))
 # println("---- done extracting and saving dual for LONG control ----")
 
 
