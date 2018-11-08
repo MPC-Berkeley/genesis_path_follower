@@ -221,6 +221,11 @@ class MapMatch:
         self.seed = 1 #index of map to take a guess
         self.firstSearch = True #first time running search
         self.matchType = matchType
+        if matchType == "embed":
+            self.seed = 0
+            self.REQUIRED_DISTANCE = 10.
+            self.MAX_FORWARD_ITERS = 225
+            self.MAX_BACKWARD_ITERS = 75
 
 
 
@@ -233,30 +238,205 @@ class MapMatch:
             localState.updateMapMatchStates(e, dPsi, s)
             return
 
+        elif self.matchType == "embed":
+            e, s, dPsi = self.mapMatchEmbed(globalState.posE, globalState.posN, globalState.psi)
+            localState.updateMapMatchStates(e, dPsi, s)
+            return
+
         else:
             sys.exit("invalid mapMatch Type")
+
+    def mapMatchEmbed(self, posE, posN, psi):
+        e, s, K, psiDes, initStatus, numIters, smallestNorm = self.convertToLocalPathEmbed(posE, posN) 
+
+        if initStatus == False:
+            e = 0
+            dPsi = 0
+            s = 0
+
+        else:
+
+            #sanity check - s must be within map boundaries
+            if s < 0:
+                s = self.path.s[-1] + s #cycle to end of map
+            elif s > self.path.s[-1]:
+                s = s - self.path.s[-1]
+
+            dPsi = psi - psiDes - np.pi / 2 #needed offset to account for OxTS convention
+
+            while dPsi > np.pi:
+                dPsi = dPsi - 2 * np.pi
+
+            while dPsi < -np.pi:
+                dPsi = dPsi + 2 * np.pi
+
+
+        return e, s, dPsi
 
     def mapMatch(self, posE, posN, psi):
         pEN = [posE, posN]
         pSE = self.convertToLocalPath(pEN)
+        sEnd = self.path.s[-1] #last value of s
 
         #avoid small bug where we go to negative at start of path
         if pSE[0] < 0:
-            s = 0
+            s = sEnd + pSE[0]
+
+        #wrap around if s > end of map
+        elif pSE[0] > sEnd:
+            s = pSE[0] - sEnd
+
         else:
             s = pSE[0]
 
         e = pSE[1]
         psiDes = np.interp(s, np.squeeze(self.path.s), np.squeeze(self.path.roadPsi))
-        dPsi = psi - psiDes - np.pi/2 #need pi/2 correction to account for 0 being due east, not due north
-
-        while dPsi > np.pi:
-            dPsi = dPsi - 2*np.pi
-
-        while dPsi < -np.pi:
-            dPsi = dPsi + 2*np.pi
+        dPsi = psi - psiDes - np.pi/2 #needed correction to account for OxTS psi convention
 
         return e, s, dPsi
+
+    def convertToLocalPathEmbed(self, posE, posN):
+        #Very crude mapmatching -- works on small maps
+        path = self.path
+
+        m = len(self.path.s)
+        EN = np.array([posE, posN])
+
+        #go forward
+
+        lastPair = 9999999 #inf
+        forwardInd = self.seed
+        stillDecreasing = True
+        numForwardIterations = 0
+
+        while stillDecreasing and (numForwardIterations < self.MAX_FORWARD_ITERS):
+            numForwardIterations = numForwardIterations + 1
+
+            if forwardInd <= m - 2:
+                currentPair = np.linalg.norm(EN - np.array([path.posE[forwardInd], path.posN[forwardInd]])) + \
+                np.linalg.norm(EN - np.array([path.posE[forwardInd+1], path.posN[forwardInd+1]]))
+
+            else:
+            #allow searching at the beginning of the map if world is closed 
+                if path.isOpen:
+                    currentPair = 9999999
+                else:
+                    currentPair = np.linalg.norm(EN - np.array([path.posE[forwardInd], path.posN[forwardInd]])) + \
+                    np.linalg.norm(EN - np.array([path.posE[0], path.posN[0]]))  
+
+            stillDecreasing = currentPair < lastPair
+
+            if stillDecreasing:
+                lastPair = currentPair
+
+                #allow searching at beginning of map if world is closed
+                if (forwardInd == m-1) & (not path.isOpen):
+                    forwardInd = 0
+                else:
+                    forwardInd += 1
+
+
+        smallestF = lastPair
+
+        #go backwards
+        lastPair = 9999999 #inf
+        backwardInd = self.seed
+        stillDecreasing = True
+        numBackwardIterations = 0
+
+        while stillDecreasing & (numBackwardIterations < self.MAX_BACKWARD_ITERS):
+            numBackwardIterations += 1
+
+            if backwardInd >= 1:
+                currentPair = np.linalg.norm(EN - [path.posE[backwardInd],
+                path.posN[backwardInd]]) + np.linalg.norm(EN - [path.posE[backwardInd - 1],
+                path.posN[backwardInd - 1]])
+
+            else:
+                #allow searching at end of map if map is closed
+                if path.isOpen:
+                    currentPair = 9999999 #inf
+                else:
+                    currentPair = np.linalg.norm(EN - [path.posE[backwardInd],
+                    path.posN[backwardInd]]) + np.linalg.norm(EN - [path.posE[m-1],
+                    path.posN[m-1]])
+
+
+            stillDecreasing = currentPair < lastPair
+            if stillDecreasing:
+                lastPair = currentPair
+
+                #allow searching from end of map if map is clsoed
+                if (backwardInd ==0) & (not path.isOpen):
+                    backwardInd = m-1 
+                else:
+                    backwardInd = backwardInd - 1
+
+        smallestB = lastPair
+
+        if smallestB < smallestF:
+            if backwardInd > 0:
+                lowSind = backwardInd - 1
+
+            else:
+                lowSind = m - 2 
+                #This should be m-1, but paths are defined so that the last
+                #point overlaps with the first point. This will mess up the
+                #cross product below, so we just go back one index when we cross
+                #to the next lap
+
+            highSind = backwardInd
+
+        else:
+            lowSind = forwardInd
+            if forwardInd < m-1:
+                highSind = forwardInd + 1
+            else:
+                highSind = 1 
+                #This should be 0, but paths are defined so that the last point
+                #overlaps with the first point. This messes up the cross product, 
+                #so just go up one index when we cross to the next lap
+
+        #need to track this for initialization testing
+        smallestNorm = min(smallestB, smallestF)
+
+        a = np.linalg.norm(EN-np.array([path.posE[lowSind], path.posN[lowSind]]))
+        b = np.linalg.norm(EN-np.array([path.posE[highSind], path.posN[highSind]]))
+        c = np.linalg.norm(np.array([path.posE[lowSind], path.posN[lowSind]])- np.array([path.posE[highSind], path.posN[highSind]]))
+
+        deltaS = (a**2+c**2-b**2)/(2*c)
+        abs_e = np.sqrt(np.abs(a**2 - deltaS**2))
+
+        s = path.s[lowSind] + deltaS
+
+        headingVector = [ -np.sin(path.roadPsi[lowSind]), np.cos(path.roadPsi[lowSind]), 0]
+        pENaugmented = np.array([EN[0], EN[1], 0])    
+        pathVector = [path.posE[lowSind], path.posN[lowSind] , 0]
+
+        positionVector = pENaugmented -  pathVector
+        crss = np.cross(headingVector, positionVector)
+
+        e = np.sign(crss[2])*abs_e
+
+        #compute K and psi desired via interpolation
+        psiDes = path.roadPsi[lowSind] + (path.roadPsi[highSind] - path.roadPsi[lowSind])/(path.s[highSind] - path.s[lowSind])*deltaS
+        K =      path.curvature[lowSind]   + (path.curvature[highSind] - path.curvature[lowSind])/(path.s[highSind] - path.s[lowSind])*deltaS
+
+        if smallestNorm < self.REQUIRED_DISTANCE:
+            converged = True
+            self.seed = lowSind
+
+        else:
+            converged = False
+            self.seed = self.seed + self.MAX_BACKWARD_ITERS + self.MAX_FORWARD_ITERS
+
+            #wrap around if necessary
+            if self.seed > m-1:
+                self.seed = 0
+
+        iterations = numForwardIterations + numBackwardIterations
+
+        return e, s, K, psiDes, converged, iterations, smallestNorm
 
     def convertToLocalPath(self, pEN):
         #reshape to rank 0 arrays
