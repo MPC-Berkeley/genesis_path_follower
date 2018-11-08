@@ -133,7 +133,7 @@ Qdual_tmp = 0.5*(Qdual_tmp+Qdual_tmp') + 0e-5*eye(N*(nf+ng))
 ######################## ITERATE OVER parameters ################
 # build problem
 num_DataPoints = size(test_inputParams,1)
-num_DataPoints = 1e4
+num_DataPoints = 2e3
 
 ## Load Ranges of params 
 ds_lb = KinMPCParams.ds_lb		# from exp and sim data
@@ -303,13 +303,13 @@ while ii <= num_DataPoints
 	gap_primalDual[ii] = obj_primal-obj_dual
 
 	gap_primal[ii] = primObj_NN[1] - obj_primal
-	relGap_primal[ii] = gap_primal[ii] / obj_primal
+	relGap_primal[ii] = (primObj_NN[1] - obj_primal) / obj_primal
 
 	gap_dual[ii] = obj_primal - dualObj_NN[1]
-	relGap_dual[ii] = gap_dual[ii] / obj_primal
+	relGap_dual[ii] = (obj_primal - dualObj_NN[1]) / obj_primal
 
 	gap_primalNNdualNN[ii] = primObj_NN[1] - dualObj_NN[1]
-	relGap_primalNNdualNN[ii] = gap_primalNNdualNN[ii] / obj_primal
+	relGap_primalNNdualNN[ii] = (primObj_NN[1] - dualObj_NN[1]) / obj_primal
 
 
  	ii = ii + 1 
