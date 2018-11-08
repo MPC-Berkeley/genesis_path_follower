@@ -133,7 +133,7 @@ Qdual_tmp = 0.5*(Qdual_tmp+Qdual_tmp') + 0e-5*eye(N*(nf+ng))
 ######################## ITERATE OVER parameters ################
 # build problem
 num_DataPoints = size(test_inputParams,1)
-# num_DataPoints = 1e4
+num_DataPoints = 1e3
 
 ## Load Ranges of params 
 ds_lb = KinMPCParams.ds_lb		# from exp and sim data
@@ -165,6 +165,11 @@ u_0 = []
 s_ref = []
 v_ref = []
 
+x_tilde_NN_vec = []
+x_tilde_ref = []
+u_tilde_NN_vec = []
+
+
 ii = 1
 while ii <= num_DataPoints
 	
@@ -180,7 +185,7 @@ while ii <= num_DataPoints
 	u_0 = params_old[3]
 	s_ref_old = params_old[4:4+N-1]
 	v_ref 	= params_old[4+N:end]
-	s_ref 	= s_ref_old - s_0
+	s_ref 	= s_ref_old - s_0_old
 
  	# stack together w/o s0 and normalized w.r.t. s0
 	params = [v_0 u_0 s_ref' v_ref']'
@@ -298,6 +303,8 @@ while ii <= num_DataPoints
 
 	### collect stat data
 
+
+
 	dAcc_res[ii] = norm(U_test_opt - u_tilde_NN_vec)
 	lambda_res[ii] = norm(L_test_opt - lambda_tilde_NN_vec)
 	gap_primalDual[ii] = obj_primal-obj_dual
@@ -310,6 +317,13 @@ while ii <= num_DataPoints
 
 	gap_primalNNdualNN[ii] = primObj_NN[1] - dualObj_NN[1]
 	relGap_primalNNdualNN[ii] = gap_primalNNdualNN[ii] / obj_primal
+
+	println("prim Obj Gurobi: $(obj_primal)")
+	println("prim Obj NN: $(primObj_NN[1])")
+	println("dual Obj NN: $(dualObj_NN[1])")
+	println("relGap primal: $(relGap_primal[ii])")
+	println("relGap dual: $(relGap_dual[ii])")
+
 
 
  	ii = ii + 1 
