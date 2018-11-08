@@ -23,8 +23,8 @@ L_a 	= KinMPCParams.L_a				# from CoG to front axle (according to Jongsang)
 L_b 	= KinMPCParams.L_b				# from CoG to rear axle (according to Jongsang)
 
 ############## load all NN Matrices ##############
-primalNN_Data 	= matread("trained_weightsPrimalLong1k_CPGDay3.mat")
-dualNN_Data 	= matread("trained_weightsDualLong1k_CPGDay3.mat")
+primalNN_Data 	= matread("trained_weightsPrimalLongComplTrajData_CPGDay3.mat")
+dualNN_Data 	= matread("trained_weightsDualLongComplTrajData_CPGDay3.mat")
 
 # read out NN primal/Dual weights
 Wi_PLong = primalNN_Data["W1"]
@@ -42,9 +42,11 @@ Wout_DLong = dualNN_Data["W0"]
 bout_DLong = dualNN_Data["b0"]
 
 ####################### debugging code ###################################
-test_Data = matread("NN_test_CPGDay3_RandTrainingDataLong1k.mat")
+test_Data = matread("NN_test_CPGDay3_TotalDataLong_complete.mat")
 test_inputParams = test_Data["inputParam_long"]
 test_optVal = test_Data["optVal_long"]
+test_Dacc = test_Data["outputParamDacc_long"]
+test_dual = test_Data["outputParamDual_long"]
 # test_inputParams = test_inputParams[1:1000,:]
 
 ############################################################################
@@ -116,7 +118,7 @@ fu_tilde_vec = repmat(fu_tilde,N)
 # F_tilde = [eye(nx+nu) ; -eye(nx+nu)]
 # f_tilde = [x_tilde_ub ; -x_tilde_lb]
 # nf = length(f_tilde)
-nf =0
+nf = 0
 
 # Concatenate appended state (tilde) constraints
 # F_tilde_vec = kron(eye(N), F_tilde)
@@ -130,6 +132,7 @@ Qdual_tmp = 0.5*(Qdual_tmp+Qdual_tmp') + 0e-5*eye(N*(nf+ng))
 ######################## ITERATE OVER parameters ################
 # build problem
 num_DataPoints = size(test_inputParams,1)
+# num_DataPoints = 1e3
 
 gap_primal = zeros(num_DataPoints)
 relGap_primal = zeros(num_DataPoints)
@@ -137,6 +140,9 @@ gap_dual = zeros(num_DataPoints)
 relGap_dual = zeros(num_DataPoints)
 gap_primalNNdualNN = zeros(num_DataPoints)
 relGap_primalNNdualNN = zeros(num_DataPoints)
+
+dAcc_res = zeros(num_DataPoints)
+lambda_res = zeros(num_DataPoints)
 
 numbSkipped = 0
 flag_XUfeas = 0
@@ -276,6 +282,9 @@ while ii <= num_DataPoints
  # 	end
 
 
+	dAcc_res[ii] = norm(test_Dacc[ii,:] - u_tilde_NN_vec)
+	lambda_res[ii] = norm(test_dual[ii,:] - lambda_tilde_NN_vec)
+	
 
 	gap_primal[ii] = primObj_NN[1] - optVal_saved
 	relGap_primal[ii] = gap_primal[ii] / optVal_saved
@@ -295,6 +304,20 @@ end
 println("$(flag_XUfeas)")
 
 println("===========================================")
+
+
+println("max dACC res:  $(maximum(dAcc_res))")
+println("min dACC res:  $(minimum(dAcc_res))")
+println("avg dACC res:  $(mean(dAcc_res))")
+
+println(" ")
+
+println("max lambda res:  $(maximum(lambda_res))")
+println("min lambda res:  $(minimum(lambda_res))")
+println("avg lambda res:  $(mean(lambda_res))")
+
+println(" ")
+
 
 println("max primal NN gap:  $(maximum(gap_primal))")
 println("min primal NN gap:  $(minimum(gap_primal))")
