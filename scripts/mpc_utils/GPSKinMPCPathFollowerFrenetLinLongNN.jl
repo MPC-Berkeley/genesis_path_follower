@@ -39,11 +39,11 @@ module GPSKinMPCPathFollowerFrenetLinLongNN
 	println(pwd())
 
 	if KinMPCParams.platform == "nuvo"
-		primalNN_Data 	= matread("../GenesisAutoware/ros/src/genesis_path_follower/paths/trained_weightsPrimalLongRandData_CPGDay4.mat")
-		dualNN_Data 	= matread("../GenesisAutoware/ros/src/genesis_path_follower/paths/trained_weightsDualLongRandData_CPGDay4.mat")
+		primalNN_Data 	= matread("../GenesisAutoware/ros/src/genesis_path_follower/paths/goodNNs/trained_weightsPrimalLongBadV10k_CPGDay3.mat")
+		dualNN_Data 	= matread("../GenesisAutoware/ros/src/genesis_path_follower/paths/goodNNs/trained_weightsDualLongBadV10k_CPGDay3.mat")
 	elseif KinMPCParams.platform == "abby"
-		primalNN_Data 	= matread("../catkin_ws/src/genesis_path_follower/paths/trained_weightsPrimalLongRandData_CPGDay4.mat")
-		dualNN_Data 	= matread("../catkin_ws/src/genesis_path_follower/paths/trained_weightsDualLongRandData_CPGDay4.mat")
+		primalNN_Data 	= matread("../catkin_ws/src/genesis_path_follower/paths/goodNNs/trained_weightsPrimalLongBadV10k_CPGDay3.mat")
+		dualNN_Data 	= matread("../catkin_ws/src/genesis_path_follower/paths/goodNNs/trained_weightsDualLongBadV10k_CPGDay3.mat")
 	else
 		println("Lat NN Data not found!!!")
 	end
@@ -304,7 +304,7 @@ module GPSKinMPCPathFollowerFrenetLinLongNN
     Qdual_tmp = C_dual*(Q_dual\(C_dual'))
     Qdual_tmp = 0.5*(Qdual_tmp+Qdual_tmp') + 0e-5*eye(N*(nf+ng))
 
-   
+   NNgapThreshold_long = KinMPCParams.NNgapThreshold_long
 ##################################################################################
 ##################################################################################
 ##################################################################################
@@ -365,7 +365,7 @@ module GPSKinMPCPathFollowerFrenetLinLongNN
 
 		## verify feasibility
 		# xu_tilde_NN_res = [ maximum(F_tilde_vec*x_tilde_NN_vec - f_tilde_vec) ; maximum(Fu_tilde_vec*u_tilde_NN_vec - fu_tilde_vec) ]  # should be <= 0
-		xu_tilde_NN_res = maximum(Fu_tilde_vec*u_tilde_NN_vec - fu_tilde_vec)
+		xu_tilde_NN_res = [maximum(Fu_tilde_vec*u_tilde_NN_vec - fu_tilde_vec)]
 
 		flag_XUfeas = 0
 		if maximum(xu_tilde_NN_res) <= 1e-5  	# infeasible if bigger than zero/threshold
@@ -447,7 +447,7 @@ module GPSKinMPCPathFollowerFrenetLinLongNN
 		# is_opt_NN = (flag_XUfeas==1) && ( (primNN_obj[1] - dualNN_obj[1])/(mean([primNN_obj[1], dualNN_obj[1]])) <= 0.1 )
 		# is_opt_NN = (flag_XUfeas==1) && ( (primNN_obj[1] - dualNN_obj[1])/(mean([primNN_obj[1], primNN_obj[1]])) <= 0.1 )
 		# is_opt_NN = (flag_XUfeas==1) && ( (primNN_obj[1] - dualNN_obj[1])/(mean([dualNN_obj[1], dualNN_obj[1]])) <= 0.1 )
-		is_opt_NN = (flag_XUfeas==1) && ( primNN_obj[1] - dualNN_obj[1] <= 100000 )
+		is_opt_NN = (flag_XUfeas==1) && ( primNN_obj[1] - dualNN_obj[1] <= NNgapThreshold_long )
 
 		# println("params: $(params')")
 		# println("primNN_obj: $(primNN_obj)")
@@ -459,7 +459,7 @@ module GPSKinMPCPathFollowerFrenetLinLongNN
 
 
 		if is_opt_NN
-			println("****** LONG FEAS & OPT: $(is_opt_NN) ******")
+			println("****** LONG FEAS & OPT: $(is_opt_NN) / threshold: $(NNgapThreshold_long) ******")
 			solMode = "NN"
 			# needs a bit of work
 			# a_opt_NN, a_pred_NN, s_pred_NN, v_pred_NN, dA_pred_NN, solvTime_NN, is_opt_NN = solve_gurobi(s_0, v_0, u_0, s_ref, v_ref)
@@ -467,9 +467,9 @@ module GPSKinMPCPathFollowerFrenetLinLongNN
 
 		else  	## NN solution not good
 			solMode = "opt"
-			primNN_obj = Inf
-			dualNN_obj = -Inf
-			xu_tilde_NN_res = []
+			# primNN_obj = Inf
+			# dualNN_obj = -Inf
+			# xu_tilde_NN_res = []
 			a_opt_gurobi, a_pred_gurobi, s_pred_gurobi, v_pred_gurobi, dA_pred_gurobi, solv_time_long_gurobi1, is_opt_long = solve_gurobi(s_0, v_0, u_0, s_ref, v_ref)
 			return a_opt_gurobi, a_pred_gurobi, s_pred_gurobi+s_0_true, v_pred_gurobi, dA_pred_gurobi, solv_time_long_gurobi1, is_opt_long, solMode, primNN_obj, dualNN_obj,xu_tilde_NN_res
 		end 

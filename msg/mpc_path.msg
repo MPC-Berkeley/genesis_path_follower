@@ -31,3 +31,15 @@ float64[] df
 float64[] acc
 float64[] dacc
 float64[] ddf
+float64 NNgapThreshold_long
+float64 primNNobj_long
+float64 dualNNobj_long
+string solMode_long
+float64[] xuNNres_long
+float64 optVal_long
+float64 NNgapThreshold_lat
+float64 primNNobj_lat
+float64 dualNNobj_lat
+string solMode_lat
+float64[] xuNNres_lat
+float64 optVal_lat

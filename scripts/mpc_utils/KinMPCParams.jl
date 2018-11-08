@@ -52,6 +52,9 @@ module KinMPCParams
 	df_max 		= largeNumber	# 0.5					# steering
 	ddf_max 	= 0.5					# change in steering
 
+	NNgapThreshold_long 	= 1000.0			#  float64
+	NNgapThreshold_lat		= 5.0			#  float64
+
     ## The below are all for random data generation for NN train 
 	ey_lb       = -1					# -1.5
 	ey_ub		=  1					# 1	
