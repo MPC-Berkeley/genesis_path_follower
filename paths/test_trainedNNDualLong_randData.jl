@@ -123,7 +123,7 @@ Qdual_tmp = 0.5*(Qdual_tmp+Qdual_tmp') + 0e-5*eye(N*(nf+ng))
 
 ######################## ITERATE OVER parameters ################
 # build problem
-num_DataPoints = 2e3
+num_DataPoints = 1e3
 
 ## Load Ranges of params 
 ds_lb = KinMPCParams.ds_lb		# from exp and sim data
@@ -301,6 +301,12 @@ while ii <= num_DataPoints
 	gap_primalNNdualNN[ii] = primObj_NN[1] - dualObj_NN[1]
 	relGap_primalNNdualNN[ii] = gap_primalNNdualNN[ii] / obj_primal
 
+
+	println("prim Obj Gurobi: $(obj_primal)")
+	println("prim Obj NN: $(primObj_NN[1])")
+	println("dual Obj NN: $(dualObj_NN[1])")
+	println("relGap primal: $(relGap_primal[ii])")
+	println("relGap dual: $(relGap_dual[ii])")
 
  	ii = ii + 1 
 

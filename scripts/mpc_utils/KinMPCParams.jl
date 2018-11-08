@@ -68,6 +68,8 @@ module KinMPCParams
 	# LONG random data generation	
 	aprev_lb 	= -2
 	aprev_ub 	= 2
-	ds_lb 		= 0.2			# from exp and sim data
+	ds_lb 		= 1			# from exp and sim data
 	ds_ub		= 4				# from exp and sim data
+	dv_lb 		= -0.5
+	dv_ub  		= 0.4
 end
