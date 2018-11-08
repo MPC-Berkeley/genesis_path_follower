@@ -1,5 +1,7 @@
 # code to test and extract dual multipliers from primal solution
 # GXZ + MB
+# Gets raw data. Extracts Duals and resaves it. 
+# That postprocessed data is used for training 
 
 using MAT
 using Gurobi
@@ -28,7 +30,7 @@ longData = matread("NN_test_CPGDay3_TotalDataLongTrafo2.mat")   				# bad
 
 
 inputParam_long = longData["inputParam_long"]   # np.hstack((s_curr.T, v_curr.T ,a_prev.T, s_ref, v_ref ))
-outputParamDacc_long = longData["outputParamDacc_long"]
+# outputParamDacc_long = longData["outputParamDacc_long"]
 # outputParamDual_long = longData["outputParamDual_long"]
 # outputParamOptVal_long = longData["optVal_long"]
 
@@ -165,7 +167,7 @@ while ii <= num_DataPoints
 	s_ref = s_ref_all[ii,:]
 	v_ref = v_ref_all[ii,:]
 
-	dAcc_stored = outputParamDacc_long[ii,:]	
+	# dAcc_stored = outputParamDacc_long[ii,:]	
 	# obj_stored = outputParamOptVal_long[ii]
 	dual_stored = outputParamDual_long[ii,:]		
 
@@ -271,7 +273,7 @@ while ii <= num_DataPoints
 	dA_pred_opt = getvalue(u_tilde_vec)
 	outputParamDacc_longNew[ii,:] = getvalue(u_tilde_vec)
 
-	dA_res_all[ii] = norm(dA_pred_opt - dAcc_stored)
+	# dA_res_all[ii] = norm(dA_pred_opt - dAcc_stored)
 
 	# z_opt = getvalue(z)
 	# dA_pred_opt2 = z_opt[1:n_uxu:end]
@@ -305,7 +307,7 @@ println(" ")
 
 println(" ")
 
-println("max dA-residual:  $(maximum(dA_res_all))")
+# println("max dA-residual:  $(maximum(dA_res_all))")
 # println("max dA-residual2: $(maximum(dA_res_all2))")
 # println("max dual-residual: $(maximum(dual_res_all))")
 
@@ -325,7 +327,7 @@ println("avg Rel dual_gap:  $(mean(Reldual_gap))")
 
 
 #save data
-matwrite("NN_test_CPGDay3_TotalDataLong_complete.mat", Dict(
+matwrite("NN_test_CPGDay3_TotalDataLongTrafo2.mat", Dict(
 	"inputParam_long" => inputParam_long,
 	"outputParamDacc_long" => outputParamDacc_longNew,
 	"outputParamDual_long" => outputParamDual_long,
