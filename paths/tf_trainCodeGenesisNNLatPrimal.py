@@ -8,7 +8,6 @@ import tensorflow as tf
 import scipy.io as sio
 from sklearn.utils import shuffle
 from sklearn.preprocessing import normalize
-import IPython
 from sklearn.preprocessing import StandardScaler
 from sklearn import preprocessing
 import math
@@ -20,7 +19,7 @@ def unnormalize(x, mean, std):
     return x * std + mean
 
 #%% We have imported all dependencies
-df = sio.loadmat('NN_test_CPGDay2BacktoDay1Tune_RandDataLat30kTrafo2.mat',squeeze_me=True, struct_as_record=False) # read data set using pandas
+df = sio.loadmat('NN_test_CPGDay1_RandDataLat10kTrafo2uncConstr.mat',squeeze_me=True, struct_as_record=False) # read data set using pandas
 # df = sio.loadmat('NN_test_trainingDataLatRFS.mat',squeeze_me=True, struct_as_record=False) # read data set using pandas
 x_data = df['inputParam_lat']
 y_data = df['outputParamDdf_lat']
@@ -139,7 +138,7 @@ with tf.Session() as sess:
      vj['b1'] = sess.run(b_1)
      vj['b2'] = sess.run(b_2)
      vj['b0'] = sess.run(b_O)
-     sio.savemat('trained_weightsPrimalLatBadRand30kData_CPGDay5.mat',vj)
+     sio.savemat('trained_weightsPrimalLatBadRand10kData_CPGDay5.mat',vj)
 
 
 

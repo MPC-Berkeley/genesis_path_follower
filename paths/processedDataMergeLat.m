@@ -7,7 +7,7 @@
 clear all; close all; clc;
 
 %%
-load('NN_test_CPGDay4_SmoothVCRandTrainingDataLat10k.mat')
+load('NN_test_CPGDay1_RandDataLat10kTrafo2uncConstr.mat')
 tmpinlat1 = inputParam_lat;
 tmpoutDdf1 = outputParamDdf_lat;
 tmpoutDual1 = outputParamDual_lat;

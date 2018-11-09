@@ -2,7 +2,7 @@
 clear all; close all; clc;
 
 %% Load all the files to merge from 
-load('CPG_day1_test1_trainingData.mat');
+load('NN_test_CPGDay1_RandDataLat10kTrafo2uncConstr.mat');
 tmpinLat1 = inputParam_lat;
 tmpoutDf1 = outputParamDf_lat;
 tmpoutDdf1 = outputParamDdf_lat;
