@@ -221,6 +221,10 @@ function pub_loop(acc_pub_obj, steer_pub_obj, mpc_path_pub_obj)
 	relDualGap = zeros(control_rate/10*6000)
 	dualObj = zeros(control_rate/10*6000)
 
+	absDualGap_lat = zeros(control_rate/10*6000)
+	absDualGapMod_lat = zeros(control_rate/10*6000)
+	relDualGap_lat = zeros(control_rate/10*6000)
+	dualObj_lat = zeros(control_rate/10*6000)
 
 	num_NN_long = 0		# counter for how often NN was called
 	num_NN_lat = 0
@@ -292,11 +296,6 @@ function pub_loop(acc_pub_obj, steer_pub_obj, mpc_path_pub_obj)
 			dualObj[it_num+1] = dualNN_obj[1]
 			absDualGap[it_num+1] = primNN_obj[1] - dualNN_obj[1]
 			absDualGapMod[it_num+1] = primNN_obj[1] - max(dualNN_obj[1],0)
-			# relDualGap[it_num+1]  = (primNN_obj[1] - dualNN_obj[1]) / mean([primNN_obj[1], dualNN_obj[1]])
-
-
-
-
 
 			if (is_opt_long==1) && (solMode_long=="NN")
 				num_NN_long = num_NN_long + 1
@@ -307,14 +306,17 @@ function pub_loop(acc_pub_obj, steer_pub_obj, mpc_path_pub_obj)
 			df_opt_gurobi, df_pred_gurobi, ey_pred_gurobi, epsi_pred_gurobi, ddf_pred_gurobi, solv_time_lat_gurobi1, is_opt_lat, solMode_lat, primNN_Lat_obj, dualNN_lat_obj, xu_tilde_lat_NN_res = kmpcLinLatNN.get_NNsolution(ey_curr, epsi_curr, df_opt, s_pred_gurobi, v_pred_gurobi, K_coeff)
 			# df_opt_gurobi, df_pred_gurobi, ddf_pred_gurobi, ey_pred_gurobi, epsi_pred_gurobi, solv_time_lat_gurobi1, is_opt_lat = kmpcLinLatNN.solve_gurobi(ey_curr, epsi_curr, df_opt, s_pred_gurobi, v_pred_gurobi, K_coeff)
 			
+			dualObj_lat[it_num+1] = dualNN_lat_obj[1]
+			absDualGap_lat[it_num+1] = primNN_Lat_obj[1] - dualNN_lat_obj[1]
+			absDualGapMod_lat[it_num+1] = primNN_Lat_obj[1] - max(dualNN_lat_obj[1],0)
+			# relDualGap_lat[it_num+1]  = (primNN_obj[1] - dualNN_obj[1]) / mean([primNN_obj[1], dualNN_obj[1]])
+
 			if (is_opt_lat==1) && (solMode_lat=="NN")
 				num_NN_lat = num_NN_lat + 1
 			end
 
 			# num_NN_lat
 			solv_time_lat_gurobi1_all[it_num+1] = solv_time_lat_gurobi1
-
-
 
 			rostm = get_rostime()
 			tm_secs = rostm.secs + 1e-9 * rostm.nsecs
@@ -434,8 +436,8 @@ function pub_loop(acc_pub_obj, steer_pub_obj, mpc_path_pub_obj)
 				println("--- percentage of NN long called: $(num_NN_long/it_num*100) %---")
 				println("--- percentage of NN lat called: $(num_NN_lat/it_num*100) %---")
 				
-				println(" ")
 
+				println(" ==== LONG NN STATS ===")
 				println("--- percentage dual_obj < 0: $( sum(dualObj[1:it_num-1].<0)/(it_num-1)*100 ) %")
 
 				println(" ")
@@ -482,6 +484,58 @@ function pub_loop(acc_pub_obj, steer_pub_obj, mpc_path_pub_obj)
 				println("--- max rel primal-dual NN gap: $(maximum(relDualGap[1:it_num-1]))")
 				println("--- avg rel primal-dual NN gap: $(mean(relDualGap[1:it_num-1]))")
 				println("--- min rel primal-dual NN gap: $(minimum(relDualGap[1:it_num-1]))")
+
+
+
+
+				println(" ==== LAT NN STATS ===")
+				println("--- percentage dual_obj < 0: $( sum(dualObj_lat[1:it_num-1].<0)/(it_num-1)*100 ) %")
+
+				println(" ")
+				
+				println("--- max abs primal-dual NN gap: $(maximum(absDualGap_lat[1:it_num-1]))")
+				println("avg abs primal-dual NN gap: $(mean(absDualGap_lat[1:it_num-1]))")
+				println("median abs primal-dual NN gap: $(median(absDualGap_lat[1:it_num-1]))")
+				
+				println(" ")
+				
+				println("--- max abs mod primal-dual NN gap: $(maximum(absDualGapMod_lat[1:it_num-1]))")
+				println("avg abs mod primal-dual NN gap: $(mean(absDualGapMod_lat[1:it_num-1]))")
+				println("median abs mod primal-dual NN gap: $(median(absDualGapMod_lat[1:it_num-1]))")
+
+				println(" ")
+				
+				println("--- frac of abs gap below 1: $( sum(absDualGap_lat[1:it_num-1].<=1)/(it_num-1)*100 ) %")
+				println("frac of abs gap below 2: $( sum(absDualGap_lat[1:it_num-1].<=2)/(it_num-1)*100 ) %")
+				println("frac of abs gap below 3: $( sum(absDualGap_lat[1:it_num-1].<=3)/(it_num-1)*100 ) %")
+				println("frac of abs gap below 4: $( sum(absDualGap_lat[1:it_num-1].<=4)/(it_num-1)*100 ) %")
+				println("frac of abs gap below 5: $( sum(absDualGap_lat[1:it_num-1].<=5)/(it_num-1)*100 ) %")
+				println("frac of abs gap below 6: $( sum(absDualGap_lat[1:it_num-1].<=6)/(it_num-1)*100 ) %")
+				println("frac of abs gap below 7: $( sum(absDualGap_lat[1:it_num-1].<=7)/(it_num-1)*100 ) %")
+				println("frac of abs gap below 8: $( sum(absDualGap_lat[1:it_num-1].<=8)/(it_num-1)*100 ) %")
+				println("frac of abs gap below 9: $( sum(absDualGap_lat[1:it_num-1].<=9)/(it_num-1)*100 ) %")
+				println("frac of abs gap below 10: $( sum(absDualGap_lat[1:it_num-1].<=10)/(it_num-1)*100 ) %")
+
+				println(" ")
+				
+				println("--- frac of abs mod gap below 1: $( sum(absDualGapMod_lat[1:it_num-1].<=1)/(it_num-1)*100 ) %")
+				println("frac of abs mod gap below 2: $( sum(absDualGapMod_lat[1:it_num-1].<=2)/(it_num-1)*100 ) %")
+				println("frac of abs mod gap below 3: $( sum(absDualGapMod_lat[1:it_num-1].<=3)/(it_num-1)*100 ) %")
+				println("frac of abs mod gap below 4: $( sum(absDualGapMod_lat[1:it_num-1].<=4)/(it_num-1)*100 ) %")
+				println("frac of abs mod gap below 5: $( sum(absDualGapMod_lat[1:it_num-1].<=5)/(it_num-1)*100 ) %")
+				println("frac of abs mod gap below 6: $( sum(absDualGapMod_lat[1:it_num-1].<=6)/(it_num-1)*100 ) %")
+				println("frac of abs mod gap below 7: $( sum(absDualGapMod_lat[1:it_num-1].<=7)/(it_num-1)*100 ) %")
+				println("frac of abs mod gap below 8: $( sum(absDualGapMod_lat[1:it_num-1].<=8)/(it_num-1)*100 ) %")
+				println("frac of abs mod gap below 9: $( sum(absDualGapMod_lat[1:it_num-1].<=9)/(it_num-1)*100 ) %")
+				println("frac of abs mod gap below 10: $( sum(absDualGapMod_lat[1:it_num-1].<=10)/(it_num-1)*100 ) %")
+
+
+				println(" ")
+
+				println("--- max rel primal-dual NN gap: $(maximum(relDualGap_lat[1:it_num-1]))")
+				println("--- avg rel primal-dual NN gap: $(mean(relDualGap_lat[1:it_num-1]))")
+				println("--- min rel primal-dual NN gap: $(minimum(relDualGap_lat[1:it_num-1]))")
+
 
 			end
 			

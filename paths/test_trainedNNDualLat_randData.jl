@@ -48,7 +48,7 @@ bout_DLat = dualNN_Data["b0"]
 test_Data = matread("NN_test_CPGDay4_2sim2testTrajTestDataLat.mat")
 test_inputParams = test_Data["inputParam_lat"]
 test_optVal = test_Data["optVal_lat"]
-test_Ddf = test_Data["outputParamDdf_lat"]
+test_outputParamDdf = test_Data["outputParamDdf_lat"]
 test_dual = test_Data["outputParamDual_lat"]
 # test_inputParams = test_inputParams[50:1550,:]
 
@@ -102,25 +102,31 @@ nf = 0
 ######################## ITERATE OVER parameters ################
 # build problem
 # num_DataPoints = 1000						# Number of test data points
-num_DataPoints = size(test_inputParams,1)
 
-gap_primal 				= zeros(num_DataPoints)
-relGap_primal 			= zeros(num_DataPoints)
-gap_dual 				= zeros(num_DataPoints)
-relGap_dual 			= zeros(num_DataPoints)
-gap_primalNNdualNN 		= zeros(num_DataPoints)
-relGap_primalNNdualNN 	= zeros(num_DataPoints)
+solv_time_all = zeros(num_DataPoints)
+dual_gap = zeros(num_DataPoints)
+Reldual_gap = zeros(num_DataPoints)
+PrimandOnline_gap = zeros(num_DataPoints)
+RelPrimandOnline_gap = zeros(num_DataPoints)
+optVal_lat = zeros(num_DataPoints)
+DualOnline_gap = zeros(num_DataPoints)
+RelDualOnline_gap = zeros(num_DataPoints)
 
-ddf_res 	= zeros(num_DataPoints)
-lambda_res 	= zeros(num_DataPoints)
 
-numbSkipped = 0
-flag_XUfeas = 0
+#### vectors for debugging ####
+dualDiff = zeros(num_DataPoints)
+primalDiff = zeros(num_DataPoints)
+primalDiff0 = zeros(num_DataPoints)
+primalDiffOrigSol = zeros(num_DataPoints)
 
-x_tilde_ref = x_tilde_ref_init
+
+dual_Fx = []
+dual_Fu = []
+L_test_opt = []
 
 iii = 1
 
+x_tilde_ref = x_tilde_ref_init
 
 while iii <= num_DataPoints
 	
@@ -128,10 +134,25 @@ while iii <= num_DataPoints
 		println("iteration: $(iii)")
 	end
 
+	# Save only feasible points. 
+	# extract appropriate parameters	
+ 	ey_0 = ey_lb + (ey_ub-ey_lb)*rand(1)				
+ 	epsi_0 = epsi_lb + (epsi_ub-epsi_lb)*rand(1) 
+ 	u_0 = dfprev_lb + (dfprev_ub-dfprev_lb)*rand(1) 		
+	v_pred = v_lb + (v_ub-v_lb)*rand(1,N)						#  Along horizon 
+	c_pred = curv_lb + (curv_ub-curv_lb)*rand(1,N)				#  Along horizon 
+	
+	### param merge 
+	vc_pred = v_pred.*c_pred
+	############################
+
+ 	# stack everything together
+	params = [ey_0  epsi_0  u_0  v_pred  vc_pred]' 				# stack to 19x1 matrix
+
+	# load stuff
 	params = test_inputParams[iii,:]
 	v_pred = params[4:4+N-1]
-	vc_pred = params[4+N:end]
-	optVal_saved = test_optVal[iii]
+	vc_pred = params[4+N:end]									# param merge 
 
 	
 	# system dynamics A, B, g
@@ -178,6 +199,8 @@ while iii <= num_DataPoints
 	end
 
 	nw=nx+nu
+
+
 	# new approach: CORRECT
 	E_tilde_vec2 = zeros(N*(nx+nu), nw*N)
 	E_tilde_vec2[1:(nx+nu) , 1:nw] = eye(nw) 	# for x1
@@ -199,13 +222,22 @@ while iii <= num_DataPoints
 	################## BEGIN extract Primal NN solution ##################
 	tic()
 	# calls the NN with two Hidden Layers
-	z1 = max.(Wi_PLat*params + bi_PLat, 0)
+	z0 = params	
+	# z0 = (params - xinoff).*xingain + xinymin
+	z1 = max.(Wi_PLat*z0 + bi_PLat, 0)
 	z2 = max.(W1_PLat*z1 + b1_PLat, 0)
-	u_tilde_NN_vec = Wout_PLat*z2 + bout_PLat 
-	# do projection
-	u_tilde_NN_vec = min.(u_tilde_NN_vec, u_tilde_ub)
-	u_tilde_NN_vec = max.(u_tilde_NN_vec, u_tilde_lb)
 
+	u_tilde_NN_vec = Wout_PLat*z2 + bout_PLat 
+
+
+	## Project this to make it feasible. Otherwise bad 
+	for u_len = 1:length(u_tilde_NN_vec)
+		if u_tilde_NN_vec[u_len] > u_tilde_ub
+			u_tilde_NN_vec[u_len] = u_tilde_ub
+		elseif u_tilde_NN_vec[u_len] < u_tilde_lb
+			u_tilde_NN_vec[u_len] = u_tilde_lb
+		end
+	end
 	##################################################
 	
 	# compute NN predicted state
@@ -213,19 +245,22 @@ while iii <= num_DataPoints
 	x_tilde_NN_vec = A_tilde_vec*x_tilde_0 + B_tilde_vec*u_tilde_NN_vec + E_tilde_vec*g_tilde_vec
 
 	## verify feasibility
-	# xu_tilde_NN_res = [ maximum(F_tilde_vec*x_tilde_NN_vec - f_tilde_vec) ; maximum(Fu_tilde_vec*u_tilde_NN_vec - fu_tilde_vec) ]  # should be <= 0
-	xu_tilde_NN_res = maximum(Fu_tilde_vec*u_tilde_NN_vec - fu_tilde_vec)  # should be <= 0
+	# xu_tilde_NN_res = [ maximum(F_tilde_vec*x_tilde_NN_vec - f_tilde_vec) ; maximum(Fu_tilde_vec*x_tilde_NN_vec - fu_tilde_vec) ]  # should be <= 0
+	xu_tilde_NN_res = [ maximum(F_tilde_vec*x_tilde_NN_vec - f_tilde_vec) ; maximum(Fu_tilde_vec*u_tilde_NN_vec - fu_tilde_vec) ]  # should be <= 0
+	flag_XUfeas = 0
 
 	if maximum(xu_tilde_NN_res) < 1e-3  						# infeasible if bigger than zero/threshold
-		flag_XUfeas = flag_XUfeas+1
+		flag_XUfeas = 1
 	end
 
 	## check optimality ##
 	# primObj_NN = (x_tilde_NN_vec-x_tilde_ref)'*Q_tilde_vec*(x_tilde_NN_vec-x_tilde_ref) + u_tilde_NN_vec'*R_tilde_vec*u_tilde_NN_vec
 	primObj_NN = x_tilde_NN_vec'*Q_tilde_vec*x_tilde_NN_vec + u_tilde_NN_vec'*R_tilde_vec*u_tilde_NN_vec
 	solvTime_NN = toq()
+
 	################## END extract Primal NN solution ##################
 
+	# dualNN_obj, lambda_tilde_NN_vec = eval_DualNN(params)
 	
 	################## BEGIN extract Dual NN solution ##################
 	
@@ -239,91 +274,111 @@ while iii <= num_DataPoints
                   - 2*x_tilde_0'*A_tilde_vec'*Q_tilde_vec*x_tilde_ref - 2*g_tilde_vec'*E_tilde_vec'*Q_tilde_vec*x_tilde_ref +
                   + x_tilde_ref'*Q_tilde_vec*x_tilde_ref
         
-    # C_dual = [F_tilde_vec*B_tilde_vec; Fu_tilde_vec]		        # Adding state constraints 
-    C_dual = Fu_tilde_vec		        # Adding state constraints 
-    # d_dual = [f_tilde_vec - F_tilde_vec*A_tilde_vec*x_tilde_0 - F_tilde_vec*E_tilde_vec*g_tilde_vec;  fu_tilde_vec]
-    d_dual = fu_tilde_vec
+    C_dual = [F_tilde_vec*B_tilde_vec; Fu_tilde_vec]		        # Adding state constraints 
+    d_dual = [f_tilde_vec - F_tilde_vec*A_tilde_vec*x_tilde_0 - F_tilde_vec*E_tilde_vec*g_tilde_vec;  fu_tilde_vec]
     Qdual_tmp = C_dual*(Q_dual\(C_dual'))
     Qdual_tmp = 0.5*(Qdual_tmp+Qdual_tmp') + 0e-5*eye(N*(nf+ng))
 
 
 	# calls the NN with two Hidden Layers
-	z1D = max.(Wi_DLat*params + bi_DLat, 0)
-	z2D = max.(W1_DLat*z1D + b1_DLat, 0)
-	lambda_tilde_NN_orig = Wout_DLat*z2D + bout_DLat
-	# need projection
-	lambda_tilde_NN_vec = max.lambda_tilde_NN_orig, 0)  	#Delta-Acceleration
+	# z1D = max.(Wi_DLat*params + bi_DLat, 0)
+	# z2D = max.(W1_DLat*z1D + b1_DLat, 0)
+	# lambda_tilde_NN_orig = Wout_DLat*z2D + bout_DLat
+	# lambda_tilde_NN_vec = max.(Wout_DLat*z2D + bout_DLat, 0)  	#Delta-Acceleration
 
-	dualObj_NN = -1/2 * lambda_tilde_NN_vec'*Qdual_tmp*lambda_tilde_NN_vec - (C_dual*(Q_dual\c_dual)+d_dual)'*lambda_tilde_NN_vec - 1/2*c_dual'*(Q_dual\c_dual) + const_dual
+	# dualObj_NN = -1/2 * lambda_tilde_NN_vec'*Qdual_tmp*lambda_tilde_NN_vec - (C_dual*(Q_dual\c_dual)+d_dual)'*lambda_tilde_NN_vec - 1/2*c_dual'*(Q_dual\c_dual) + const_dual
 	
-	################## END extract Dual NN solution ##################
+	################## BEGIN extract Dual NN solution ##################
 
-	ddf_res[iii] = norm(test_Ddf[iii,:] - u_tilde_NN_vec)
-	lambda_res[iii] = norm(test_dual[iii,:] - lambda_tilde_NN_vec)
+	mdl = Model(solver=GurobiSolver(Presolve=0, LogToConsole=0))
+	@variable(mdl, x_tilde_vec[1:N*(nx+nu)])  	# decision variable; contains everything
+	@variable(mdl, u_tilde_vec[1:N*nu] )
+	@objective(mdl, Min, (x_tilde_vec-x_tilde_ref)'*Q_tilde_vec*(x_tilde_vec-x_tilde_ref) + u_tilde_vec'*R_tilde_vec*u_tilde_vec)
+	constr_eq = @constraint(mdl, x_tilde_vec .== A_tilde_vec*x_tilde_0 + B_tilde_vec*u_tilde_vec + E_tilde_vec*g_tilde_vec)
+	constr_Fx = @constraint(mdl, F_tilde_vec*x_tilde_vec .<= f_tilde_vec)
+	constr_Fu = @constraint(mdl, Fu_tilde_vec*u_tilde_vec .<= fu_tilde_vec)
+
+	tic()
+	status = solve(mdl)
+
+	obj_primal = getobjectivevalue(mdl)
+	U_test_opt = getvalue(u_tilde_vec)
+	# primalDiff[iii] = norm(U_test_opt - u_tilde_NN_vec)
+	# primalDiff0[iii] = norm(U_test_opt[1] - u_tilde_NN_vec[1]) 
+	primalDiff[iii] = norm(test_outputParamDdf[iii,:] - u_tilde_NN_vec)
+	primalDiff0[iii] = norm(test_outputParamDdf[iii,1] - u_tilde_NN_vec[1]) 
+	primalDiffOrigSol[iii] = norm(U_test_opt - test_outputParamDdf[iii,:])
+
 	
-	gap_primal[iii] = primObj_NN[1] - optVal_saved
-	relGap_primal[iii] = gap_primal[iii] / optVal_saved
+	if !(status == :Optimal)
+		println(status)
+		primStatusError = primStatusError+1
+		@goto label1
+	end
 
-	gap_dual[iii] = optVal_saved - dualObj_NN[1]
-	relGap_dual[iii] = gap_dual[iii] / optVal_saved
+	optVal_lat[iii] = obj_primal
+	solv_time_all[iii] = toq()
+	
+	PrimandOnline_gap[iii] = primObj_NN[1] - obj_primal
+	RelPrimandOnline_gap[iii] = (primObj_NN[1] - obj_primal)/obj_primal
+ # 	###########################################################	
 
-	gap_primalNNdualNN[iii] = primObj_NN[1] - dualObj_NN[1]
-	relGap_primalNNdualNN[iii] = gap_primalNNdualNN[iii] / optVal_saved
+	# DualOnline_gap[iii] = obj_primal - dualObj_NN[1]
+	# RelDualOnline_gap[iii] = (obj_primal - dualObj_NN[1])/obj_primal
+ # 	###########################################################	
+
+	# dual_gap[iii] = primObj_NN[1] - dualObj_NN[1]
+	# Reldual_gap[iii] = (primObj_NN[1] - dualObj_NN[1])/obj_primal
 
  	iii = iii + 1 
 
  	@label label1
 end
 
-println("$(flag_XUfeas)")
 
 println("===========================================")
+# println("max dual_gap:  $(maximum(dual_gap))")
+# println("min dual_gap:  $(minimum(dual_gap))")
+# println("max Rel dual_gap:  $(maximum(Reldual_gap))")
+# println("min Rel dual_gap:  $(minimum(Reldual_gap))")
+# println("avg Rel dual_gap:  $(mean(Reldual_gap))")
 
-
-println("max ddf res:  $(maximum(ddf_res))")
-println("min ddf res:  $(minimum(ddf_res))")
-println("avg ddf res:  $(mean(ddf_res))")
-
-println(" ")
-
-println("max lambda res:  $(maximum(lambda_res))")
-println("min lambda res:  $(minimum(lambda_res))")
-println("avg lambda res:  $(mean(lambda_res))")
+println("max onlineNN_gap:  $(maximum(PrimandOnline_gap))")
+println("min onlineNN_gap:  $(minimum(PrimandOnline_gap))")
+println("avr onlineNN_gap:  $(mean(PrimandOnline_gap))")
 
 println(" ")
 
+println("max Rel onlineNN_gap:  $(maximum(RelPrimandOnline_gap))")
+println("min Rel onlineNN_gap:  $(minimum(RelPrimandOnline_gap))")
+println("avg Rel onlineNN_gap:  $(mean(RelPrimandOnline_gap))")
 
-println("max primal NN gap:  $(maximum(gap_primal))")
-println("min primal NN gap:  $(minimum(gap_primal))")
-println("avg primal NN gap:  $(mean(gap_primal))")
+# println(" ")
 
-println(" ")
+# println("max onlineDualNN_gap:  $(maximum(DualOnline_gap))")
+# println("min onlineDualNN_gap:  $(minimum(DualOnline_gap))")
+# println("avg onlineDualNN_gap:  $(mean(DualOnline_gap))")
 
-println("max rel primal NN gap:  $(maximum(relGap_primal))")
-println("min rel primal NN gap:  $(minimum(relGap_primal))")
-println("avg rel primal NN gap:  $(mean(relGap_primal))")
+# println(" ")
 
-println(" ")
-
-println("max dual NN gap:  $(maximum(gap_dual))")
-println("min dual NN gap:  $(minimum(gap_dual))")
-println("avg dual NN gap:  $(mean(gap_dual))")
-
-println(" ")
-
-println("max rel dual NN gap:  $(maximum(relGap_dual))")
-println("min rel dual NN gap:  $(minimum(relGap_dual))")
-println("avg rel dual NN gap:  $(mean(relGap_dual))")
+# println("max Rel onlineDualNN_gap:  $(maximum(RelDualOnline_gap))")
+# println("min Rel onlineDualNN_gap:  $(minimum(RelDualOnline_gap))")
+# println("avg Rel onlineDualNN_gap:  $(mean(RelDualOnline_gap))")
 
 println(" ")
 
-println("max primal-dual NN gap:  $(maximum(gap_primalNNdualNN))")
-println("min primal-dual NN gap:  $(minimum(gap_primalNNdualNN))")
-println("avg primal-dual NN gap:  $(mean(gap_primalNNdualNN))")
+println("difference primal variable MAX: $(maximum(primalDiff)) ")
+println("difference primal variable MIN: $(minimum(primalDiff)) ")
+println("difference primal variable AVG: $(mean(primalDiff)) ")
 
 println(" ")
 
-println("max rel primal-dual NN gap:  $(maximum(relGap_primalNNdualNN))")
-println("min rel primal-dual NN gap:  $(minimum(relGap_primalNNdualNN))")
-println("avg rel primal-dual NN gap:  $(mean(relGap_primalNNdualNN))")
+println("difference first primal variable MAX: $(maximum(primalDiff0)) ")
+println("difference first primal variable MIN: $(minimum(primalDiff0)) ")
+println("difference first primal variable AVG: $(mean(primalDiff0)) ")
 
+println(" ")
+# 
+println("difference Optimal primal variable MAX: $(maximum(primalDiffOrigSol)) ")
+println("difference optimal primal variable MIN: $(minimum(primalDiffOrigSol)) ")
+println("difference optimal primal variable AVG: $(mean(primalDiffOrigSol)) ")
