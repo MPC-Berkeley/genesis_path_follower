@@ -20,7 +20,7 @@ def unnormalize(x, mean, std):
     return x * std + mean
 
 #%% We have imported all dependencies
-df = sio.loadmat('NN_test_CPGDay3_N3RandDataLat10kTrafo2.mat',squeeze_me=True, struct_as_record=False) # read data set using pandas
+df = sio.loadmat('NN_test_CPGDay4_SmoothVCRand10kOneTrajDataLat.mat',squeeze_me=True, struct_as_record=False) # read data set using pandas
 # df = sio.loadmat('NN_test_trainingDataLatRFS.mat',squeeze_me=True, struct_as_record=False) # read data set using pandas
 x_data = df['inputParam_lat']
 y_data = df['outputParamDdf_lat']
@@ -111,8 +111,8 @@ with tf.Session() as sess:
      inds = np.arange(x_train.shape[0])
      train_count = len(x_train)
 
-     N_EPOCHS = 1000
-     BATCH_SIZE = 100
+     N_EPOCHS = 150
+     BATCH_SIZE = 32
      max_learning_rate = 0.001
      min_learning_rate = 0.0001
      #learning_rate = 0.0001
@@ -139,13 +139,8 @@ with tf.Session() as sess:
      vj['b1'] = sess.run(b_1)
      vj['b2'] = sess.run(b_2)
      vj['b0'] = sess.run(b_O)
-     sio.savemat('trained_weightsPrimalLat10k_CPGDay3N3.mat',vj)
-    # sio.savemat('trained_weightsPrimalLat10k_CPGDay2ParamMerge.mat',vj)
-    # sio.savemat('trained_weightsPrimalLat100k_CPGDay2BacktoDay1Tune.mat',vj)
-    # sio.savemat('trained_weightsPrimalLat10k_CPGDay2BacktoDay1Tune.mat',vj)
-    # sio.savemat('trained_weightsPrimalLat100k_CPGDay2.mat',vj)
-    # sio.savemat('trained_weightsPrimalLatTrafo2.mat',vj)
-    # sio.savemat('trained_weightsPrimalLat.mat',vj)
+     sio.savemat('trained_weightsPrimalLatSmoothVCRand10kDataOneTraj_CPGDay4.mat',vj)
+
 
 
 ################################ Plotting the Primal NN Train Quality
@@ -160,82 +155,3 @@ with tf.Session() as sess:
 # plt.xlabel('Epoch')
 # plt.title('Fitting Testing Error')
 # plt.show()
-#%%
-
-########################## PRIMAL TRAIN ENDS. DUAL TRAIN START 
-# neuron_sizeD = 90
-# neuron_sizeMLD = neuron_sizeD                             # Can vary size of the intermediate layer as well
-
-# W_1D = tf.Variable(tf.random_uniform([neuron_sizeD,insize]))
-# b_1D = tf.Variable(tf.random_uniform([neuron_sizeD,1]))
-# layer_1D = tf.add(tf.matmul(W_1D,xs), b_1D)
-# layer_1D = tf.nn.relu(layer_1D)
-
-# # layer 1 multiplying and adding bias then activation function
-# W_2D = tf.Variable(tf.random_uniform([neuron_sizeMLD,neuron_sizeD]))
-# b_2D = tf.Variable(tf.random_uniform([neuron_sizeMLD,1]))
-# layer_2D = tf.add(tf.matmul(W_2D,layer_1D), b_2D)
-# layer_2D = tf.nn.relu(layer_2D)
-
-# # layer 2 multiplying and adding bias then activation function
-# W_OD = tf.Variable(tf.random_uniform([outsizeD,neuron_sizeMLD]))
-# b_OD = tf.Variable(tf.random_uniform([outsizeD,1]))
-# outputD = tf.add(tf.matmul(W_OD,layer_2D), b_OD)
-
-# #  O/p layer multiplying and adding bias then activation function
-# #  notice output layer has one node only since performing #regression
-
-# costD = tf.reduce_mean(tf.square(outputD-ysD))            # our mean squared error cost function
-# trainD = tf.train.AdamOptimizer(0.001).minimize(costD)     # GD and proximal GD working bad! Adam and RMS well.
-
-# c_tD = []
-# c_testD = []
-
-# #%%
-# with tf.Session() as sess:
-#      # Initiate session and initialize all vaiables
-#      sess.run(tf.global_variables_initializer())
-#      saver = tf.train.Saver()
-
-#      inds = np.arange(x_train.shape[0])
-#      train_count = len(x_train)
-
-#      N_EPOCHS = 100
-#      BATCH_SIZE = 32
-
-#      for i in range(0, N_EPOCHS):
-#          for start, end in zip(range(0, train_count, BATCH_SIZE),
-#                                range(BATCH_SIZE, train_count + 1,BATCH_SIZE)):
-
-#              sess.run([costD,trainD], feed_dict={xs: np.transpose(x_train[start:end]),
-#                                             ysD: np.transpose(y_trainDual[start:end])})
-    
-#          c_tD.append(sess.run(costD, feed_dict={xs:np.transpose(x_train),ysD:np.transpose(y_trainDual)}))
-#          c_testD.append(sess.run(costD, feed_dict={xs:np.transpose(x_test),ysD:np.transpose(y_testDual)}))
-#          print('Epoch :',i,'Cost Train Dual :',c_tD[i], 'Cost Test Dual:',c_testD[i])
-
-# #%%
-# #  Getting the variables from the Neural Nets
-#      vjD={}
-#      vjD['W1D'] = sess.run(W_1D)
-#      vjD['W2D'] = sess.run(W_2D)
-#      vjD['W0D'] = sess.run(W_OD)
-#      vjD['b1D'] = sess.run(b_1D)
-#      vjD['b2D'] = sess.run(b_2D)
-#      vjD['b0D'] = sess.run(b_OD)
-#      sio.savemat('trained_weightsDualLat.mat',vjD)
-
-# #%%
-# ################################## Plotting the Dual NN Train Quality
-# plt.plot(range(len(c_tD)),c_tD, 'r')
-# plt.ylabel('Error in Training')
-# plt.xlabel('Epoch')
-# plt.title('Fitting Error Training')
-# plt.show()
-# # plt.hold(True)                                          # hold is on
-# plt.plot(range(len(c_testD)),c_testD, 'b')
-# plt.ylabel('Error in Testing Points')
-# plt.xlabel('Epoch')
-# plt.title('Fitting Testing Error')
-# plt.show()
-
