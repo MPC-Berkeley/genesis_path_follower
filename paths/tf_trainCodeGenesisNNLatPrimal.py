@@ -113,7 +113,7 @@ with tf.Session() as sess:
 
      N_EPOCHS = 400
      BATCH_SIZE = 32
-     max_learning_rate = 0.001
+     max_learning_rate = 0.003
      min_learning_rate = 0.0001
      #learning_rate = 0.0001
      decay_speed = 1200000.0
