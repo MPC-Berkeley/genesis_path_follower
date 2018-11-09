@@ -82,7 +82,7 @@ nf = 0
 
 ######################## ITERATE OVER saved parameters ################
 # build problem
-num_DataPoints = 1e4								# Training data count 
+num_DataPoints = 3e4								# Training data count 
 
 # solv_time_all = zeros(num_DataPoints)
 
@@ -287,7 +287,7 @@ println("avg Rel dual_gap:  $(mean(Reldual_gap))")
 
 
 ### save data
-matwrite("NN_test_CPGDay5_BadRandTrainingDataLat10k.mat", Dict(
+matwrite("NN_test_CPGDay5_BadRandTrainingDataLat30k.mat", Dict(
 	"inputParam_lat" => inputParam_lat,
 	"outputParamDdf_lat" => outputParamDdf_lat,
 	"outputParamDual_lat" => outputParamDual_lat,
