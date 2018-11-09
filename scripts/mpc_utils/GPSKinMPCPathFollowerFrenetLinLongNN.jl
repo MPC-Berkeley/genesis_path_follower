@@ -455,7 +455,7 @@ module GPSKinMPCPathFollowerFrenetLinLongNN
 
 
 		# is_opt_NN = (flag_XUfeas==1)
-		# is_opt_NN = false 	# always use GUROBI
+		is_opt_NN = false 	# always use GUROBI
 
 
 		if is_opt_NN
