@@ -39,13 +39,13 @@ module GPSKinMPCPathFollowerFrenetLinLatNN
 
 	# saved place is different
 	if KinMPCParams.platform == "nuvo"
-		# primalNN_Data 	= matread("../GenesisAutoware/ros/src/genesis_path_follower/paths/trained_weightsPrimalLatTrafo2.mat") 	# OK'ish
-		primalNN_Data 	= matread("../GenesisAutoware/ros/src/genesis_path_follower/paths/goodNNs/trained_weightsPrimalLat10k_CPGDay2BacktoDay1Tune.mat")
+		# primalNN_Data 	= matread("../GenesisAutoware/ros/src/genesis_path_follower/paths/goodNNs/trained_weightsPrimalLat10k_CPGDay2BacktoDay1Tune.mat")
+		primalNN_Data 	= matread("../GenesisAutoware/ros/src/genesis_path_follower/paths/rained_weightsPrimalLatSmoothVCRand10kData_CPGDay4.mat")
 		dualNN_Data 	= matread("../GenesisAutoware/ros/src/genesis_path_follower/paths/trained_weightsDualLat.mat")
 
 	elseif KinMPCParams.platform == "abby"
-		# primalNN_Data 	= matread("../catkin_ws/src/genesis_path_follower/paths/trained_weightsPrimalLatTrafo2.mat")		# OK'ish
-		primalNN_Data 	= matread("../catkin_ws/src/genesis_path_follower/paths/goodNNs/trained_weightsPrimalLat10k_CPGDay2BacktoDay1Tune.mat")
+		# primalNN_Data 	= matread("../catkin_ws/src/genesis_path_follower/paths/goodNNs/trained_weightsPrimalLat10k_CPGDay2BacktoDay1Tune.mat")
+		primalNN_Data 	= matread("../catkin_ws/src/genesis_path_follower/paths/rained_weightsPrimalLatSmoothVCRand10kData_CPGDay4.mat")
 		dualNN_Data 	= matread("../catkin_ws/src/genesis_path_follower/paths/trained_weightsDualLat.mat")
 	
 	else
@@ -424,7 +424,7 @@ module GPSKinMPCPathFollowerFrenetLinLatNN
 
 		updateMatrices(s_pred, v_pred, k_coeffs)
 
-		params = [ey_0 ; epsi_0 ; u_0 ; v_pred[1:N] ; c_pred]
+		params = [ey_0 ; epsi_0 ; u_0 ; v_pred[1:N] ; v_pred[1:N].*c_pred]
 
 		# println("isze of params: $(size(params))")
 
