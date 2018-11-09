@@ -130,7 +130,7 @@ while iii <= num_DataPoints
  	c_pred = curv_lb + (curv_ub-curv_lb)*rand(1,N)
 
 	# Appending parameters here Geokkhge style
-	vc_pred = v_pred.*c_pred
+	# vc_pred = v_pred.*c_pred
 
  	###########################################
  	# build problem (only the updated parts)
@@ -148,7 +148,7 @@ while iii <= num_DataPoints
 		B_updated[:,:,i] = [	dt*v_pred[i]*L_b/(L_a+L_b) 
 								dt*v_pred[i]/(L_a + L_b)	]
 		g_updated[:,i] = [ 0	# column vector
-						-dt*vc_pred[i] 	]
+						-dt*v_pred[i].*c_pred[i] 	]
 	end
 	
 	# x_tilde transformation
@@ -250,7 +250,7 @@ while iii <= num_DataPoints
 	L_test_opt = getvalue(L_test)
 
 	## store the primal solution too as output gonna change now 
-	inputParam_lat[iii,:] = [ey_0 epsi_0 u_0 v_pred vc_pred]	
+	inputParam_lat[iii,:] = [ey_0 epsi_0 u_0 v_pred c_pred]	
 	outputParamDdf_lat[iii,:] = ddf_pred_opt
 	outputParamDual_lat[iii,:] = L_test_opt
 	optVal_lat[iii] = obj_primal
