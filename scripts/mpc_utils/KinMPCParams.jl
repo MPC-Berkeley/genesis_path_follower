@@ -67,10 +67,10 @@ module KinMPCParams
 	# LAT random data generation
 	ey_lb       = -1					# -1.5
 	ey_ub		=  1					# 1.5	
-	epsi_lb     = -0.15					# -0.2 (previous 0.1)
-	epsi_ub		=  0.15					#  0.2 (previous 0.1) 	
+	epsi_lb     = -0.1					# -0.2 (previous 0.1)
+	epsi_ub		=  0.1					#  0.2 (previous 0.1) 	
 	vpred_lb    =  0
-	vpred_ub    =  20					# (previous 12) 	
+	vpred_ub    =  12					# (previous 12) 	
 	dfprev_ub	=  0.4      			# (previous 0.5)
 	dfprev_lb	= -0.4					# (previous 0.6)
 	curv_lb  	=  -0.1
