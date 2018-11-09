@@ -39,11 +39,11 @@ module GPSKinMPCPathFollowerFrenetLinLongNN
 	println(pwd())
 
 	if KinMPCParams.platform == "nuvo"
-		primalNN_Data 	= matread("../GenesisAutoware/ros/src/genesis_path_follower/paths/goodNNs/trained_weightsPrimalLongBadRand10kandTwoTrajData_CPGDay4.mat")
-		dualNN_Data 	= matread("../GenesisAutoware/ros/src/genesis_path_follower/paths/goodNNs/trained_weightsDuallLongBadRand10kandTwoTrajData_CPGDay4.mat")
+		primalNN_Data 	= matread("../GenesisAutoware/ros/src/genesis_path_follower/paths/goodNNs/trained_weightsPrimalLongSmoothRand10kandTwoTrajData_CPGDay4_2Cp.mat")
+		dualNN_Data 	= matread("../GenesisAutoware/ros/src/genesis_path_follower/paths/goodNNs/trained_weightsDuallLongSmoothRand10kandTwoTrajData_CPGDay4_2Cd.mat")
 	elseif KinMPCParams.platform == "abby"
-		primalNN_Data 	= matread("../catkin_ws/src/genesis_path_follower/paths/goodNNs/trained_weightsPrimalLongBadRand10kandTwoTrajData_CPGDay4.mat")
-		dualNN_Data 	= matread("../catkin_ws/src/genesis_path_follower/paths/goodNNs/trained_weightsDuallLongBadRand10kandTwoTrajData_CPGDay4.mat")
+		primalNN_Data 	= matread("../catkin_ws/src/genesis_path_follower/paths/goodNNs/trained_weightsPrimalLongSmoothRand10kandTwoTrajData_CPGDay4_2Cp.mat")
+		dualNN_Data 	= matread("../catkin_ws/src/genesis_path_follower/paths/goodNNs/trained_weightsDuallLongSmoothRand10kandTwoTrajData_CPGDay4_2Cd.mat")
 	else
 		println("Lat NN Data not found!!!")
 	end

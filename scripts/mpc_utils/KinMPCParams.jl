@@ -49,30 +49,32 @@ module KinMPCParams
     C_epsi 		= 0.0
 	C_df	 	= 0.0					# 150			# tire angle input
 	C_ddf	 	= 1000.0				# 3e4			# derivative of tire angle input
-	df_max 		= largeNumber	# 0.5					# steering
+	df_max 		= largeNumber			# 0.5					# steering
 	ddf_max 	= 0.5					# change in steering
 
 	NNgapThreshold_long 	= 1000.0			#  float64
 	NNgapThreshold_lat		= 5.0			#  float64
 
-    ## The below are all for random data generation for NN train 
-	ey_lb       = -1					# -1.5
-	ey_ub		=  1					# 1	
-	epsi_lb     = -1					# -0.2
-	epsi_ub		=  1					#  0.2  	
-	
-	curv_lb  	=  -0.1
-	curv_ub 	=   0.1					# +-0.15			
-	vpred_lb    =  0
-	vpred_ub    =  20					# 22 	
-	dfprev_ub	=  0.5
-	dfprev_lb	= -0.5			
-
+    
 	# LONG random data generation	
 	aprev_lb 	= -2
 	aprev_ub 	= 2
 	ds_lb 		= 1			# from exp and sim data
 	ds_ub		= 4				# from exp and sim data
 	dv_lb 		= -0.5
-	dv_ub  		= 0.4
+	dv_ub  		= 0.5
+
+	# LAT random data generation
+	ey_lb       = -1					# -1.5
+	ey_ub		=  1					# 1.5	
+	epsi_lb     = -1					# -0.2
+	epsi_ub		=  1					#  0.2  	
+	vpred_lb    =  0
+	vpred_ub    =  20					# 22 	
+	dfprev_ub	=  0.4      			# 0.28; 0.5 also good
+	dfprev_lb	= -0.4					# -0.15; -0.5 also good
+	curv_lb  	=  -0.1
+	curv_ub 	=   0.1					# +-0.05 from traj data			
+	dcurv_lb 	= -0.015
+	dcurv_ub 	= 0.015
 end

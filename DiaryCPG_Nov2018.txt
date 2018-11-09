@@ -21,3 +21,22 @@ Day 3:
 Day 4:
 1. generate random data based on smoothened v_ref using dv
 2. generate 10k data
+3. Got long controller primal dual working
+4. did 10k bad/good random data - added trajectory data for improvement
+5. observed that 0 is a trivial lower bound, next to dual
+6. ran tests 1a,1b,1c and 2a,2b,2c to show performance improvement
+7. collected vision data for Jongsang
+
+8. Get lateral done by Day 4
+
+Day 5:
+a. Pick best long NN from Day 4, and ran test
+b. in-car video
+c. drone video
+d. 
+
+
+
+File Nomenclature
+
+- "normalized": refers to s0==0, and s_ref normalized w.r.t s0, also contain dual and optVals
