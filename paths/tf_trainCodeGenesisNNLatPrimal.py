@@ -111,7 +111,7 @@ with tf.Session() as sess:
      inds = np.arange(x_train.shape[0])
      train_count = len(x_train)
 
-     N_EPOCHS = 100
+     N_EPOCHS = 150
      BATCH_SIZE = 32
      max_learning_rate = 0.003
      min_learning_rate = 0.0001
