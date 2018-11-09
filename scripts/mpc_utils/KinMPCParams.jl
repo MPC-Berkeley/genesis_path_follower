@@ -67,8 +67,8 @@ module KinMPCParams
 	# LAT random data generation
 	ey_lb       = -1					# -1.5
 	ey_ub		=  1					# 1.5	
-	epsi_lb     = -1					# -0.2 (previous 0.1)
-	epsi_ub		=  1					#  0.2 (previous 0.1) 	
+	epsi_lb     = -0.15					# -0.2 (previous 0.1)
+	epsi_ub		=  0.15					#  0.2 (previous 0.1) 	
 	vpred_lb    =  0
 	vpred_ub    =  20					# (previous 12) 	
 	dfprev_ub	=  0.4      			# (previous 0.5)
@@ -76,5 +76,5 @@ module KinMPCParams
 	curv_lb  	=  -0.1
 	curv_ub 	=   0.1					# +-0.05 from traj data			
 	dcurv_lb 	= -0.015
-	dcurv_ub 	= 0.015
+	dcurv_ub 	=  0.015
 end
