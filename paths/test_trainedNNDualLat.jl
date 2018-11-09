@@ -23,8 +23,8 @@ L_a 	= KinMPCParams.L_a				# from CoG to front axle (according to Jongsang)
 L_b 	= KinMPCParams.L_b				# from CoG to rear axle (according to Jongsang)
 
 ############## load all NN Matrices ##############
-primalNN_Data 	= matread("trained_weightsPrimalLat10k_CPGDay3N3.mat")
-dualNN_Data 	= matread("trained_weightsDualLat.mat")		 
+primalNN_Data 	= matread("goodNNs/trained_weightsPrimalLat10k_CPGDay2BacktoDay1Tune.mat")
+dualNN_Data 	= matread("trained_weightsDualLatBadVCRand10kDataTwoTraj_CPGDay4.mat")		 
 
 # read out NN primal/Dual weights
 Wi_PLat = primalNN_Data["W1"]
@@ -252,7 +252,7 @@ while iii <= num_DataPoints
 	z2D = max.(W1_DLat*z1D + b1_DLat, 0)
 	lambda_tilde_NN_orig = Wout_DLat*z2D + bout_DLat
 	# need projection
-	lambda_tilde_NN_vec = max.lambda_tilde_NN_orig, 0)  	#Delta-Acceleration
+	lambda_tilde_NN_vec = max.(lambda_tilde_NN_orig, 0)  	#Delta-Acceleration
 
 	dualObj_NN = -1/2 * lambda_tilde_NN_vec'*Qdual_tmp*lambda_tilde_NN_vec - (C_dual*(Q_dual\c_dual)+d_dual)'*lambda_tilde_NN_vec - 1/2*c_dual'*(Q_dual\c_dual) + const_dual
 	
