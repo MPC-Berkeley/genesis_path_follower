@@ -290,6 +290,8 @@ module GPSKinMPCPathFollowerFrenetLinLatNN
 	F_tilde_vec = kron(eye(N), F_tilde)
 	f_tilde_vec = repmat(f_tilde,N)   
 
+	NNgapThreshold_lat = KinMPCParams.NNgapThreshold_lat
+
 	# will be updated below
 	x_tilde_ref = []
 	A_tilde_updated = []
@@ -431,9 +433,9 @@ module GPSKinMPCPathFollowerFrenetLinLatNN
 		primNN_obj, xu_tilde_NN_res, flag_XUfeas, df_opt_NN, df_pred_NN, ey_pred_NN, epsi_pred_NN, ddf_pred_NN, solvTime_primNN = eval_PrimalNN(params)
 
 		solvTime_dualNN = 0
-		dualNN_obj = 0
+		dualNN_obj = Inf
 
-		# is_opt_NN = (flag_XUfeas==1) && (primNN_obj[1] - dualNN_obj[1] <= 0.1)
+		# is_opt_NN = (flag_XUfeas==1) && (primNN_obj[1] - dualNN_obj[1] <= NNgapThreshold_lat)
 		is_opt_NN = (flag_XUfeas==1)
 		is_opt_NN = false
 
@@ -445,9 +447,9 @@ module GPSKinMPCPathFollowerFrenetLinLatNN
 			return 	df_opt_NN, df_pred_NN, ey_pred_NN, epsi_pred_NN, ddf_pred_NN, solvTime_primNN + solvTime_dualNN, is_opt_NN, solMode, primNN_obj, dualNN_obj,xu_tilde_NN_res
 		else  	## NN solution not good
 			solMode = "opt"
-			primNN_obj = []
-			dualNN_obj = []
-			xu_tilde_NN_res = []
+			# primNN_obj = []
+			# dualNN_obj = []
+			# xu_tilde_NN_res = []
 			df_opt_gurobi, df_pred_gurobi, ddf_pred_gurobi, ey_pred_gurobi, epsi_pred_gurobi, solvTimeGurobi1, is_opt_lat = solve_gurobi(ey_0, epsi_0, u_0, s_pred, v_pred, k_coeffs)
 			return df_opt_gurobi, df_pred_gurobi, ey_pred_gurobi, epsi_pred_gurobi, ddf_pred_gurobi, solvTimeGurobi1, is_opt_lat, solMode, primNN_obj, dualNN_obj,xu_tilde_NN_res
 		end 

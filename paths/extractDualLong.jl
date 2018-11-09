@@ -134,14 +134,6 @@ num_DataPoints = size(inputParam_long,1)
 
 solv_time_all = zeros(num_DataPoints)
 
-dA_res_all = zeros(num_DataPoints)
-dA_res_all2 = zeros(num_DataPoints)
-dual_res_all = zeros(num_DataPoints)
-
-optVal_res_all = zeros(num_DataPoints)
-relOptVal_res_all = zeros(num_DataPoints)
-
-
 dual_gap 	= zeros(num_DataPoints)
 Reldual_gap = zeros(num_DataPoints)
 
@@ -266,22 +258,17 @@ while ii <= num_DataPoints
 	################################################
 	# extract data for comparison
 	# comparison of objective
-	# optVal_res_all[ii] = norm(getobjectivevalue(mdl) - obj_stored)
-	# relOptVal_res_all[ii] = optVal_res_all[ii] / obj_stored
+
 
 	# comparison of optimizers
 	dA_pred_opt = getvalue(u_tilde_vec)
 	outputParamDacc_longNew[ii,:] = getvalue(u_tilde_vec)
 
-	# dA_res_all[ii] = norm(dA_pred_opt - dAcc_stored)
-
 	# z_opt = getvalue(z)
 	# dA_pred_opt2 = z_opt[1:n_uxu:end]
-	# dA_res_all2[ii] = norm(dA_pred_opt2 - dAcc_stored)
 
 	L_test_opt = getvalue(L_test)
 	outputParamDual_long[ii,:] = L_test_opt
-	# dual_res_all[ii] = norm(L_test_opt - dual_stored)
 
 	# sanity checks
 
@@ -295,22 +282,12 @@ while ii <= num_DataPoints
 end
 
 println("===========================================")
-# println("max optVal residual: $(maximum(optVal_res_all))")
-# println("min optVal residual: $(minimum(optVal_res_all))")
-# println("avg optVal residual: $(mean(optVal_res_all))")
 
 println(" ")
 
 # println("max rel optVal residual: $(maximum(relOptVal_res_all))")
 # println("min rel optVal residual: $(minimum(relOptVal_res_all))")
 # println("avg rel optVal residual: $(mean(relOptVal_res_all))")
-
-println(" ")
-
-# println("max dA-residual:  $(maximum(dA_res_all))")
-# println("max dA-residual2: $(maximum(dA_res_all2))")
-# println("max dual-residual: $(maximum(dual_res_all))")
-
 
 println(" ")
 

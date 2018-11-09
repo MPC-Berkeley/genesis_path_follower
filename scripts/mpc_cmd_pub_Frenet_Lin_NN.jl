@@ -110,6 +110,9 @@ ey_curr = 0.0		# frenet
 epsi_curr = 0.0		# frenet
 K_coeff = zeros(4)	# assuming curvature is described by polynomial of order 3
 
+NNgapThreshold_long = KinMPCParams.NNgapThreshold_long
+NNgapThreshold_lat = KinMPCParams.NNgapThreshold_lat
+
 
 command_stop = false
 
@@ -391,8 +394,19 @@ function pub_loop(acc_pub_obj, steer_pub_obj, mpc_path_pub_obj)
 			mpc_path_msg.df  = df_pred_gurobi	# acc
 			mpc_path_msg.ddf = ddf_pred_gurobi   # delta df; for policy-learning
 			mpc_path_msg.dacc = dA_pred_gurobi	# delta ACC; for policy-learning
-
-
+			# data for NN
+			mpc_path_msg.NNgapThreshold_long	= NNgapThreshold_long
+			mpc_path_msg.primNNobj_long 		= primNN_obj[1]
+			mpc_path_msg.dualNNobj_long 		= dualNN_obj[1]
+			mpc_path_msg.solMode_long 			= solMode_long
+			mpc_path_msg.xuNNres_long 			= xu_tilde_NN_res
+# float64 optVal_long
+			mpc_path_msg.NNgapThreshold_lat		= NNgapThreshold_lat
+			mpc_path_msg.primNNobj_lat 			= primNN_Lat_obj[1]
+			mpc_path_msg.dualNNobj_lat 			= dualNN_lat_obj[1]
+			mpc_path_msg.solMode_lat 			= solMode_lat
+			mpc_path_msg.xuNNres_lat			= xu_tilde_lat_NN_res
+# mpc_path_msg.optVal_lat
 
 			publish(mpc_path_pub_obj, mpc_path_msg)
 
