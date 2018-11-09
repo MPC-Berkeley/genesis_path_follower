@@ -424,7 +424,7 @@ module GPSKinMPCPathFollowerFrenetLinLatNN
 
 		updateMatrices(s_pred, v_pred, k_coeffs)
 
-		params = [ey_0 ; epsi_0 ; u_0 ; v_pred[1:N] ; c_pred]
+		params = [ey_0 ; epsi_0 ; u_0 ; v_pred[1:N] ; v_pred[1:N] .* c_pred]
 
 		# println("isze of params: $(size(params))")
 
