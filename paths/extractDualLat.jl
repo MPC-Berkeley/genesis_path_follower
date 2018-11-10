@@ -31,7 +31,7 @@ lb_gurobi = kmpcLinLat.lb_gurobi
  
 
 ############## load all data ##############
-latData = matread("CPG_day1_sim1_trainingData.mat")   				# bad
+latData = matread("CPG_day1_test1_trainingData.mat")   				# bad
 
 
 inputParam_lat = latData["inputParam_lat"]   #

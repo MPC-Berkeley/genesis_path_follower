@@ -14,7 +14,7 @@ tmpoutDual1 = outputParamDual_lat;
 tmpoutOpt1 = optVal_lat; 
 
 %% 
-load('CPG_day1_test1_latTrainingDataVCnormalized.mat')
+load('CPG_day1_test1_latTrainingDataUnConstr.mat')
 tmpinlat2 = inputParam_lat;
 tmpoutDdf2 = outputParamDdf_lat;
 tmpoutDual2 = outputParamDual_lat;
@@ -41,4 +41,4 @@ optVal_lat = [tmpoutOpt1; tmpoutOpt2]; %tmpoutOpt3]; %tmpoutOpt4]; % tmpoutOpt3]
 %% Save this crap 
 
 % save('NN_test_CPGDay4_2sim2testTrajTestDataLat.mat','inputParam_lat','outputParamDdf_lat','outputParamDual_lat','optVal_lat')
-save('NN_test_CPGDay4_SmoothVCRand10kOneTrajDataLat.mat','inputParam_lat','outputParamDdf_lat','outputParamDual_lat','optVal_lat')
+save('NN_test_CPGDay5_BadRand10kOneTrajDataLat.mat','inputParam_lat','outputParamDdf_lat','outputParamDual_lat','optVal_lat')
