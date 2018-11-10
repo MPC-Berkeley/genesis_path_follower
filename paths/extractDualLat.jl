@@ -31,7 +31,7 @@ lb_gurobi = kmpcLinLat.lb_gurobi
  
 
 ############## load all data ##############
-latData = matread("CPG_day1_sim1_trainingData.mat")   				# bad
+latData = matread("CPG_day1_test2_trainingData.mat")   				# bad
 
 
 inputParam_lat = latData["inputParam_lat"]   #
@@ -272,7 +272,7 @@ println("max Rel dual_gap:  $(maximum(Reldual_gap))")
 println("min Rel dual_gap:  $(minimum(Reldual_gap))")
 println("avg Rel dual_gap:  $(mean(Reldual_gap))")
 
-matwrite("CPG_day1_test1_latTrainingDataUnConstr.mat", Dict(
+matwrite("CPG_day1_test2_latTrainingDataUnConstr.mat", Dict(
 	"inputParam_lat" => inputParam_lat,
 	"outputParamDdf_lat" => outputParamDdf_lat,
 	"outputParamDual_lat" => outputParamDual_lat,
