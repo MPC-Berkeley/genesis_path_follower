@@ -8,7 +8,11 @@ from lk_utils.path_lib import *
 from lk_utils.vehicle_lib import *
 from lk_utils.velocityprofiles import *
 from lk_utils.sim_lib import *
+from lk_utils.LMPC import ControllerLMPC
+from lk_utils.Utilities import *
+from Classes import LMPCprediction, ClosedLoopData
 import matplotlib.pyplot as plt
+import numpy as np
 
 import math
 
@@ -37,7 +41,8 @@ class LanekeepingPublisher():
 		self.enable_acc_pub   = rospy.Publisher("/control/enable_accel", UInt8, queue_size =2, latch=True)  ##Why queue_size = 10?
 		self.enable_steer_pub = rospy.Publisher("/control/enable_spas",  UInt8, queue_size =2, latch=True)
 
-		self.r = rospy.Rate(50.0)  ##TODO: Can we run this fast?
+		rate = 10.0
+		self.r = rospy.Rate(rate)  ##TODO: Can we run this fast?
 
 		#Initialize Path object
 		self.path = Path()
@@ -51,6 +56,7 @@ class LanekeepingPublisher():
 		self.X = self.path.posE[0] 
 		self.Y = self.path.posN[0]
 		self.psi = self.path.roadPsi[0]
+		halfWidth = self.path.halfWidth
 		self.Ux = 0.
 		self.Ax = 0.
 		self.delta = 0.
@@ -73,6 +79,33 @@ class LanekeepingPublisher():
 		self.globalState  = GlobalState(self.path)
 		self.controlInput = ControlInput()
 
+		self.oldS = 0
+		self.lapCounter = 0
+
+
+		self.closedLoopData = ClosedLoopData(dt = 1.0 / rate, Time = 400., v0 = 8.0)
+
+		numSS_Points = 15
+		numSS_it = 2
+		N = 12
+		Qslack = np.diag([1., 1., 1., 1., 1., 1.])
+		Qlane  = np.array([15. , 10.])
+		Q = np.zeros((6,6))
+		R = np.zeros((2,2))
+		dR = np.array([10., 10.]) 
+		shift = 8 
+		dt = 1.0 / rate 
+		map = None #to add 
+		Laps = 10
+		TimeLMPC = 400
+		Solver = "OSQP"
+		steeringDelay = 0.
+		idDelay= 0.
+		aConstr = np.array([2., 2.]) #min and max acceleration
+
+		self.LMPC  = ControllerLMPC(numSS_Points, numSS_it, N, Qslack, Qlane, Q, R, dR, shift, dt,  map, Laps, TimeLMPC, Solver, steeringDelay, idDelay, aConstr, trackLength, halfWidth) 
+		self.timeCounter = 0
+
 		#Initialize map matching object - use closest style
 		self.mapMatch = MapMatch(self.path, "embed")
 		
@@ -91,6 +124,9 @@ class LanekeepingPublisher():
 		self.Ux = msg.v
 		self.Ax = msg.a
 		self.delta =  msg.df
+		self.Uy = msg.vy #switching from Borrelli's notation to Hedrick's
+		self.Ux = msg.vx #switching from Borrelli's notation to Hedrick's
+		self.r = msg.wz  #switching from Borrelli's notation to Hedrick's
 
 	def pub_loop(self):
 		#Start testing!
@@ -103,22 +139,60 @@ class LanekeepingPublisher():
 			dt_secs = dt.secs + 1e-9 * dt.nsecs
 
 			#Yaw rate and Uy currently not returned by state publisher!
-			self.localState.update(Ux = self.Ux)
+			self.localState.update(Ux = self.Ux, Uy = self.Uy, r = self.r)
 			self.globalState.update(posE = self.X, posN = self.Y, psi = self.psi)
+
+			xMeasuredLoc = np.array([self.localState.Ux, self.localState.Uy, self.localState.r, self.localState.deltaPsi, self.localState.s, self.localState.e])
+			xMeasuredGlob  = np.array([self.localState.Ux, self.localState.Uy, self.localState.r, self.globalState.Psi, self.globalState.X, self.globalState.Y])
+
 
 			#Localize Vehicle
 			self.mapMatch.localize(self.localState, self.globalState)
 			#print("Lateral Error is " + str(self.localState.e) )
 			
+			#check lap counter to see if lap elapsed
+			sNow = self.localState.s
+			if (self.oldS - sNow) > self.trackLength / 2:
+				self.lapCounter += 1
+				self.LMPC.addTrajectory(closedLoopData)
+				self.closedLoopData.updateInitialConditions(xMeasuredLoc, xMeasuredGlob)
+
+
 
 			#Calculate control inputs
-			self.controller.updateInput(self.localState, self.controlInput)
-			delta = self.controlInput.delta
-			Fx = self.controlInput.Fx
+			if self.lapCounter <= 3:
+				self.controller.updateInput(self.localState, self.controlInput)
+				delta = self.controlInput.delta
+				Fx = self.controlInput.Fx
 
-			# use F = m*a to get desired acceleration. Limit acceleration command to 2 m/s
-			accel = min( Fx / self.genesis.m , 2.0)
+				# use F = m*a to get desired acceleration. Limit acceleration command to 2 m/s
+				accel = min( Fx / self.genesis.m , 2.0)
+
+			else: 
+				self.LMPC.solve(xMeasuredLoc)
+				delta = self.LMPC.uPred[0,0]
+				accel = self.LMPC.uPred[0,1]
+				
+
+
+
 			print("Accel Desired (mps2) is " + str(accel) )
+
+			#Save the data
+			
+			uApplied = np.array([delta, accel])
+			solverTime = 0.
+			sysIDTime = 0.
+			contrTime = 0.
+			measSteering = 0.0
+
+
+			self.closedLoopData.addMeasurement(xMeasuredGlob, xMeasuredLoc, uApplied, solverTime, sysIDTime, contrTime, measSteering)
+			self.LMPC.addPoint(xMeasuredLoc, xMeasuredGlob, uApplied, self.timeCounter)
+			self.timeCounter = self.timeCounter + 1
+
+
+
 
 
 
