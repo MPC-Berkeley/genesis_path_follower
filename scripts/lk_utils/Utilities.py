@@ -25,22 +25,12 @@ def Regression(x, u, lamb):
 
     return A, B, Error
 
-def Curvature(s, PointAndTangent):
+def Curvature(s, path):
     """curvature computation
     s: curvilinear abscissa at which the curvature has to be evaluated
     PointAndTangent: points and tangent vectors defining the map (these quantities are initialized in the map object)
     """
-    TrackLength = PointAndTangent[-1,3]+PointAndTangent[-1,4]
-
-    # In case on a lap after the first one
-    while (s > TrackLength):
-        s = s - TrackLength
-
-    # Given s \in [0, TrackLength] compute the curvature
-    # Compute the segment in which system is evolving
-    index = np.all([[s >= PointAndTangent[:, 3]], [s < PointAndTangent[:, 3] + PointAndTangent[:, 4]]], axis=0)
-    i = int(np.where(np.squeeze(index))[0])
-    curvature = PointAndTangent[i, 5]
+    curvature = np.interp(s, path.s, path.K)
 
     return curvature
 

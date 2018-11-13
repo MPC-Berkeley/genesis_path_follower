@@ -10,23 +10,22 @@ from lk_utils.velocityprofiles import *
 from lk_utils.sim_lib import *
 from lk_utils.LMPC import ControllerLMPC
 from lk_utils.Utilities import *
-from Classes import LMPCprediction, ClosedLoopData
+from lk_utils.Classes import LMPCprediction, ClosedLoopData
 import matplotlib.pyplot as plt
 import numpy as np
-
 import math
 
 
 
 #################################################################################################
-### Path following code using lanekeeping controller from VSD 2015 paper ########################
+### Integrates Ugo Rosolia's LMPC onto Genesis. First runs 3 laps of data using Nitin
+### Kapania's lanekeeping controller, than after lap 3 begins to LMPC. 
 #################################################################################################
 
 class LanekeepingPublisher():
 
 	'''
-	Publishes acceleration and steering commands based on Nitin Kapania's thesis. 
-	@Nitin Kapania Aug 2018
+	Publishes acceleration and steering commands based on LMPC
 	'''
 
 	def __init__(self):
@@ -51,12 +50,12 @@ class LanekeepingPublisher():
 
 		pathLocation = rospy.get_param('mat_waypoints')	
 		self.path.loadFromMAT(pathLocation)
+		self.trackLength = self.path.s[-1];
 
 		#vehicle information needed - initialize to none
 		self.X = self.path.posE[0] 
 		self.Y = self.path.posN[0]
 		self.psi = self.path.roadPsi[0]
-		halfWidth = self.path.halfWidth
 		self.Ux = 0.
 		self.Ax = 0.
 		self.delta = 0.
@@ -66,7 +65,6 @@ class LanekeepingPublisher():
 
 		#Create speed profile - choose between constant velocity limit or track-varying velocity limit
 		self.speedProfile  = BasicProfile(self.genesis, self.path, friction = 0.4, vMax = 15., AxMax = 2.0)
-		#self.speedProfile = BasicProfile(self.genesis, self.path, self.path.friction, self.path.vMax, AxMax = 2.0)
 
 		plt.plot(self.speedProfile.s, self.speedProfile.Ux)
 		plt.show()
@@ -79,31 +77,22 @@ class LanekeepingPublisher():
 		self.globalState  = GlobalState(self.path)
 		self.controlInput = ControlInput()
 
-		self.oldS = 0
+		self.oldS = 0.
 		self.lapCounter = 0
 
 
 		self.closedLoopData = ClosedLoopData(dt = 1.0 / rate, Time = 400., v0 = 8.0)
-
-		numSS_Points = 15
-		numSS_it = 2
-		N = 12
-		Qslack = np.diag([1., 1., 1., 1., 1., 1.])
-		Qlane  = np.array([15. , 10.])
-		Q = np.zeros((6,6))
-		R = np.zeros((2,2))
-		dR = np.array([10., 10.]) 
-		shift = 8 
-		dt = 1.0 / rate 
-		map = None #to add 
-		Laps = 10
-		TimeLMPC = 400
-		Solver = "OSQP"
-		steeringDelay = 0.
-		idDelay= 0.
-		aConstr = np.array([2., 2.]) #min and max acceleration
-
-		self.LMPC  = ControllerLMPC(numSS_Points, numSS_it, N, Qslack, Qlane, Q, R, dR, shift, dt,  map, Laps, TimeLMPC, Solver, steeringDelay, idDelay, aConstr, trackLength, halfWidth) 
+		
+		#Initialization Parameters for LMPC controller; 
+		numSS_Points = 15; numSS_it = 2; N = 12
+		Qslack = np.diag([1., 1., 1., 1., 1., 1.]); Qlane  = np.array([15. , 10.]); Q = np.zeros((6,6))
+		R = np.zeros((2,2)); dR = np.array([10., 10.]); 
+		dt = 1.0 / rate; Laps = 10; TimeLMPC = 400
+		Solver = "OSQP"; steeringDelay = 0.; idDelay= 0.; aConstr = np.array([2., 2.]) #min and max acceleration
+		
+		SysID_Solver = "CVX" 
+		halfWidth = 3.0 #meters - hardcoded for now, can be property of map
+		self.LMPC  = ControllerLMPC(numSS_Points, numSS_it, N, Qslack, Qlane, Q, R, dR, dt, self.path, Laps, TimeLMPC, Solver, SysID_Solver, steeringDelay, idDelay, aConstr, self.trackLength, halfWidth) 
 		self.timeCounter = 0
 
 		#Initialize map matching object - use closest style
@@ -138,12 +127,12 @@ class LanekeepingPublisher():
 			dt = t_now - t_start
 			dt_secs = dt.secs + 1e-9 * dt.nsecs
 
-			#Yaw rate and Uy currently not returned by state publisher!
+			#Populate localState and globalState objects from state publisher
 			self.localState.update(Ux = self.Ux, Uy = self.Uy, r = self.r)
 			self.globalState.update(posE = self.X, posN = self.Y, psi = self.psi)
 
 			xMeasuredLoc = np.array([self.localState.Ux, self.localState.Uy, self.localState.r, self.localState.deltaPsi, self.localState.s, self.localState.e])
-			xMeasuredGlob  = np.array([self.localState.Ux, self.localState.Uy, self.localState.r, self.globalState.Psi, self.globalState.X, self.globalState.Y])
+			xMeasuredGlob  = np.array([self.localState.Ux, self.localState.Uy, self.localState.r, self.globalState.psi, self.globalState.posE, self.globalState.posN])
 
 
 			#Localize Vehicle

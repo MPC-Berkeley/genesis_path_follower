@@ -6,7 +6,7 @@ from scipy import linalg
 from scipy import sparse
 from cvxopt.solvers import qp
 import datetime
-from utilities import Curvature
+from Utilities import Curvature
 from numpy import hstack, inf, ones
 from scipy.sparse import vstack
 from osqp import OSQP
@@ -22,7 +22,7 @@ class ControllerLMPC():
         update: this function can be used to set SS, Qfun, uSS and the iteration index.
     """
 
-    def __init__(self, numSS_Points, numSS_it, N, Qslack, Qlane, Q, R, dR, shift, dt,  map, Laps, TimeLMPC, Solver, SysID_Solver, flag_LTV, steeringDelay, idDelay, aConstr, trackLength, halfWidth):
+    def __init__(self, numSS_Points, numSS_it, N, Qslack, Qlane, Q, R, dR, dt,  map, Laps, TimeLMPC, Solver, SysID_Solver, steeringDelay, idDelay, aConstr, trackLength, halfWidth):
         """Initialization
         Arguments:
             numSS_Points: number of points selected from the previous trajectories to build SS
@@ -31,7 +31,6 @@ class ControllerLMPC():
             Q,R: weight to define cost function h(x,u) = ||x||_Q + ||u||_R
             dR: weight to define the input rate cost h(x,u) = ||x_{k+1}-x_k||_dR
             n,d: state and input dimensiton
-            shift: given the closest point x_t^j to x(t) the controller start selecting the point for SS from x_{t+shift}^j
             map: map
             Laps: maximum number of laps the controller can run (used to avoid dynamic allocation)
             TimeLMPC: maximum time [s] that an lap can last (used to avoid dynamic allocation)
@@ -47,7 +46,6 @@ class ControllerLMPC():
         self.dR = dR
         self.n = Q.shape[1]
         self.d = R.shape[1]
-        self.shift = shift
         self.dt = dt
         self.map = map
         self.Solver = Solver            
@@ -55,15 +53,16 @@ class ControllerLMPC():
         self.A = []
         self.B = []
         self.C = []
-        self.flag_LTV = flag_LTV
         self.halfWidth = halfWidth
+        self.trackLength = trackLength
         self.idDelay = idDelay
 
         self.aConstr = aConstr
-        self.trackLength = trackLength
 
         self.steeringDelay = steeringDelay
         self.acceleraDelay = 0
+
+        self.zVector = np.array([0.0, 0.0, 0.0, 0.0, 10.0, 0.0])
 
         self.OldInput = np.zeros((1,2))
 
@@ -131,7 +130,6 @@ class ControllerLMPC():
         N            = self.N;     dt       = self.dt
         it           = self.it
         numSS_Points = self.numSS_Points
-        shift        = self.shift
         Qslack       = self.Qslack
         LinPoints    = self.LinPoints
         LinInput     = self.LinInput
@@ -146,13 +144,21 @@ class ControllerLMPC():
 
         # Select points to be used in LMPC as Terminal Constraint
         SS_PointSelectedTot      = np.empty((n, 0))
+        Succ_SS_PointSelectedTot = np.empty((n, 0))
+        Succ_uSS_PointSelectedTot = np.empty((d, 0))
         SS_glob_PointSelectedTot = np.empty((n, 0))
         Qfun_SelectedTot         = np.empty((0))
+
+        if (self.zVector[4]-x0[4] > self.trackLength/2):
+            self.zVector[4] = self.zVector[4] - self.trackLength
+
         for jj in self.lapSelected[0:self.numSS_it]:
-            SS_PointSelected, SS_glob_PointSelected, Qfun_Selected = _SelectPoints(self, jj, x0, numSS_Points / self.numSS_it, shift)
-            SS_PointSelectedTot      =  np.append(SS_PointSelectedTot, SS_PointSelected, axis=1)
-            SS_glob_PointSelectedTot =  np.append(SS_glob_PointSelectedTot, SS_glob_PointSelected, axis=1)
-            Qfun_SelectedTot         =  np.append(Qfun_SelectedTot, Qfun_Selected, axis=0)
+            SS_PointSelected, uSS_PointSelected, SS_glob_PointSelected, Qfun_Selected = _SelectPoints(self, jj, self.zVector, numSS_Points / self.numSS_it + 1)
+            SS_PointSelectedTot      =  np.append(SS_PointSelectedTot, SS_PointSelected[:,0:-1], axis=1)
+            Succ_SS_PointSelectedTot =  np.append(Succ_SS_PointSelectedTot, SS_PointSelected[:,1:], axis=1)
+            Succ_uSS_PointSelectedTot=  np.append(Succ_uSS_PointSelectedTot, uSS_PointSelected[:,1:], axis=1)
+            SS_glob_PointSelectedTot =  np.append(SS_glob_PointSelectedTot, SS_glob_PointSelected[:,0:-1], axis=1)
+            Qfun_SelectedTot         =  np.append(Qfun_SelectedTot, Qfun_Selected[0:-1], axis=0)
 
         self.SS_PointSelectedTot      = SS_PointSelectedTot
         self.SS_glob_PointSelectedTot = SS_glob_PointSelectedTot
@@ -197,6 +203,8 @@ class ControllerLMPC():
 
         # Extract solution and set linerizations points
         xPred, uPred, lambd, slack = _LMPC_GetPred(Solution, n, d, N, np)
+        self.zVector = np.dot(Succ_SS_PointSelectedTot, lambd)
+        self.uVector = np.dot(Succ_uSS_PointSelectedTot, lambd)
 
         self.xPred = xPred.T
         if self.N == 1:
@@ -204,10 +212,9 @@ class ControllerLMPC():
             self.LinInput =  np.array([[uPred[0], uPred[1]]])
         else:
             self.uPred = uPred.T
-            self.LinInput = np.vstack((uPred.T[1:, :], uPred.T[-1, :]))
+            self.LinInput = np.vstack((uPred.T[1:, :], self.uVector))
 
-        self.LinPoints = np.vstack((xPred.T[1:,:], xPred.T[-1,:]))
-
+        self.LinPoints = np.vstack((xPred.T[1:,:], self.zVector))
         # self.OldInput = uPred.T[0,:]
         
         # self.OldSteering.pop(0)
@@ -229,9 +236,9 @@ class ControllerLMPC():
         # print self.TimeSS[it], it 
         self.SS[0:(self.TimeSS[it] + 1), :, it] = ClosedLoopData.x[0:(self.TimeSS[it] + 1), :]
         self.SS_glob[0:(self.TimeSS[it] + 1), :, it] = ClosedLoopData.x_glob[0:(self.TimeSS[it] + 1), :]
-        self.uSS[0:(self.TimeSS[it]+ 1), :, it]      = ClosedLoopData.u[0:(self.TimeSS[it] + 1), :]
+        self.uSS[0:(self.TimeSS[it]), :, it]      = ClosedLoopData.u[0:(self.TimeSS[it]), :]
         self.Qfun[0:(self.TimeSS[it] + 1), it]  = _ComputeCost(ClosedLoopData.x[0:(self.TimeSS[it] + 1), :],
-                                                               ClosedLoopData.u[0:(self.TimeSS[it]), :], self.trackLength)
+                                                               ClosedLoopData.u[0:(self.TimeSS[it]), :], self.self.trackLength)
         for i in np.arange(0, self.Qfun.shape[0]):
             if self.Qfun[i, it] == 0:
                 self.Qfun[i, it] = self.Qfun[i - 1, it] - 1
@@ -253,14 +260,14 @@ class ControllerLMPC():
             u: current input
             i: at the j-th iteration i is the time at which (x,u) are recorded
         """
-        self.TimeSS[self.it - 1] = self.TimeSS[self.it - 1] + 1
         Counter = self.TimeSS[self.it - 1]
-        self.SS[Counter, :, self.it - 1] = x + np.array([0, 0, 0, 0, self.trackLength, 0])
+        self.SS[Counter, :, self.it - 1] = x + np.array([0, 0, 0, 0, self.self.trackLength, 0])
         self.SS_glob[Counter, :, self.it - 1] = x_glob
         self.uSS[Counter, :, self.it - 1] = u
         if self.Qfun[Counter, self.it - 1] == 0:
             self.Qfun[Counter, self.it - 1] = self.Qfun[Counter + i - 1, self.it - 1] - 1        
-        
+        self.TimeSS[self.it - 1] = self.TimeSS[self.it - 1] + 1
+
     def update(self, SS, uSS, Qfun, TimeSS, it, LinPoints, LinInput):
         """update controller parameters. This function is useful to transfer information among LMPC controller
            with different tuning
@@ -531,35 +538,38 @@ def _LMPC_BuildMatIneqConst(LMPC):
     return F_return, b
 
 
-def _SelectPoints(LMPC, it, x0, numSS_Points, shift):
+def _SelectPoints(LMPC, it, x0, numSS_Points):
     SS          = LMPC.SS
+    uSS         = LMPC.uSS
     SS_glob     = LMPC.SS_glob
     Qfun        = LMPC.Qfun
     xPred       = LMPC.xPred
     map         = LMPC.map
-    TrackLength = map.TrackLength
+    TrackLength = self.trackLength
     currIt      = LMPC.it
-    LapCounter  = LMPC.LapCounter
+    TimeSS  = LMPC.TimeSS
 
-    x = SS[0:(LapCounter[it]+1), :, it]
+    x = SS[0:TimeSS[it], :, it]
+    u = uSS[0:TimeSS[it], :, it]
     oneVec = np.ones((x.shape[0], 1))
     x0Vec = (np.dot(np.array([x0]).T, oneVec.T)).T
     diff = x - x0Vec
     norm = la.norm(diff, 1, axis=1)
     MinNorm = np.argmin(norm)
 
-    if (MinNorm + shift >= 0):
-        indexSSandQfun = range(shift + MinNorm, shift + MinNorm + numSS_Points)
-        # SS_Points = x[shift + MinNorm:shift + MinNorm + numSS_Points, :].T
-        # SS_glob_Points = x_glob[shift + MinNorm:shift + MinNorm + numSS_Points, :].T
-        # Sel_Qfun = Qfun[shift + MinNorm:shift + MinNorm + numSS_Points, it]
+    if (MinNorm - numSS_Points/2 >= 0) and (MinNorm + numSS_Points/2 < TimeSS[it]):
+        indexSSandQfun = range(-numSS_Points/2 + MinNorm, MinNorm + numSS_Points/2)
+    elif (MinNorm - numSS_Points/2 < 0):
+        indexSSandQfun = range(0,0 + numSS_Points)
     else:
-        indexSSandQfun = range(MinNorm,MinNorm + numSS_Points)
-        # SS_Points = x[MinNorm:MinNorm + numSS_Points, :].T
-        # SS_glob_Points = x_glob[MinNorm:MinNorm + numSS_Points, :].T
-        # Sel_Qfun = Qfun[MinNorm:MinNorm + numSS_Points, it]
+        indexSSandQfun = range(TimeSS[it]-numSS_Points ,TimeSS[it])
+
 
     SS_Points = SS[indexSSandQfun, :, it].T
+    uSS_Points= uSS[indexSSandQfun, :, it].T
+    if uSS_Points[0,-1]<-10:
+        print "Error a point not yet assigned has been used"
+
     SS_glob_Points = SS_glob[indexSSandQfun, :, it].T
     Sel_Qfun = Qfun[indexSSandQfun, it]
 
@@ -577,7 +587,7 @@ def _SelectPoints(LMPC, it, x0, numSS_Points, shift):
         currLapTime = LMPC.LapTime
         Sel_Qfun = Qfun[indexSSandQfun, it] + currLapTime + predCurrLap
 
-    return SS_Points, SS_glob_Points, Sel_Qfun
+    return SS_Points, uSS_Points, SS_glob_Points, Sel_Qfun
 
 def _ComputeCost(x, u, TrackLength):
     Cost = 10000 * np.ones((x.shape[0]))  # The cost has the same elements of the vector x --> time +1
@@ -740,7 +750,7 @@ def _LMPC_BuildMatEqConst(LMPC):
 def _LMPC_GetPred(Solution,n,d,N, np):
     xPred = np.squeeze(np.transpose(np.reshape((Solution[np.arange(n*(N+1))]),(N+1,n))))
     uPred = np.squeeze(np.transpose(np.reshape((Solution[n*(N+1)+np.arange(d*N)]),(N, d))))
-    lambd = Solution[n*(N+1)+d*N:Solution.shape[0]-n]
+    lambd = Solution[(n*(N+1)+d*N):(Solution.shape[0]-n-2*N)]
     slack = Solution[Solution.shape[0]-n-2*N:]
     laneSlack = Solution[Solution.shape[0]-2*N:]
 
@@ -760,11 +770,10 @@ def _LMPC_EstimateABC(ControllerLMPC):
     SS              = ControllerLMPC.SS
     uSS             = ControllerLMPC.uSS
     LapCounter      = ControllerLMPC.LapCounter
-    #PointAndTangent = ControllerLMPC.map.PointAndTangent
+    PointAndTangent = ControllerLMPC.map.PointAndTangent
     dt              = ControllerLMPC.dt
     it              = ControllerLMPC.it
     SysID_Solver    = ControllerLMPC.SysID_Solver
-    flag_LTV        = ControllerLMPC.flag_LTV
     MaxNumPoint     = ControllerLMPC.MaxNumPoint  # Need to reason on how these points are selected
     sortedLapTime   = ControllerLMPC.lapSelected
 
@@ -774,8 +783,8 @@ def _LMPC_EstimateABC(ControllerLMPC):
     # Index of the laps used in the System ID
 
     for i in range(0, N):
-        if (i > 0) and (flag_LTV == False):
-            Ai, Bi, Ci = Linearization(LinPoints, dt, i, Atv[0], Btv[0], Ctv[0])            
+        if (i > 0):
+            Ai, Bi, Ci = Linearization(LinPoints, PointAndTangent, dt, i, Atv[0], Btv[0], Ctv[0])            
         else:
             # Ai, Bi, Ci, indexSelected = RegressionAndLinearization(LinPoints, LinInput, usedIt, SS, uSS, LapCounter,
             #                                                MaxNumPoint, n, d, matrix, PointAndTangent, dt, i, SysID_Solver)
@@ -797,11 +806,10 @@ def RegressionAndLinearization(ControllerLMPC, i):
     SS              = ControllerLMPC.SS
     uSS             = ControllerLMPC.uSS
     LapCounter      = ControllerLMPC.LapCounter
-    #PointAndTangent = ControllerLMPC.map.PointAndTangent
+    PointAndTangent = ControllerLMPC.map.PointAndTangent
     dt              = ControllerLMPC.dt
     it              = ControllerLMPC.it
     SysID_Solver    = ControllerLMPC.SysID_Solver
-    flag_LTV        = ControllerLMPC.flag_LTV
     MaxNumPoint     = ControllerLMPC.MaxNumPoint  # Need to reason on how these points are selected
     sortedLapTime   = ControllerLMPC.lapSelected
     steeringDelay   = ControllerLMPC.steeringDelay
@@ -904,7 +912,7 @@ def RegressionAndLinearization(ControllerLMPC, i):
         print "s is negative, here the state: \n", LinPoints
 
     startTimer = datetime.datetime.now()  # Start timer for LMPC iteration
-    cur = Curvature(s)
+    cur = Curvature(s, map)
     den = 1 - cur * ey
     # ===========================
     # ===== Linearize epsi ======
@@ -948,7 +956,7 @@ def RegressionAndLinearization(ControllerLMPC, i):
 
     return Ai, Bi, Ci, indexSelected
 
-def Linearization(LinPoints, dt, i, Ai, Bi, Ci):
+def Linearization(LinPoints, PointAndTangent, dt, i, Ai, Bi, Ci):
 
 
     x0 = LinPoints[i, :]
@@ -964,7 +972,7 @@ def Linearization(LinPoints, dt, i, Ai, Bi, Ci):
         print "s is negative, here the state: \n", LinPoints
 
     startTimer = datetime.datetime.now()  # Start timer for LMPC iteration
-    cur = Curvature(s)
+    cur = Curvature(s, map)
     den = 1 - cur * ey
     # ===========================
     # ===== Linearize epsi ======
