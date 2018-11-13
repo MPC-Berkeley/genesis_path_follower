@@ -7,3 +7,6 @@ float64 lat
 float64 lon
 float64 a
 float64 df
+float64 vy
+float64 wz
+float64 vx
