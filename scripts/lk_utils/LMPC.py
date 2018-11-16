@@ -44,8 +44,8 @@ class ControllerLMPC():
         self.Q = Q
         self.R = R
         self.dR = dR
-        self.n = Q.shape[1]
-        self.d = R.shape[1]
+        self.n = int(Q.shape[1])
+        self.d = int(R.shape[1])
         self.dt = dt
         self.map = map
         self.Solver = Solver            
@@ -193,6 +193,11 @@ class ControllerLMPC():
             # np.savetxt('Eu.csv', Eu, delimiter=',', fmt='%f')
             # np.savetxt('Mmmu.csv', np.dot(Eu,uOld), delimiter=',', fmt='%f')
 
+            np.savetxt('M.csv', M, delimiter=',', fmt='%f')
+            np.savetxt('M.csv', q, delimiter=',', fmt='%f')
+            np.savetxt('M.csv', M, delimiter=',', fmt='%f')
+            np.savetxt('M.csv', M, delimiter=',', fmt='%f')
+
             res_cons, feasible = osqp_solve_qp(sparse.csr_matrix(M), q, sparse.csr_matrix(F), b, sparse.csr_matrix(G), np.add(np.dot(E,x0),L[:,0], np.dot(Eu,uOld)) )
             Solution = res_cons.x
 
@@ -238,7 +243,7 @@ class ControllerLMPC():
         self.SS_glob[0:(self.TimeSS[it] + 1), :, it] = ClosedLoopData.x_glob[0:(self.TimeSS[it] + 1), :]
         self.uSS[0:(self.TimeSS[it]), :, it]      = ClosedLoopData.u[0:(self.TimeSS[it]), :]
         self.Qfun[0:(self.TimeSS[it] + 1), it]  = _ComputeCost(ClosedLoopData.x[0:(self.TimeSS[it] + 1), :],
-                                                               ClosedLoopData.u[0:(self.TimeSS[it]), :], self.self.trackLength)
+                                                               ClosedLoopData.u[0:(self.TimeSS[it]), :], self.trackLength)
         for i in np.arange(0, self.Qfun.shape[0]):
             if self.Qfun[i, it] == 0:
                 self.Qfun[i, it] = self.Qfun[i - 1, it] - 1
@@ -261,7 +266,7 @@ class ControllerLMPC():
             i: at the j-th iteration i is the time at which (x,u) are recorded
         """
         Counter = self.TimeSS[self.it - 1]
-        self.SS[Counter, :, self.it - 1] = x + np.array([0, 0, 0, 0, self.self.trackLength, 0])
+        self.SS[Counter, :, self.it - 1] = x + np.array([0, 0, 0, 0, self.trackLength, 0])
         self.SS_glob[Counter, :, self.it - 1] = x_glob
         self.uSS[Counter, :, self.it - 1] = u
         if self.Qfun[Counter, self.it - 1] == 0:
@@ -545,7 +550,7 @@ def _SelectPoints(LMPC, it, x0, numSS_Points):
     Qfun        = LMPC.Qfun
     xPred       = LMPC.xPred
     map         = LMPC.map
-    TrackLength = self.trackLength
+    TrackLength = LMPC.trackLength
     currIt      = LMPC.it
     TimeSS  = LMPC.TimeSS
 
@@ -651,7 +656,7 @@ def _LMPC_TermConstr(LMPC, G, E, L, Eu):
         G_LMPC_sparse   = spmatrix(G_LMPC[np.nonzero(G_LMPC)],  np.nonzero(G_LMPC)[0].astype(int),  np.nonzero(G_LMPC)[1].astype(int),  G_LMPC.shape)
         E_LMPC_sparse   = spmatrix(E_LMPC[np.nonzero(E_LMPC)],  np.nonzero(E_LMPC)[0].astype(int),  np.nonzero(E_LMPC)[1].astype(int),  E_LMPC.shape)
         L_LMPC_sparse   = spmatrix(L_LMPC[np.nonzero(L_LMPC)],  np.nonzero(L_LMPC)[0].astype(int),  np.nonzero(L_LMPC)[1].astype(int),  L_LMPC.shape)
-        Eu_LMPC_sparse  = spmatrix(Eu_LMPC[np.nonzero(L_LMPC)], np.nonzero(L_LMPC)[0].astype(int), np.nonzero(Eu_LMPC)[1].astype(int), Eu_LMPC.shape)
+        Eu_LMPC_sparse  = spmatrix(Eu_LMPC[np.nonzero(Eu_LMPC)], np.nonzero(Eu_LMPC)[0].astype(int), np.nonzero(Eu_LMPC)[1].astype(int), Eu_LMPC.shape)
         G_LMPC_return   = G_LMPC_sparse
         E_LMPC_return   = E_LMPC_sparse
         L_LMPC_return   = L_LMPC_sparse
@@ -770,7 +775,6 @@ def _LMPC_EstimateABC(ControllerLMPC):
     SS              = ControllerLMPC.SS
     uSS             = ControllerLMPC.uSS
     LapCounter      = ControllerLMPC.LapCounter
-    PointAndTangent = ControllerLMPC.map.PointAndTangent
     dt              = ControllerLMPC.dt
     it              = ControllerLMPC.it
     SysID_Solver    = ControllerLMPC.SysID_Solver
@@ -783,12 +787,7 @@ def _LMPC_EstimateABC(ControllerLMPC):
     # Index of the laps used in the System ID
 
     for i in range(0, N):
-        if (i > 0):
-            Ai, Bi, Ci = Linearization(LinPoints, PointAndTangent, dt, i, Atv[0], Btv[0], Ctv[0])            
-        else:
-            # Ai, Bi, Ci, indexSelected = RegressionAndLinearization(LinPoints, LinInput, usedIt, SS, uSS, LapCounter,
-            #                                                MaxNumPoint, n, d, matrix, PointAndTangent, dt, i, SysID_Solver)
-            Ai, Bi, Ci, indexSelected = RegressionAndLinearization(ControllerLMPC, i)
+        Ai, Bi, Ci, indexSelected = RegressionAndLinearization(ControllerLMPC, i)
             
         Atv.append(Ai)
         Btv.append(Bi)
@@ -806,7 +805,6 @@ def RegressionAndLinearization(ControllerLMPC, i):
     SS              = ControllerLMPC.SS
     uSS             = ControllerLMPC.uSS
     LapCounter      = ControllerLMPC.LapCounter
-    PointAndTangent = ControllerLMPC.map.PointAndTangent
     dt              = ControllerLMPC.dt
     it              = ControllerLMPC.it
     SysID_Solver    = ControllerLMPC.SysID_Solver
@@ -815,6 +813,7 @@ def RegressionAndLinearization(ControllerLMPC, i):
     steeringDelay   = ControllerLMPC.steeringDelay
     acceleraDelay   = ControllerLMPC.acceleraDelay
     idDelay         = ControllerLMPC.idDelay
+    map             = ControllerLMPC.map
 
     usedIt = sortedLapTime[0:ControllerLMPC.itUsedSysID] # range(ControllerLMPC.it-ControllerLMPC.itUsedSysID, ControllerLMPC.it)
 
@@ -956,66 +955,6 @@ def RegressionAndLinearization(ControllerLMPC, i):
 
     return Ai, Bi, Ci, indexSelected
 
-def Linearization(LinPoints, PointAndTangent, dt, i, Ai, Bi, Ci):
-
-
-    x0 = LinPoints[i, :]
-
-
-    # ===========================
-    # ===== Linearization =======
-    vx = x0[0]; vy   = x0[1]
-    wz = x0[2]; epsi = x0[3]
-    s  = x0[4]; ey   = x0[5]
-
-    if s < 0:
-        print "s is negative, here the state: \n", LinPoints
-
-    startTimer = datetime.datetime.now()  # Start timer for LMPC iteration
-    cur = Curvature(s, map)
-    den = 1 - cur * ey
-    # ===========================
-    # ===== Linearize epsi ======
-    # epsi_{k+1} = epsi + dt * ( wz - (vx * np.cos(epsi) - vy * np.sin(epsi)) / (1 - cur * ey) * cur )
-    depsi_vx = -dt * np.cos(epsi) / den * cur
-    depsi_vy = dt * np.sin(epsi) / den * cur
-    depsi_wz = dt
-    depsi_epsi = 1 - dt * (-vx * np.sin(epsi) - vy * np.cos(epsi)) / den * cur
-    depsi_s = 0  # Because cur = constant
-    depsi_ey = dt * (vx * np.cos(epsi) - vy * np.sin(epsi)) / (den ** 2) * cur * (-cur)
-
-    Ai[3, :] = [depsi_vx, depsi_vy, depsi_wz, depsi_epsi, depsi_s, depsi_ey]
-    Ci[3]    = epsi + dt * ( wz - (vx * np.cos(epsi) - vy * np.sin(epsi)) / (1 - cur * ey) * cur ) - np.dot(Ai[3, :], x0)
-    # ===========================
-    # ===== Linearize s =========
-    # s_{k+1} = s    + dt * ( (vx * np.cos(epsi) - vy * np.sin(epsi)) / (1 - cur * ey) )
-    ds_vx = dt * (np.cos(epsi) / den)
-    ds_vy = -dt * (np.sin(epsi) / den)
-    ds_wz = 0
-    ds_epsi = dt * (-vx * np.sin(epsi) - vy * np.cos(epsi)) / den
-    ds_s = 1  # + Ts * (Vx * cos(epsi) - Vy * sin(epsi)) / (1 - ey * rho) ^ 2 * (-ey * drho);
-    ds_ey = -dt * (vx * np.cos(epsi) - vy * np.sin(epsi)) / (den * 2) * (-cur)
-
-    Ai[4, :] = [ds_vx, ds_vy, ds_wz, ds_epsi, ds_s, ds_ey]
-    Ci[4]    = s    + dt * ( (vx * np.cos(epsi) - vy * np.sin(epsi)) / (1 - cur * ey) ) - np.dot(Ai[4, :], x0)
-
-    # ===========================
-    # ===== Linearize ey ========
-    # ey_{k+1} = ey + dt * (vx * np.sin(epsi) + vy * np.cos(epsi))
-    dey_vx = dt * np.sin(epsi)
-    dey_vy = dt * np.cos(epsi)
-    dey_wz = 0
-    dey_epsi = dt * (vx * np.cos(epsi) - vy * np.sin(epsi))
-    dey_s = 0
-    dey_ey = 1
-
-    Ai[5, :] = [dey_vx, dey_vy, dey_wz, dey_epsi, dey_s, dey_ey]
-    Ci[5]    = ey + dt * (vx * np.sin(epsi) + vy * np.cos(epsi)) - np.dot(Ai[5, :], x0)
-
-    endTimer = datetime.datetime.now(); deltaTimer_tv = endTimer - startTimer
-
-    return Ai, Bi, Ci
-
 def Compute_Q_M(SS, uSS, indexSelected, stateFeatures, inputFeatures, usedIt, lamb, K, SysID_Solver, inputDelay, idDelay):
     Counter = 0
 
@@ -1025,9 +964,12 @@ def Compute_Q_M(SS, uSS, indexSelected, stateFeatures, inputFeatures, usedIt, la
 
     for it in usedIt:
         if idDelay == 0:
+
+            print(indexSelected)
             X0 = np.append( X0, np.hstack((np.squeeze(SS[np.ix_(indexSelected[Counter], stateFeatures, [it])]),
                             np.squeeze(uSS[np.ix_(indexSelected[Counter] - inputDelay, inputFeatures, [it])], axis=2))), axis=0)
         else:
+            print(indexSelected)
             # print indexSelected[Counter]
 
             # Aa = np.squeeze(SS[np.ix_(indexSelected[Counter], stateFeatures, [it])])
