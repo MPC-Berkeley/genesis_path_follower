@@ -30,7 +30,7 @@ def Curvature(s, path):
     s: curvilinear abscissa at which the curvature has to be evaluated
     PointAndTangent: points and tangent vectors defining the map (these quantities are initialized in the map object)
     """
-    curvature = np.interp(s, path.s, path.K)
+    curvature = np.interp(s, path.s, path.curvature)
 
     return curvature
 

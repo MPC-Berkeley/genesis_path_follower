@@ -41,7 +41,7 @@ class LanekeepingPublisher():
 		self.enable_steer_pub = rospy.Publisher("/control/enable_spas",  UInt8, queue_size =2, latch=True)
 
 		rate = 10.0
-		self.r = rospy.Rate(rate)  ##TODO: Can we run this fast?
+		self.rate = rospy.Rate(rate)  ##TODO: Can we run this fast?
 
 		#Initialize Path object
 		self.path = Path()
@@ -59,6 +59,8 @@ class LanekeepingPublisher():
 		self.Ux = 0.
 		self.Ax = 0.
 		self.delta = 0.
+		self.accelMax = 2.0
+		self.accelMin = 5.0 #negative value implied by LMPC controller
 
 		#Initialize vehicle
 		self.genesis = Vehicle('genesis')
@@ -88,7 +90,7 @@ class LanekeepingPublisher():
 		Qslack = np.diag([1., 1., 1., 1., 1., 1.]); Qlane  = np.array([15. , 10.]); Q = np.zeros((6,6))
 		R = np.zeros((2,2)); dR = np.array([10., 10.]); 
 		dt = 1.0 / rate; Laps = 10; TimeLMPC = 400
-		Solver = "OSQP"; steeringDelay = 0.; idDelay= 0.; aConstr = np.array([2., 2.]) #min and max acceleration
+		Solver = "CVX"; steeringDelay = 0; idDelay= 1; aConstr = np.array([self.accelMin, self.accelMax]) #min and max acceleration
 		
 		SysID_Solver = "CVX" 
 		halfWidth = 3.0 #meters - hardcoded for now, can be property of map
@@ -143,19 +145,24 @@ class LanekeepingPublisher():
 			sNow = self.localState.s
 			if (self.oldS - sNow) > self.trackLength / 2:
 				self.lapCounter += 1
-				self.LMPC.addTrajectory(closedLoopData)
+				print(self.lapCounter)
+				print(self.timeCounter)
+				self.LMPC.addTrajectory(self.closedLoopData)
 				self.closedLoopData.updateInitialConditions(xMeasuredLoc, xMeasuredGlob)
+				self.timeCounter = 0
+
+			self.oldS = sNow
 
 
 
 			#Calculate control inputs
-			if self.lapCounter <= 3:
+			if self.lapCounter <= 2:
 				self.controller.updateInput(self.localState, self.controlInput)
 				delta = self.controlInput.delta
 				Fx = self.controlInput.Fx
 
 				# use F = m*a to get desired acceleration. Limit acceleration command to 2 m/s
-				accel = min( Fx / self.genesis.m , 2.0)
+				accel = min( Fx / self.genesis.m , self.accelMax)
 
 			else: 
 				self.LMPC.solve(xMeasuredLoc)
@@ -165,7 +172,7 @@ class LanekeepingPublisher():
 
 
 
-			print("Accel Desired (mps2) is " + str(accel) )
+			#print("Accel Desired (mps2) is " + str(accel) )
 
 			#Save the data
 			
@@ -175,14 +182,11 @@ class LanekeepingPublisher():
 			contrTime = 0.
 			measSteering = 0.0
 
-
 			self.closedLoopData.addMeasurement(xMeasuredGlob, xMeasuredLoc, uApplied, solverTime, sysIDTime, contrTime, measSteering)
-			self.LMPC.addPoint(xMeasuredLoc, xMeasuredGlob, uApplied, self.timeCounter)
 			self.timeCounter = self.timeCounter + 1
 
-
-
-
+			if self.lapCounter >= 1:
+				self.LMPC.addPoint(xMeasuredLoc, xMeasuredGlob, uApplied, self.timeCounter)
 
 
 			#Publish control inputs
@@ -190,7 +194,7 @@ class LanekeepingPublisher():
 			self.steer_pub.publish(delta)
 			self.accel_pub.publish(accel)
 
-			self.r.sleep()
+			self.rate.sleep()
 
 		#Disable inputs after test is ended
 		self.enable_steer_pub.publish(0) # disable steering control.
