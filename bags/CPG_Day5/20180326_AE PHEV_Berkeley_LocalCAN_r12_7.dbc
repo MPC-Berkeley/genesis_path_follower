@@ -1,0 +1,485 @@
+VERSION ""
+
+
+NS_ : 
+	NS_DESC_
+	CM_
+	BA_DEF_
+	BA_
+	VAL_
+	CAT_DEF_
+	CAT_
+	FILTER
+	BA_DEF_DEF_
+	EV_DATA_
+	ENVVAR_DATA_
+	SGTYPE_
+	SGTYPE_VAL_
+	BA_DEF_SGTYPE_
+	BA_SGTYPE_
+	SIG_TYPE_REF_
+	VAL_TABLE_
+	SIG_GROUP_
+	SIG_VALTYPE_
+	SIGTYPE_VALTYPE_
+	BO_TX_BU_
+	BA_DEF_REL_
+	BA_REL_
+	BA_DEF_DEF_REL_
+	BU_SG_REL_
+	BU_EV_REL_
+	BU_BO_REL_
+	SG_MUL_VAL_
+
+BS_:
+
+BU_: HIL MTX MAB BCF TCU EMS MCU LVR HCU BMS LDC
+VAL_TABLE_ TrafficLightPhase 2 "yellow light" 1 "green light" 0 "red light" ;
+
+
+BO_ 3221225472 VECTOR__INDEPENDENT_SIG_MSG: 0 Vector__XXX
+ SG_ CR_HcuL_EmsFuelConSum_mL_VU : 0|32@1+ (0.0001280018,0) [0|549763.6782] "ml" Vector__XXX
+ SG_ CF_UcbL_WhloutAclTqCmdUsrSel_VU : 0|1@1+ (1,0) [0|1] "" Vector__XXX
+
+BO_ 598 UCB256: 8 MAB
+ SG_ CR_UcbL_to_HiIL_WhlOutTqCmd_VS : 0|16@1- (1,0) [-32768|32767] "" Vector__XXX
+
+BO_ 597 UCB255: 2 MAB
+ SG_ CR_UcbL_WhlTrqCmd_VS : 0|16@1- (1,0) [-32768|32767] "Nm" Vector__XXX
+
+BO_ 594 UCB252: 5 HIL
+ SG_ CR_UcbL_Tgt_Spd_VU : 8|8@1+ (1,0) [0|255] "m" Vector__XXX
+ SG_ CR_UcbL_TrfTmeG_VU : 16|8@1+ (1,0) [0|255] "s" Vector__XXX
+ SG_ CR_UcbL_TrfLgtEn_VB : 0|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ CR_UcbL_TfrDst_VU : 24|16@1+ (1,0) [0|65535] "m" Vector__XXX
+
+BO_ 595 UCB253: 8 HIL
+ SG_ CR_HilL_PreScanTime_VU : 48|16@1+ (0.1,0) [0|6553.5] "s" Vector__XXX
+ SG_ CR_HilL_PreScanVehVel_VS : 32|16@1- (0.002,0) [-65.536|65.534] "m/s" Vector__XXX
+ SG_ CR_HilL_RelVelocity_VS : 16|16@1- (0.002,0) [-65.536|65.534] "m/s" Vector__XXX
+ SG_ CR_HilL_PreScanDistance_VU : 0|16@1+ (1,0) [0|65535] "m" Vector__XXX
+
+BO_ 534 HCU216: 8 HCU
+ SG_ CR_HcuL_MdpsAngle_VS : 48|16@1- (0.1,0) [-3276.8|3276.7] "%" Vector__XXX
+ SG_ CR_HcuL_EngTqFil_VU : 32|16@1+ (1,0) [0|65535] "Nm" Vector__XXX
+ SG_ CR_HcuL_RgnDmdTq_VS : 16|16@1- (1,0) [-32766|32767] "Nm" Vector__XXX
+ SG_ CR_HcuL_TmInTqFil_VS : 0|16@1- (1,0) [-32766|32767] "Nm" Vector__XXX
+
+BO_ 533 HCU215: 8 HCU
+ SG_ CR_HcuL_MotTqFil_VS : 48|16@1- (1,0) [-32766|32767] "Nm" Vector__XXX
+ SG_ CR_HcuL_MotTqCmd_VS : 32|16@1- (1,0) [-32766|32767] "Nm" Vector__XXX
+ SG_ CR_HcuL_MotTqCmpnAft_VS : 16|16@1- (1,0) [-32766|32767] "Nm" Vector__XXX
+ SG_ CR_HcuL_MotTqEngCmpn_VS : 0|16@1- (1,0) [-32766|32767] "Nm" Vector__XXX
+
+BO_ 593 UCB251: 8 MAB
+ SG_ CR_UcbL_TmInEngTqCmd_VU : 8|16@1+ (0.1,0) [0|6553.5] "Nm" Vector__XXX
+ SG_ CF_UcbL_DrvEngOnReq_VB : 1|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ CF_UcbL_PtLevelCtrlEn_VB : 0|1@1+ (1,0) [0|1] "" Vector__XXX
+
+BO_ 1058 HCU422: 8 HCU
+ SG_ CR_HcuL_AuxPwrWatt_VU : 0|16@1+ (10,0) [0|655350] "Nm" Vector__XXX
+
+BO_ 592 UCB250: 8 MAB
+ SG_ CR_UcbL_WhloutAclTqCmd_VS : 0|16@1- (1,0) [-32766|32767] "Nm" Vector__XXX
+ SG_ CF_UcbL_PtModeCmd_VU : 48|3@1+ (1,0) [0|7] "" Vector__XXX
+ SG_ CF_UcbL_UCBSCCEn_VB : 51|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ CR_UcbL_TotBrklTqCmd_VU : 32|16@1+ (1,0) [0|65535] "Nm" Vector__XXX
+ SG_ CR_UcbL_TmInAclTqCmd_VS : 16|16@1- (0.1,0) [-3276|3276] "Nm" Vector__XXX
+
+BO_ 1057 HCU421: 8 HCU
+ SG_ CR_HcuL_ObjRelSpd_VS : 14|12@1+ (0.1,-170) [-170|239.5] "m/s" Vector__XXX
+ SG_ CR_HcuL_ObjRelDist_VU : 3|11@1+ (0.1,0) [0|204.7] "m" Vector__XXX
+ SG_ CF_HcuL_ObjStat_VU : 1|2@1+ (1,0) [0|3] "flag" Vector__XXX
+ SG_ CF_HcuL_ObjValidity_VB : 0|1@1+ (1,0) [0|1] "flag" Vector__XXX
+
+BO_ 1056 HCU420: 8 HCU
+ SG_ CR_HcuL_MotTemp_VS : 56|8@1+ (1,-40) [-40|200] "C" Vector__XXX
+ SG_ CR_HcuL_EngColTemp_VS : 48|8@1+ (0.75,-48) [-48|142.5] "C" Vector__XXX
+ SG_ CR_HcuL_HighVolBatTemp_VS : 40|8@1- (1,0) [-128|126] "C" Vector__XXX
+ SG_ CR_HcuL_HighVolBatSOC_VU : 32|8@1+ (0.5,0) [0|100] "%" Vector__XXX
+ SG_ CR_HcuL_HighVolBatCur_VS : 16|16@1- (0.1,0) [-500|500] "A" Vector__XXX
+ SG_ CR_HcuL_HighVolBatTotVol_VU : 0|16@1+ (0.1,0) [0|500] "V" Vector__XXX
+
+BO_ 532 HCU214: 8 HCU
+ SG_ CR_HcuL_YawRate_VS : 36|13@1+ (0.1,-40.95) [-40.95|40.96] "Deg" Vector__XXX
+ SG_ CR_HcuL_LatAccl_VS : 25|11@1+ (0.01,-10.23) [-10.23|10.24] "m/s2" Vector__XXX
+ SG_ CR_HcuL_LongAccl_VS : 14|11@1+ (0.01,-10.23) [-10.23|10.24] "m/s2" Vector__XXX
+ SG_ CR_HcuL_VehSpdKph_VU : 0|14@1+ (0.03125,0) [0|511.96875] "kph" Vector__XXX
+
+BO_ 531 HCU213: 8 HCU
+ SG_ CR_HcuL_CrpTq_VS : 40|16@1- (1,0) [-32766|32767] "Nm" Vector__XXX
+ SG_ CR_HcuL_EmsFuelCon_uL_VU : 24|16@1+ (0.128,0) [0|8388.6] "ul" Vector__XXX
+ SG_ CR_HcuL_ClutchTransTq_VS : 8|16@1- (1,0) [-32766|32767] "Nm" Vector__XXX
+ SG_ CF_HcuL_CurGear_VU : 4|4@1+ (1,0) [0|15] "" Vector__XXX
+ SG_ CF_HcuL_EngFirCmp_VB : 3|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ CF_HcuL_ClutchState_VU : 0|3@1+ (1,0) [0|7] "" Vector__XXX
+
+BO_ 530 HCU212: 8 HCU
+ SG_ CR_HcuL_HsgTq_VS : 48|16@1- (1,0) [-32766|32767] "Nm" Vector__XXX
+ SG_ CR_HcuL_MotTq_VS : 32|16@1- (1,0) [-32766|32767] "Nm" Vector__XXX
+ SG_ CR_HcuL_EngFrTq_VU : 16|16@1+ (1,0) [0|65535] "Nm" Vector__XXX
+ SG_ CR_HcuL_EngIndTq_VU : 0|16@1+ (1,0) [0|65535] "Nm" Vector__XXX
+
+BO_ 529 HCU211: 8 HCU
+ SG_ CR_HcuL_BrkStkDepPc_VU : 56|8@1+ (0.390625,0) [0|99.609375] "%" Vector__XXX
+ SG_ CR_HcuL_AccelPedalDepPc_VU : 48|8@1+ (0.390625,0) [0|99.609375] "%" Vector__XXX
+ SG_ CR_HcuL_RgnEstTq_VU : 32|16@1+ (1,0) [0|65535] "Nm" Vector__XXX
+ SG_ CR_HcuL_TotBrkEstTq_VU : 16|16@1+ (1,0) [0|65535] "Nm" Vector__XXX
+ SG_ CR_HcuL_WhlOutTq_VS : 0|16@1- (1,0) [-32766|32767] "Nm" Vector__XXX
+
+BO_ 528 HCU210: 8 HCU
+ SG_ CR_HcuL_MotSpdRpm_VS : 32|16@1- (1,0) [-32768|32767] "rpm" Vector__XXX
+ SG_ CR_HcuL_HsgSpdRpm_VS : 48|16@1- (1,0) [-32768|32767] "rpm" Vector__XXX
+ SG_ CR_HcuL_EngSpdRpm_VU : 16|16@1+ (1,0) [0|65535] "rpm" Vector__XXX
+ SG_ CR_HcuL_WhlSpdRpm_VU : 0|16@1+ (1,0) [0|65535] "rpm" Vector__XXX
+
+BO_ 1800 x08: 8 Vector__XXX
+ SG_ SAT_VerticalDistance : 39|32@0- (0.001,0) [0|0] "m" Vector__XXX
+ SG_ SAT_HorizontalDistance : 7|32@0+ (0.001,0) [0|0] "m" Vector__XXX
+
+BO_ 1799 x07: 8 Vector__XXX
+ SG_ SAT_LateralDistance : 55|16@0- (0.01,0) [0|0] "m" Vector__XXX
+ SG_ SAT_YawAngle : 39|16@0- (0.01,0) [-180|180] "deg" Vector__XXX
+ SG_ SAT_PitchAngle : 23|16@0- (0.01,0) [-180|180] "deg" Vector__XXX
+ SG_ SAT_RollAngle : 7|16@0- (0.01,0) [-180|180] "deg" Vector__XXX
+
+BO_ 1798 x06: 8 Vector__XXX
+ SG_ SAT_Drift : 55|16@0- (0.01,0) [0|0] "m" Vector__XXX
+ SG_ SAT_ZAngularVelocity : 39|16@0- (0.01,0) [-327.68|327.67] "deg/s" Vector__XXX
+ SG_ SAT_YAngularVelocity : 23|16@0- (0.01,0) [-327.68|327.67] "deg/s" Vector__XXX
+ SG_ SAT_XAngularVelocity : 7|16@0- (0.01,0) [-327.68|327.67] "deg/s" Vector__XXX
+
+BO_ 1797 x05: 8 Vector__XXX
+ SG_ SAT_GATE : 63|8@0+ (1,0) [0|1] "" Vector__XXX
+ SG_ SAT_StartStop : 55|8@0+ (1,0) [0|255] "" Vector__XXX
+ SG_ SAT_ZAcceleration : 39|16@0- (0.01,0) [-327.68|327.67] "m/s^2" Vector__XXX
+ SG_ SAT_YAcceleration : 23|16@0- (0.01,0) [-327.68|327.67] "m/s^2" Vector__XXX
+ SG_ SAT_XAcceleration : 7|16@0- (0.01,0) [-327.68|327.67] "m/s^2" Vector__XXX
+
+BO_ 1796 x04: 8 Vector__XXX
+ SG_ SAT_UTCTime : 39|32@0+ (0.01,0) [0|0] "s" Vector__XXX
+ SG_ SAT_VDOP : 23|16@0+ (0.01,0) [0|655.35] "" Vector__XXX
+ SG_ SAT_HDOP : 7|16@0+ (0.01,0) [0|655.35] "" Vector__XXX
+
+BO_ 1795 x03: 8 Vector__XXX
+ SG_ SAT_Gradient : 55|16@0- (0.01,0) [-100|100] "%" Vector__XXX
+ SG_ SAT_VerticalVelocity : 39|16@0- (0.01,0) [0|0] "km/h" Vector__XXX
+ SG_ SAT_Altitude : 7|32@0- (0.01,0) [0|0] "m" Vector__XXX
+
+BO_ 1794 x02: 8 Vector__XXX
+ SG_ SAT_Longitude_min : 39|32@0- (1E-005,0) [-2147.483648|2147.483647] "min" Vector__XXX
+ SG_ SAT_Latitude_min : 7|32@0- (1E-005,0) [-2147.483648|2147.483647] "min" Vector__XXX
+
+BO_ 1793 x01: 8 Vector__XXX
+ SG_ SAT_Precision : 63|8@0+ (1,0) [0|9] "" Vector__XXX
+ SG_ SAT_Status : 55|8@0+ (1,0) [0|5] "" Vector__XXX
+ SG_ SAT_SatelliteNumber : 47|8@0+ (1,0) [0|31] "" Vector__XXX
+ SG_ SAT_Unit : 39|8@0+ (1,0) [0|3] "" Vector__XXX
+ SG_ SAT_Heading : 23|16@0- (0.01,0) [-180|180] "deg" Vector__XXX
+ SG_ SAT_HorizontalSpeed : 7|16@0+ (0.01,0) [0|500] "km/h" Vector__XXX
+
+
+
+CM_ BU_ MTX "UCB ADLINK MatriX embedded PC";
+CM_ BU_ MAB "UCB dSPACE MicroAutoBox";
+CM_ BO_ 3221225472 "This is a message for not used signals, created by Vector CANdb++ DBC OLE DB Provider.";
+CM_ BO_ 595 "[P] Periodic";
+CM_ BO_ 534 "[P] Periodic";
+CM_ BO_ 533 "[P] Periodic";
+CM_ BO_ 593 "[P] Periodic";
+CM_ BO_ 1058 "[P] Periodic";
+CM_ BO_ 592 "[P] Periodic";
+CM_ BO_ 1057 "[P] Periodic";
+CM_ BO_ 1056 "[P] Periodic";
+CM_ BO_ 532 "[P] Periodic";
+CM_ BO_ 531 "[P] Periodic";
+CM_ BO_ 530 "[P] Periodic";
+CM_ BO_ 529 "[P] Periodic";
+CM_ BO_ 528 "[P] Periodic";
+BA_DEF_ SG_  "GenSigEnvVarType" ENUM  "Int","Float","Undef";
+BA_DEF_ SG_  "GenSigEVName" STRING ;
+BA_DEF_ SG_  "GenSigInactiveValue" INT 0 65535;
+BA_DEF_ SG_  "GenSigSendType" ENUM  "Cyclic","OnWrite","OnWriteWithRepetition","OnChange","OnChangeWithRepetition","IfActive","IfActiveWithRepetition","NoSigSendType";
+BA_DEF_ SG_  "GenSigStartValue" INT 0 1215752192;
+BA_DEF_ SG_  "GwSigLatencyTime" INT 0 65535;
+BA_DEF_ SG_  "GwSigMissingSourceType" ENUM  "Undef","OldValue","DefaultValue","InitialValue";
+BA_DEF_ SG_  "SignalCategory" HEX 10 15;
+BA_DEF_ BO_  "GenMsgCycleTime" INT 0 2000;
+BA_DEF_ BO_  "GenMsgCycleTimeFast" INT 0 500;
+BA_DEF_ BO_  "GenMsgDelayTime" INT 0 20;
+BA_DEF_ BO_  "GenMsgFastOnStart" INT 0 0;
+BA_DEF_ BO_  "GenMsgILSupport" ENUM  "No","Yes";
+BA_DEF_ BO_  "GenMsgNrOfRepetition" INT 0 3;
+BA_DEF_ BO_  "GenMsgSendType" ENUM  "Cyclic","not_used","not_used","not_used","not_used","not_used","not_used","not_used","NoMsgSendType";
+BA_DEF_ BO_  "GenMsgStartDelayTime" INT 0 2000;
+BA_DEF_ BO_  "NmMessage" ENUM  "No","Yes";
+BA_DEF_ BU_  "ECU" STRING ;
+BA_DEF_ BU_  "GenNodSleepTime" INT 1375 1650;
+BA_DEF_ BU_  "ILUsed" ENUM  "No","Yes";
+BA_DEF_ BU_  "NmCAN" INT 1 2;
+BA_DEF_ BU_  "NmNode" ENUM  "No","Yes";
+BA_DEF_ BU_  "NmStationAddress" HEX 0 255;
+BA_DEF_ BU_  "NodeLayerModules" STRING ;
+BA_DEF_  "Baudrate" INT 50000 1000000;
+BA_DEF_  "BusType" STRING ;
+BA_DEF_  "GenEnvVarEndingDsp" STRING ;
+BA_DEF_  "GenEnvVarEndingSnd" STRING ;
+BA_DEF_  "GenEnvVarPrefix" STRING ;
+BA_DEF_  "GenNWMApBusSleep" STRING ;
+BA_DEF_  "GenNWMApCanNormal" STRING ;
+BA_DEF_  "GenNWMApCanOff" STRING ;
+BA_DEF_  "GenNWMApCanOn" STRING ;
+BA_DEF_  "GenNWMApCanSleep" STRING ;
+BA_DEF_  "GenNWMApCanWakeUp" STRING ;
+BA_DEF_  "GenNWMGotoMode_Awake" STRING ;
+BA_DEF_  "GenNWMGotoMode_BusSleep" STRING ;
+BA_DEF_  "GenNWMSleepTime" INT 1375 1650;
+BA_DEF_  "GenNWMTalkNM" STRING ;
+BA_DEF_  "Manufacturer" STRING ;
+BA_DEF_  "NmBaseAddress" HEX 0 2047;
+BA_DEF_  "NmMessageCount" INT 0 128;
+BA_DEF_  "NmType" STRING ;
+BA_DEF_  "SamplePointMax" INT 50 85;
+BA_DEF_  "SamplePointMin" INT 55 85;
+BA_DEF_  "SyncJumpWidthMax" INT 1 8;
+BA_DEF_  "SyncJumpWidthMin" INT 1 4;
+BA_DEF_  "VersionDay" INT 1 31;
+BA_DEF_  "VersionMonth" INT 1 12;
+BA_DEF_  "VersionNumber" INT 0 9999;
+BA_DEF_  "VersionNumberInternal" INT 0 9999;
+BA_DEF_  "VersionWeek" INT 1 53;
+BA_DEF_  "VersionYear" INT 0 9999;
+BA_DEF_REL_ BU_SG_REL_  "GenSigTimeoutMsg" HEX 0 2047;
+BA_DEF_REL_ BU_SG_REL_  "GenSigTimeoutTime" INT 0 7000;
+BA_DEF_DEF_  "GenSigEnvVarType" "Undef";
+BA_DEF_DEF_  "GenSigEVName" "@Signame";
+BA_DEF_DEF_  "GenSigInactiveValue" 0;
+BA_DEF_DEF_  "GenSigSendType" "NoSigSendType";
+BA_DEF_DEF_  "GenSigStartValue" 0;
+BA_DEF_DEF_  "GwSigLatencyTime" 40;
+BA_DEF_DEF_  "GwSigMissingSourceType" "Undef";
+BA_DEF_DEF_  "SignalCategory" 12;
+BA_DEF_DEF_  "GenMsgCycleTime" 10;
+BA_DEF_DEF_  "GenMsgCycleTimeFast" 40;
+BA_DEF_DEF_  "GenMsgDelayTime" 20;
+BA_DEF_DEF_  "GenMsgFastOnStart" 0;
+BA_DEF_DEF_  "GenMsgILSupport" "Yes";
+BA_DEF_DEF_  "GenMsgNrOfRepetition" 0;
+BA_DEF_DEF_  "GenMsgSendType" "Cyclic";
+BA_DEF_DEF_  "GenMsgStartDelayTime" 0;
+BA_DEF_DEF_  "NmMessage" "No";
+BA_DEF_DEF_  "ECU" "";
+BA_DEF_DEF_  "GenNodSleepTime" 1500;
+BA_DEF_DEF_  "ILUsed" "Yes";
+BA_DEF_DEF_  "NmCAN" 1;
+BA_DEF_DEF_  "NmNode" "No";
+BA_DEF_DEF_  "NmStationAddress" 0;
+BA_DEF_DEF_  "NodeLayerModules" "oseknm01.dll";
+BA_DEF_DEF_  "Baudrate" 500000;
+BA_DEF_DEF_  "BusType" "CAN";
+BA_DEF_DEF_  "GenEnvVarEndingDsp" "Dsp_";
+BA_DEF_DEF_  "GenEnvVarEndingSnd" "_";
+BA_DEF_DEF_  "GenEnvVarPrefix" "Env";
+BA_DEF_DEF_  "GenNWMApBusSleep" "ApplNmCanBusSleep()";
+BA_DEF_DEF_  "GenNWMApCanNormal" "ApplNmCanNormal()";
+BA_DEF_DEF_  "GenNWMApCanOff" "ApplCanOffline()";
+BA_DEF_DEF_  "GenNWMApCanOn" "ApplCanOnline()";
+BA_DEF_DEF_  "GenNWMApCanSleep" "ApplNmCanSleep()";
+BA_DEF_DEF_  "GenNWMApCanWakeUp" "ApplCanWakeUp()";
+BA_DEF_DEF_  "GenNWMGotoMode_Awake" "GotoMode_Awake()";
+BA_DEF_DEF_  "GenNWMGotoMode_BusSleep" "GotoMode_BusSleep()";
+BA_DEF_DEF_  "GenNWMSleepTime" 1500;
+BA_DEF_DEF_  "GenNWMTalkNM" "TalkNM()";
+BA_DEF_DEF_  "Manufacturer" "HMC";
+BA_DEF_DEF_  "NmBaseAddress" 1024;
+BA_DEF_DEF_  "NmMessageCount" 128;
+BA_DEF_DEF_  "NmType" "Vector";
+BA_DEF_DEF_  "SamplePointMax" 82;
+BA_DEF_DEF_  "SamplePointMin" 75;
+BA_DEF_DEF_  "SyncJumpWidthMax" 3;
+BA_DEF_DEF_  "SyncJumpWidthMin" 2;
+BA_DEF_DEF_  "VersionDay" 1;
+BA_DEF_DEF_  "VersionMonth" 1;
+BA_DEF_DEF_  "VersionNumber" 0;
+BA_DEF_DEF_  "VersionNumberInternal" 0;
+BA_DEF_DEF_  "VersionWeek" 1;
+BA_DEF_DEF_  "VersionYear" 2010;
+BA_DEF_DEF_REL_ "GenSigTimeoutMsg" 0;
+BA_DEF_DEF_REL_ "GenSigTimeoutTime" 500;
+BA_ "NmStationAddress" BU_ BCF 0;
+BA_ "NmStationAddress" BU_ EMS 0;
+BA_ "NmStationAddress" BU_ LVR 0;
+BA_ "GenMsgStartDelayTime" BO_ 534 0;
+BA_ "GenMsgCycleTime" BO_ 534 10;
+BA_ "GenMsgStartDelayTime" BO_ 533 0;
+BA_ "GenMsgCycleTime" BO_ 533 10;
+BA_ "GenMsgCycleTime" BO_ 1058 20;
+BA_ "GenMsgStartDelayTime" BO_ 1058 0;
+BA_ "GenMsgCycleTime" BO_ 1057 20;
+BA_ "GenMsgStartDelayTime" BO_ 1057 0;
+BA_ "GenMsgCycleTime" BO_ 1056 20;
+BA_ "GenMsgStartDelayTime" BO_ 1056 0;
+BA_ "GenMsgCycleTime" BO_ 532 10;
+BA_ "GenMsgStartDelayTime" BO_ 532 0;
+BA_ "GenMsgCycleTime" BO_ 531 10;
+BA_ "GenMsgStartDelayTime" BO_ 531 0;
+BA_ "GenMsgCycleTime" BO_ 530 10;
+BA_ "GenMsgStartDelayTime" BO_ 530 0;
+BA_ "GenMsgCycleTime" BO_ 529 10;
+BA_ "GenMsgStartDelayTime" BO_ 529 0;
+BA_ "GenMsgCycleTime" BO_ 528 10;
+BA_ "GenMsgStartDelayTime" BO_ 528 0;
+BA_ "SignalCategory" SG_ 3221225472 CF_UcbL_WhloutAclTqCmdUsrSel_VU 12;
+BA_ "GenSigStartValue" SG_ 3221225472 CF_UcbL_WhloutAclTqCmdUsrSel_VU 0;
+BA_ "GenSigInactiveValue" SG_ 3221225472 CF_UcbL_WhloutAclTqCmdUsrSel_VU 0;
+BA_ "GenSigStartValue" SG_ 594 CR_UcbL_Tgt_Spd_VU 0;
+BA_ "GenSigStartValue" SG_ 594 CR_UcbL_TrfTmeG_VU 100;
+BA_ "GenSigStartValue" SG_ 594 CR_UcbL_TrfLgtEn_VB 1;
+BA_ "GenSigStartValue" SG_ 594 CR_UcbL_TfrDst_VU 100;
+BA_ "SignalCategory" SG_ 534 CR_HcuL_MdpsAngle_VS 12;
+BA_ "GenSigStartValue" SG_ 534 CR_HcuL_MdpsAngle_VS 0;
+BA_ "GenSigInactiveValue" SG_ 534 CR_HcuL_MdpsAngle_VS 0;
+BA_ "SignalCategory" SG_ 534 CR_HcuL_EngTqFil_VU 12;
+BA_ "GenSigStartValue" SG_ 534 CR_HcuL_EngTqFil_VU 0;
+BA_ "GenSigInactiveValue" SG_ 534 CR_HcuL_EngTqFil_VU 0;
+BA_ "SignalCategory" SG_ 534 CR_HcuL_RgnDmdTq_VS 12;
+BA_ "GenSigStartValue" SG_ 534 CR_HcuL_RgnDmdTq_VS 0;
+BA_ "GenSigInactiveValue" SG_ 534 CR_HcuL_RgnDmdTq_VS 0;
+BA_ "SignalCategory" SG_ 534 CR_HcuL_TmInTqFil_VS 12;
+BA_ "GenSigStartValue" SG_ 534 CR_HcuL_TmInTqFil_VS 0;
+BA_ "GenSigInactiveValue" SG_ 534 CR_HcuL_TmInTqFil_VS 0;
+BA_ "SignalCategory" SG_ 533 CR_HcuL_MotTqFil_VS 12;
+BA_ "GenSigStartValue" SG_ 533 CR_HcuL_MotTqFil_VS 0;
+BA_ "GenSigInactiveValue" SG_ 533 CR_HcuL_MotTqFil_VS 0;
+BA_ "SignalCategory" SG_ 533 CR_HcuL_MotTqCmd_VS 12;
+BA_ "GenSigStartValue" SG_ 533 CR_HcuL_MotTqCmd_VS 0;
+BA_ "GenSigInactiveValue" SG_ 533 CR_HcuL_MotTqCmd_VS 0;
+BA_ "SignalCategory" SG_ 533 CR_HcuL_MotTqCmpnAft_VS 12;
+BA_ "GenSigStartValue" SG_ 533 CR_HcuL_MotTqCmpnAft_VS 0;
+BA_ "GenSigInactiveValue" SG_ 533 CR_HcuL_MotTqCmpnAft_VS 0;
+BA_ "SignalCategory" SG_ 533 CR_HcuL_MotTqEngCmpn_VS 12;
+BA_ "GenSigStartValue" SG_ 533 CR_HcuL_MotTqEngCmpn_VS 0;
+BA_ "GenSigInactiveValue" SG_ 533 CR_HcuL_MotTqEngCmpn_VS 0;
+BA_ "SignalCategory" SG_ 593 CR_UcbL_TmInEngTqCmd_VU 12;
+BA_ "GenSigStartValue" SG_ 593 CR_UcbL_TmInEngTqCmd_VU 0;
+BA_ "GenSigInactiveValue" SG_ 593 CR_UcbL_TmInEngTqCmd_VU 0;
+BA_ "SignalCategory" SG_ 593 CF_UcbL_DrvEngOnReq_VB 12;
+BA_ "GenSigStartValue" SG_ 593 CF_UcbL_DrvEngOnReq_VB 0;
+BA_ "GenSigInactiveValue" SG_ 593 CF_UcbL_DrvEngOnReq_VB 0;
+BA_ "SignalCategory" SG_ 593 CF_UcbL_PtLevelCtrlEn_VB 12;
+BA_ "GenSigStartValue" SG_ 593 CF_UcbL_PtLevelCtrlEn_VB 0;
+BA_ "GenSigInactiveValue" SG_ 593 CF_UcbL_PtLevelCtrlEn_VB 0;
+BA_ "GenSigInactiveValue" SG_ 1058 CR_HcuL_AuxPwrWatt_VU 0;
+BA_ "GenSigStartValue" SG_ 1058 CR_HcuL_AuxPwrWatt_VU 0;
+BA_ "SignalCategory" SG_ 1058 CR_HcuL_AuxPwrWatt_VU 12;
+BA_ "GenSigStartValue" SG_ 592 CR_UcbL_WhloutAclTqCmd_VS 0;
+BA_ "GenSigInactiveValue" SG_ 592 CR_UcbL_WhloutAclTqCmd_VS 0;
+BA_ "SignalCategory" SG_ 592 CF_UcbL_PtModeCmd_VU 12;
+BA_ "GenSigStartValue" SG_ 592 CF_UcbL_PtModeCmd_VU 0;
+BA_ "GenSigInactiveValue" SG_ 592 CF_UcbL_PtModeCmd_VU 0;
+BA_ "SignalCategory" SG_ 592 CF_UcbL_UCBSCCEn_VB 12;
+BA_ "GenSigStartValue" SG_ 592 CF_UcbL_UCBSCCEn_VB 0;
+BA_ "GenSigInactiveValue" SG_ 592 CF_UcbL_UCBSCCEn_VB 0;
+BA_ "GenSigStartValue" SG_ 592 CR_UcbL_TotBrklTqCmd_VU 0;
+BA_ "GenSigInactiveValue" SG_ 592 CR_UcbL_TotBrklTqCmd_VU 0;
+BA_ "SignalCategory" SG_ 592 CR_UcbL_TmInAclTqCmd_VS 12;
+BA_ "GenSigStartValue" SG_ 592 CR_UcbL_TmInAclTqCmd_VS 0;
+BA_ "GenSigInactiveValue" SG_ 592 CR_UcbL_TmInAclTqCmd_VS 0;
+BA_ "GenSigInactiveValue" SG_ 1057 CR_HcuL_ObjRelSpd_VS 0;
+BA_ "GenSigStartValue" SG_ 1057 CR_HcuL_ObjRelSpd_VS 4095;
+BA_ "SignalCategory" SG_ 1057 CR_HcuL_ObjRelSpd_VS 12;
+BA_ "GenSigInactiveValue" SG_ 1057 CR_HcuL_ObjRelDist_VU 0;
+BA_ "GenSigStartValue" SG_ 1057 CR_HcuL_ObjRelDist_VU 2047;
+BA_ "SignalCategory" SG_ 1057 CR_HcuL_ObjRelDist_VU 12;
+BA_ "GenSigInactiveValue" SG_ 1057 CF_HcuL_ObjStat_VU 0;
+BA_ "GenSigStartValue" SG_ 1057 CF_HcuL_ObjStat_VU 3;
+BA_ "SignalCategory" SG_ 1057 CF_HcuL_ObjStat_VU 12;
+BA_ "GenSigInactiveValue" SG_ 1057 CF_HcuL_ObjValidity_VB 0;
+BA_ "GenSigStartValue" SG_ 1057 CF_HcuL_ObjValidity_VB 0;
+BA_ "SignalCategory" SG_ 1057 CF_HcuL_ObjValidity_VB 12;
+BA_ "GenSigInactiveValue" SG_ 1056 CR_HcuL_MotTemp_VS 0;
+BA_ "GenSigStartValue" SG_ 1056 CR_HcuL_MotTemp_VS 40;
+BA_ "SignalCategory" SG_ 1056 CR_HcuL_MotTemp_VS 12;
+BA_ "GenSigInactiveValue" SG_ 1056 CR_HcuL_EngColTemp_VS 0;
+BA_ "GenSigStartValue" SG_ 1056 CR_HcuL_EngColTemp_VS 64;
+BA_ "SignalCategory" SG_ 1056 CR_HcuL_EngColTemp_VS 12;
+BA_ "GenSigInactiveValue" SG_ 1056 CR_HcuL_HighVolBatTemp_VS 0;
+BA_ "GenSigStartValue" SG_ 1056 CR_HcuL_HighVolBatTemp_VS 0;
+BA_ "SignalCategory" SG_ 1056 CR_HcuL_HighVolBatTemp_VS 12;
+BA_ "GenSigInactiveValue" SG_ 1056 CR_HcuL_HighVolBatSOC_VU 0;
+BA_ "GenSigStartValue" SG_ 1056 CR_HcuL_HighVolBatSOC_VU 0;
+BA_ "SignalCategory" SG_ 1056 CR_HcuL_HighVolBatSOC_VU 12;
+BA_ "GenSigInactiveValue" SG_ 1056 CR_HcuL_HighVolBatCur_VS 0;
+BA_ "GenSigStartValue" SG_ 1056 CR_HcuL_HighVolBatCur_VS 0;
+BA_ "SignalCategory" SG_ 1056 CR_HcuL_HighVolBatCur_VS 12;
+BA_ "GenSigInactiveValue" SG_ 1056 CR_HcuL_HighVolBatTotVol_VU 0;
+BA_ "GenSigStartValue" SG_ 1056 CR_HcuL_HighVolBatTotVol_VU 0;
+BA_ "SignalCategory" SG_ 1056 CR_HcuL_HighVolBatTotVol_VU 12;
+BA_ "SignalCategory" SG_ 532 CR_HcuL_YawRate_VS 12;
+BA_ "GenSigStartValue" SG_ 532 CR_HcuL_YawRate_VS 0;
+BA_ "GenSigInactiveValue" SG_ 532 CR_HcuL_YawRate_VS 0;
+BA_ "GenSigInactiveValue" SG_ 532 CR_HcuL_LatAccl_VS 0;
+BA_ "GenSigStartValue" SG_ 532 CR_HcuL_LatAccl_VS 1023;
+BA_ "SignalCategory" SG_ 532 CR_HcuL_LatAccl_VS 12;
+BA_ "GenSigInactiveValue" SG_ 532 CR_HcuL_LongAccl_VS 0;
+BA_ "GenSigStartValue" SG_ 532 CR_HcuL_LongAccl_VS 1023;
+BA_ "SignalCategory" SG_ 532 CR_HcuL_LongAccl_VS 12;
+BA_ "GenSigInactiveValue" SG_ 532 CR_HcuL_VehSpdKph_VU 0;
+BA_ "GenSigStartValue" SG_ 532 CR_HcuL_VehSpdKph_VU 0;
+BA_ "SignalCategory" SG_ 532 CR_HcuL_VehSpdKph_VU 12;
+BA_ "SignalCategory" SG_ 531 CR_HcuL_CrpTq_VS 12;
+BA_ "GenSigStartValue" SG_ 531 CR_HcuL_CrpTq_VS 0;
+BA_ "GenSigInactiveValue" SG_ 531 CR_HcuL_CrpTq_VS 0;
+BA_ "GenSigInactiveValue" SG_ 531 CR_HcuL_ClutchTransTq_VS 0;
+BA_ "GenSigStartValue" SG_ 531 CR_HcuL_ClutchTransTq_VS 0;
+BA_ "SignalCategory" SG_ 531 CR_HcuL_ClutchTransTq_VS 12;
+BA_ "GenSigInactiveValue" SG_ 531 CF_HcuL_CurGear_VU 0;
+BA_ "GenSigStartValue" SG_ 531 CF_HcuL_CurGear_VU 0;
+BA_ "SignalCategory" SG_ 531 CF_HcuL_CurGear_VU 12;
+BA_ "GenSigInactiveValue" SG_ 531 CF_HcuL_EngFirCmp_VB 0;
+BA_ "GenSigStartValue" SG_ 531 CF_HcuL_EngFirCmp_VB 0;
+BA_ "SignalCategory" SG_ 531 CF_HcuL_EngFirCmp_VB 12;
+BA_ "GenSigInactiveValue" SG_ 531 CF_HcuL_ClutchState_VU 0;
+BA_ "GenSigStartValue" SG_ 531 CF_HcuL_ClutchState_VU 0;
+BA_ "SignalCategory" SG_ 531 CF_HcuL_ClutchState_VU 12;
+BA_ "GenSigInactiveValue" SG_ 530 CR_HcuL_HsgTq_VS 0;
+BA_ "GenSigStartValue" SG_ 530 CR_HcuL_HsgTq_VS 0;
+BA_ "SignalCategory" SG_ 530 CR_HcuL_HsgTq_VS 12;
+BA_ "GenSigInactiveValue" SG_ 530 CR_HcuL_MotTq_VS 0;
+BA_ "GenSigStartValue" SG_ 530 CR_HcuL_MotTq_VS 0;
+BA_ "SignalCategory" SG_ 530 CR_HcuL_MotTq_VS 12;
+BA_ "GenSigInactiveValue" SG_ 530 CR_HcuL_EngFrTq_VU 0;
+BA_ "GenSigStartValue" SG_ 530 CR_HcuL_EngFrTq_VU 0;
+BA_ "SignalCategory" SG_ 530 CR_HcuL_EngFrTq_VU 12;
+BA_ "GenSigInactiveValue" SG_ 530 CR_HcuL_EngIndTq_VU 0;
+BA_ "GenSigStartValue" SG_ 530 CR_HcuL_EngIndTq_VU 0;
+BA_ "SignalCategory" SG_ 530 CR_HcuL_EngIndTq_VU 12;
+BA_ "GenSigInactiveValue" SG_ 529 CR_HcuL_BrkStkDepPc_VU 0;
+BA_ "GenSigStartValue" SG_ 529 CR_HcuL_BrkStkDepPc_VU 0;
+BA_ "SignalCategory" SG_ 529 CR_HcuL_BrkStkDepPc_VU 12;
+BA_ "GenSigInactiveValue" SG_ 529 CR_HcuL_AccelPedalDepPc_VU 0;
+BA_ "GenSigStartValue" SG_ 529 CR_HcuL_AccelPedalDepPc_VU 0;
+BA_ "SignalCategory" SG_ 529 CR_HcuL_AccelPedalDepPc_VU 12;
+BA_ "GenSigInactiveValue" SG_ 529 CR_HcuL_RgnEstTq_VU 0;
+BA_ "GenSigStartValue" SG_ 529 CR_HcuL_RgnEstTq_VU 0;
+BA_ "SignalCategory" SG_ 529 CR_HcuL_RgnEstTq_VU 12;
+BA_ "GenSigInactiveValue" SG_ 529 CR_HcuL_TotBrkEstTq_VU 0;
+BA_ "GenSigStartValue" SG_ 529 CR_HcuL_TotBrkEstTq_VU 0;
+BA_ "SignalCategory" SG_ 529 CR_HcuL_TotBrkEstTq_VU 12;
+BA_ "GenSigInactiveValue" SG_ 529 CR_HcuL_WhlOutTq_VS 0;
+BA_ "GenSigStartValue" SG_ 529 CR_HcuL_WhlOutTq_VS 0;
+BA_ "SignalCategory" SG_ 529 CR_HcuL_WhlOutTq_VS 12;
+BA_ "GenSigInactiveValue" SG_ 528 CR_HcuL_MotSpdRpm_VS 0;
+BA_ "GenSigStartValue" SG_ 528 CR_HcuL_MotSpdRpm_VS 0;
+BA_ "SignalCategory" SG_ 528 CR_HcuL_MotSpdRpm_VS 12;
+BA_ "GenSigInactiveValue" SG_ 528 CR_HcuL_HsgSpdRpm_VS 0;
+BA_ "GenSigStartValue" SG_ 528 CR_HcuL_HsgSpdRpm_VS 0;
+BA_ "SignalCategory" SG_ 528 CR_HcuL_HsgSpdRpm_VS 12;
+BA_ "GenSigInactiveValue" SG_ 528 CR_HcuL_EngSpdRpm_VU 0;
+BA_ "GenSigStartValue" SG_ 528 CR_HcuL_EngSpdRpm_VU 0;
+BA_ "SignalCategory" SG_ 528 CR_HcuL_EngSpdRpm_VU 12;
+BA_ "GenSigInactiveValue" SG_ 528 CR_HcuL_WhlSpdRpm_VU 0;
+BA_ "GenSigStartValue" SG_ 528 CR_HcuL_WhlSpdRpm_VU 0;
+BA_ "SignalCategory" SG_ 528 CR_HcuL_WhlSpdRpm_VU 12;
+VAL_ 531 CF_HcuL_ClutchState_VU 0 "Open" 1 "Slip" 2 "Lock" 3 "-" 4 "-" 5 "-" 6 "-" 7 "-" ;
+
