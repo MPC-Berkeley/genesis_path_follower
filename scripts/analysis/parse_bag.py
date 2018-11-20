@@ -23,6 +23,9 @@ def parse_rosbag(mode, in_rosbag, out_mat):
 	solvStat_long = []; solvStat_lat = []; solvTime_long = []; solvTime_lat = [];
 	ey_pred = []; epsi_pred = []; s_pred = []; v_pred = [];
 	s_curr = []; v_curr = []; a_prev = []; ey_curr = []; epsi_curr = []; df_prev = [];
+	# additional msgs added during Nov 2018 CPG trip
+	NNgapThr_long = []; primNNobj_long = []; dualNNobj_long = []; solMode_long= []; xuNNres_long = []
+	NNgapThr_lat = []; primNNobj_lat= []; dualNNobj_lat = []; solMode_lat = [];	xuNNres_lat = []
 
 	b = rosbag.Bag(in_rosbag)
 	state_est_topic_name = '/vehicle/state_est'
@@ -92,6 +95,20 @@ def parse_rosbag(mode, in_rosbag, out_mat):
 			ey_curr.append(msg.ey_curr)
 			epsi_curr.append(msg.epsi_curr)
 			df_prev.append(msg.df_prev)
+
+			## additional msgs added during CPG trip
+			NNgapThr_long.append(msg.NNgapThreshold_long)
+			primNNobj_long.append(msg.primNNobj_long)
+			dualNNobj_long.append(msg.dualNNobj_long)
+			solMode_long.append(msg.solMode_long)
+			xuNNres_long.append(msg.xuNNres_long)
+
+			NNgapThr_lat.append(msg.NNgapThreshold_lat)
+			primNNobj_lat.append(msg.primNNobj_lat)
+			dualNNobj_lat.append(msg.dualNNobj_lat)
+			solMode_lat.append(msg.solMode_lat)
+			xuNNres_lat.append(msg.xuNNres_lat)
+
 
 			# print('append inside mpc_path')
 			# pdb.set_trace()	
@@ -188,6 +205,17 @@ def parse_rosbag(mode, in_rosbag, out_mat):
 	rdict['ey_curr'] = ey_curr
 	rdict['epsi_curr'] = epsi_curr
 	rdict['df_prev'] = df_prev
+
+	rdict['NNgapThr_long'] = NNgapThr_long
+	rdict['primNNobj_long'] = primNNobj_long
+	rdict['dualNNobj_long'] = dualNNobj_long
+	rdict['solMode_long'] = solMode_long
+	rdict['xuNNres_long'] = xuNNres_long
+	rdict['NNgapThr_lat'] = NNgapThr_lat
+	rdict['primNNobj_lat'] = primNNobj_lat
+	rdict['dualNNobj_lat'] = dualNNobj_lat
+	rdict['solMode_lat'] = solMode_lat
+	rdict['xuNNres_lat'] = xuNNres_lat
 
 				
 	sio.savemat(out_mat, rdict)
