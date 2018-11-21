@@ -45,7 +45,7 @@ bout_DLat = dualNN_Data["b0"]
 
 
 ####################### debugging code ###################################
-test_Data = matread("NN_test_CPGDay4_2sim2testTrajTestDataLat.mat")
+test_Data = matread("CPG_day5_lat1A_trainingData.mat")
 test_inputParams = test_Data["inputParam_lat"]
 test_optVal = test_Data["optVal_lat"]
 test_Ddf = test_Data["outputParamDdf_lat"]
