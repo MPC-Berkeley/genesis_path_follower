@@ -14,8 +14,8 @@ import argparse
 
 
 ### Define file names
-infile = 'CPG_day1_test2.mat'
-outfile = 'CPG_day1_test2_trainingData.mat'
+infile = 'path_follow_2C.mat'
+outfile = 'CPG_day4_long2C_trainingData.mat'
 
 
 ### script starts here
@@ -111,8 +111,8 @@ trainingDataDict['outputParamDdf_lat'] = outputParamDdf_lat
 sio.savemat(outfile, trainingDataDict)
 
 print('--- Summary ---')
-print "infile: " + infile
-print "outfile:" + outfile
+# print "infile: " + infile
+# print "outfile:" + outfile
 print('--- Done ---')
 
 

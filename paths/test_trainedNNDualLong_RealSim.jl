@@ -24,8 +24,8 @@ L_a 	= KinMPCParams.L_a				# from CoG to front axle (according to Jongsang)
 L_b 	= KinMPCParams.L_b				# from CoG to rear axle (according to Jongsang)
 
 ############## load all NN Matrices ##############
-primalNN_Data 	= matread("trained_weightsPrimalLong10k_CPGDay3.mat")
-dualNN_Data 	= matread("trained_weightsDualLong10k_CPGDay3.mat")
+primalNN_Data 	= matread("longNNandData/trained_weightsPrimalLongSmoothRand10kandTwoTrajData_CPGDay4_2Cp.mat")
+dualNN_Data 	= matread("longNNandData/trained_weightsDuallLongSmoothRand10kandTwoTrajData_CPGDay4_2Cd.mat")
 
 # read out NN primal/Dual weights
 Wi_PLong = primalNN_Data["W1"]
@@ -44,8 +44,8 @@ bout_DLong = dualNN_Data["b0"]
 
 ####################### debugging code ###################################
 ####################### debugging code ###################################
-# test_Data = matread("NN_test_CPGDay3_TotalDataLongTrafo2.mat")  	# contains test and sim data
-test_Data = matread("CPG_day1_sim1_trainingData.mat")  				# contains test and sim data
+# test_Data = matread("NN_test_CPGDay3_TotalDataLongTrafo2.mat")  				# contains test and sim data
+test_Data = matread("CPG_Day4/CPG_day4_long2C_trainingData.mat")  				# contains test and sim data
 test_inputParams = test_Data["inputParam_long"]
 
 
@@ -316,11 +316,11 @@ while ii <= num_DataPoints
 	gap_primalNNdualNN[ii] = primObj_NN[1] - dualObj_NN[1]
 	relGap_primalNNdualNN[ii] = (primObj_NN[1] - dualObj_NN[1]) / obj_primal
 
-	println("prim Obj Gurobi: $(obj_primal)")
-	println("prim Obj NN: $(primObj_NN[1])")
-	println("dual Obj NN: $(dualObj_NN[1])")
-	println("relGap primal: $(relGap_primal[ii])")
-	println("relGap dual: $(relGap_dual[ii])")
+	# println("prim Obj Gurobi: $(obj_primal)")
+	# println("prim Obj NN: $(primObj_NN[1])")
+	# println("dual Obj NN: $(dualObj_NN[1])")
+	# println("relGap primal: $(relGap_primal[ii])")
+	# println("relGap dual: $(relGap_dual[ii])")
 
 
 
@@ -348,43 +348,43 @@ println("avg lambda res:  $(mean(lambda_res))")
 
 println(" ")
 
-println("max primal-dual Gurobi gap:  $(maximum(gap_primalDual))")
-println("min primal-dual Gurobi gap:  $(minimum(gap_primalDual))")
-println("avg primal-dual Gurobi gap:  $(mean(gap_primalDual))")
+println("max primal-dual Gurobi gap:  $(maximum(gap_primalDual[10:end-10]))")
+println("min primal-dual Gurobi gap:  $(minimum(gap_primalDual[10:end-10]))")
+println("avg primal-dual Gurobi gap:  $(mean(gap_primalDual[10:end-10]))")
 
 println(" ")
 
-println("max primal NN gap:  $(maximum(gap_primal))")
-println("min primal NN gap:  $(minimum(gap_primal))")
-println("avg primal NN gap:  $(mean(gap_primal))")
+println("max primal NN gap:  $(maximum(gap_primal[10:end-10]))")
+println("min primal NN gap:  $(minimum(gap_primal[10:end-10]))")
+println("avg primal NN gap:  $(mean(gap_primal[10:end-10]))")
 
 println(" ")
 
-println("max rel primal NN gap:  $(maximum(relGap_primal))")
-println("min rel primal NN gap:  $(minimum(relGap_primal))")
-println("avg rel primal NN gap:  $(mean(relGap_primal))")
+println("max rel primal NN gap:  $(maximum(relGap_primal[10:end-10]))")
+println("min rel primal NN gap:  $(minimum(relGap_primal[10:end-10]))")
+println("avg rel primal NN gap:  $(mean(relGap_primal[10:end-10]))")
 
 println(" ")
 
-println("max dual NN gap:  $(maximum(gap_dual))")
-println("min dual NN gap:  $(minimum(gap_dual))")
-println("avg dual NN gap:  $(mean(gap_dual))")
+println("max dual NN gap:  $(maximum(gap_dual[10:end-10]))")
+println("min dual NN gap:  $(minimum(gap_dual[10:end-10]))")
+println("avg dual NN gap:  $(mean(gap_dual[10:end-10]))")
 
 println(" ")
 
-println("max rel dual NN gap:  $(maximum(relGap_dual))")
-println("min rel dual NN gap:  $(minimum(relGap_dual))")
-println("avg rel dual NN gap:  $(mean(relGap_dual))")
+println("max rel dual NN gap:  $(maximum(relGap_dual[10:end-10]))")
+println("min rel dual NN gap:  $(minimum(relGap_dual[10:end-10]))")
+println("avg rel dual NN gap:  $(mean(relGap_dual[10:end-10]))")
 
 println(" ")
 
-println("max primal-dual NN gap:  $(maximum(gap_primalNNdualNN))")
-println("min primal-dual NN gap:  $(minimum(gap_primalNNdualNN))")
-println("avg primal-dual NN gap:  $(mean(gap_primalNNdualNN))")
+println("max primal-dual NN gap:  $(maximum(gap_primalNNdualNN[10:end-10]))")
+println("min primal-dual NN gap:  $(minimum(gap_primalNNdualNN[10:end-10]))")
+println("avg primal-dual NN gap:  $(mean(gap_primalNNdualNN[10:end-10]))")
 
 println(" ")
 
-println("max rel primal-dual NN gap:  $(maximum(relGap_primalNNdualNN))")
-println("min rel primal-dual NN gap:  $(minimum(relGap_primalNNdualNN))")
-println("avg rel primal-dual NN gap:  $(mean(relGap_primalNNdualNN))")
+println("max rel primal-dual NN gap:  $(maximum(relGap_primalNNdualNN[10:end-10]))")
+println("min rel primal-dual NN gap:  $(minimum(relGap_primalNNdualNN[10:end-10]))")
+println("avg rel primal-dual NN gap:  $(mean(relGap_primalNNdualNN[10:end-10]))")
 
