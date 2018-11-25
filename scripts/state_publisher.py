@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import rospy
 from sensor_msgs.msg import NavSatFix
-from geometry_msgs.msg import TwistWithCovarianceStamped
+from geometry_msgs.msg import TwistWithCovarianceStampe
 from sensor_msgs.msg import Imu
 from genesis_msgs.msg import SteeringReport
 import math as m

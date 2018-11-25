@@ -23,6 +23,8 @@ class PlotGPSTrajectory():
 	Also includes the vehicle geometry, thanks to code written by Nitin Kapania, found at:
 	https://github.com/nkapania/Wolverine/blob/master/utils/sim_lib.py
 	'''
+
+	
 	def __init__(self):		
 		
 
@@ -58,8 +60,9 @@ class PlotGPSTrajectory():
 	
 		self.enable_acc_pub   = rospy.Publisher("/control/enable_accel", UInt8, queue_size =2, latch=True)  ##Why queue_size = 10?
 		self.enable_steer_pub = rospy.Publisher("/control/enable_spas",  UInt8, queue_size =2, latch=True)
-
-
+		self.errorarray=[0];
+		self.deltapsiarray=[0];
+		self.sarray=[0];
 
 		self.r = rospy.Rate(50.0)  ##TODO: Can we run this fast?
 
@@ -91,7 +94,11 @@ class PlotGPSTrajectory():
 		self.ax2=self.f.add_subplot(211)
 		self.ax1=self.f.add_subplot(212)
 		self.ax = plt.gca()	
-                	
+                self.f2=plt.figure()
+		self.ax3=self.f2.add_subplot(311)
+		self.ax4=self.f2.add_subplot(312)
+		self.ax5=self.f2.add_subplot(313)
+		
 		plt.ion()
 		#Create speed profile - choose between constant velocity limit or track-varying velocity limit
 		self.speedProfile  = BasicProfile(self.genesis, self.path, friction = 0.4, vMax = 15., AxMax = 2.0)
@@ -155,6 +162,7 @@ class PlotGPSTrajectory():
 		# Zoomed Inset Plot: Based off tutorial/code here: http://akuederle.com/matplotlib-zoomed-up-inset
 		self.ax2_zoom = zoomed_inset_axes(self.ax2, 5, loc=2) # axis, zoom_factor, location (2 = upper left)
 		self.window = 25 # m
+		
 		self.ze1 =  self.ax2_zoom.plot(self.edges_in[:,0], self.edges_in[:,1], 'k--')
 		self.ze2 =  self.ax2_zoom.plot(self.edges_out[:,0], self.edges_out[:,1], 'k--')
 		self.zl1, = self.ax2_zoom.plot(self.x_global_traj, self.y_global_traj, 'k') 			
@@ -242,11 +250,29 @@ class PlotGPSTrajectory():
 			
 			self.f.canvas.draw()
 			plt.pause(0.001)
-			#self.f2=plt.figure()
-			#self.ax3=self.f2.add_subplot(211)
-			#self.ax3.plot(self.e)
-			#plt.show()
-			print("Error is " + str(self.e) )
+			#print("Error is " + str(self.e) )
+			self.errorarray.append(self.e)
+			self.ax3.plot(self.errorarray,'r')
+			self.ax3.set_ylabel('Error (m)')
+
+			plt.show()
+
+			#if len(self.errorarray)==100:
+				#self.ax3.clear()
+			#	self.errorarray=[0]
+				
+			self.deltapsiarray.append(self.deltapsi)
+			self.ax4.plot(self.deltapsiarray,'b')
+			self.ax4.set_ylabel('Heading Error (radians)')
+		
+			plt.show()
+			
+			self.sarray.append(self.s)
+			self.ax5.plot(self.sarray,'k')
+			self.ax4.set_ylabel('Displacement(m)')
+			plt.show()
+			
+			self.ax4.set_ylim(-0.05,0.05)
 			r.sleep()
 			
 
@@ -265,7 +291,7 @@ class PlotGPSTrajectory():
 		self.s=msg.s
 		self.e=msg.e
 
-		print(self.e)
+		print(self.s)
 	
 	def update_state(self, msg):
 		# Update vehicle's position.
@@ -282,6 +308,7 @@ class PlotGPSTrajectory():
 		# Update the reference for the MPC module.
 		self.x_ref_traj = msg.xr
 		self.y_ref_traj = msg.yr
+
 
 if __name__=='__main__':
 	p = PlotGPSTrajectory()
