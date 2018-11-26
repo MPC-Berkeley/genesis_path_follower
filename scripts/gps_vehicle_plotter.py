@@ -61,9 +61,9 @@ class PlotGPSTrajectory():
 		self.enable_acc_pub   = rospy.Publisher("/control/enable_accel", UInt8, queue_size =2, latch=True)  ##Why queue_size = 10?
 		self.enable_steer_pub = rospy.Publisher("/control/enable_spas",  UInt8, queue_size =2, latch=True)
 		self.errorarray=[0];
-		self.deltapsiarray=[0];
+		self.Uxarray=[0];
 		self.sarray=[0];
-
+		#self.itercount=0; #counting no. of while loop iterations in def loop
 		self.r = rospy.Rate(50.0)  ##TODO: Can we run this fast?
 
 		#Initialize Path object
@@ -95,9 +95,9 @@ class PlotGPSTrajectory():
 		self.ax1=self.f.add_subplot(212)
 		self.ax = plt.gca()	
                 self.f2=plt.figure()
-		self.ax3=self.f2.add_subplot(311)
-		self.ax4=self.f2.add_subplot(312)
-		self.ax5=self.f2.add_subplot(313)
+		self.ax3=self.f2.add_subplot(211)
+		self.ax5=self.f2.add_subplot(212)
+		
 		
 		plt.ion()
 		#Create speed profile - choose between constant velocity limit or track-varying velocity limit
@@ -105,12 +105,11 @@ class PlotGPSTrajectory():
 		
 		#self.speedProfile = BasicProfile(self.genesis, self.path, self.path.friction, self.path.vMax, AxMax = 2.0)
 
-		self.ax1.plot(self.speedProfile.s, self.speedProfile.Ux)
-
+		self.ax1.plot(self.speedProfile.s, self.speedProfile.Ux,'b',label='Expected')
 		self.ax1.set_autoscaley_on(True)
-
-		self.ax1.set_ylabel('Speed (m/s)')
-		self.ax1.set_xlabel('Displacement (m)') 
+		plt.show()
+		self.ax1.set_ylabel('Expected and actual speed (m/s)')
+		
 
 
 	
@@ -127,7 +126,7 @@ class PlotGPSTrajectory():
 		
 		# This should be included in a launch file/yaml for the future.
 		self.a = 1.5213  		# m  	(CoG to front axle)
-		self.b = 1.4987  		# m  	(CoG to rear axle)
+		self.b = 1.4987  		#  	(CoG to rear axle)
 		self.vW = 1.89	 		# m  	(vehicle width)
 		self.rW = 0.3			# m		(wheel radius, estimate based on Shelley's value of 0.34 m).
 
@@ -194,8 +193,9 @@ class PlotGPSTrajectory():
 		# Main Plotting Loop.  Updates plot with info from subscriber callbacks.
 		
 		r  = rospy.Rate(10)
-		self.f2=plt.figure()
-		self.ax3=self.f2.add_subplot(211)
+		#self.f2=plt.figure()
+		#self.ax3=self.f2.add_subplot(211)
+		self.itercount=0
 		while not rospy.is_shutdown():
 			# Update MPC OL + Reference Trajectories.
 			self.l2.set_xdata(self.x_ref_traj); self.l2.set_ydata(self.y_ref_traj)
@@ -252,8 +252,10 @@ class PlotGPSTrajectory():
 			plt.pause(0.001)
 			#print("Error is " + str(self.e) )
 			self.errorarray.append(self.e)
-			self.ax3.plot(self.errorarray,'r')
+			self.ax3.plot(self.errorarray,'r',label='Error')
 			self.ax3.set_ylabel('Error (m)')
+			self.ax3.plot(loc='upper left')
+			self.ax3.set_autoscaley_on(True)
 
 			plt.show()
 
@@ -261,18 +263,22 @@ class PlotGPSTrajectory():
 				#self.ax3.clear()
 			#	self.errorarray=[0]
 				
-			self.deltapsiarray.append(self.deltapsi)
-			self.ax4.plot(self.deltapsiarray,'b')
-			self.ax4.set_ylabel('Heading Error (radians)')
-		
+			self.Uxarray.append(self.Ux)
+			self.ax1.plot(self.Uxarray,'r',label='Actual')
 			plt.show()
 			
 			self.sarray.append(self.s)
-			self.ax5.plot(self.sarray,'k')
-			self.ax4.set_ylabel('Displacement(m)')
+			self.ax5.plot(self.sarray,'g',label='Displacement')	
+			self.ax5.set_ylabel('Displacement(m)')
+			self.ax5.set_autoscaley_on(True)
 			plt.show()
-			
-			self.ax4.set_ylim(-0.05,0.05)
+			if self.itercount==0:
+				self.ax1.legend(loc='lower right')
+				self.ax3.legend(loc='upper left')
+				self.ax5.legend(loc='upper left')
+
+			self.itercount=self.itercount+1
+	
 			r.sleep()
 			
 
@@ -290,8 +296,9 @@ class PlotGPSTrajectory():
 		self.deltapsi=msg.deltapsi
 		self.s=msg.s
 		self.e=msg.e
+		self.Ux=msg.v
 
-		print(self.s)
+		
 	
 	def update_state(self, msg):
 		# Update vehicle's position.
