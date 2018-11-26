@@ -254,7 +254,6 @@ class PlotGPSTrajectory():
 			self.errorarray.append(self.e)
 			self.ax3.plot(self.errorarray,'r',label='Error')
 			self.ax3.set_ylabel('Error (m)')
-			self.ax3.plot(loc='upper left')
 			self.ax3.set_autoscaley_on(True)
 
 			plt.show()
@@ -271,11 +270,14 @@ class PlotGPSTrajectory():
 			self.ax5.plot(self.sarray,'g',label='Displacement')	
 			self.ax5.set_ylabel('Displacement(m)')
 			self.ax5.set_autoscaley_on(True)
+			plt.xticks(visible=True)
+			plt.yticks(visible=True)
 			plt.show()
 			if self.itercount==0:
 				self.ax1.legend(loc='lower right')
-				self.ax3.legend(loc='upper left')
-				self.ax5.legend(loc='upper left')
+				self.ax3.legend(loc='upper right')
+				self.ax5.legend(loc='lower right')
+				
 
 			self.itercount=self.itercount+1
 	
