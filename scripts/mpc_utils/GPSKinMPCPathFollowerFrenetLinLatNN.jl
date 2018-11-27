@@ -40,14 +40,11 @@ module GPSKinMPCPathFollowerFrenetLinLatNN
 	# saved place is different
 	if KinMPCParams.platform == "nuvo"
 		primalNN_Data 	= matread("../GenesisAutoware/ros/src/genesis_path_follower/paths/latNNNotWorking/trained_weightsPrimalLatBadVCRand10kDataTwoTraj_CPGDay4_1Cp.mat")
-		# primalNN_Data 	= matread("../GenesisAutoware/ros/src/genesis_path_follower/paths/goodNNs/trained_weightsPrimalLat10k_CPGDay2BacktoDay1Tune.mat")
 		dualNN_Data 	= matread("../GenesisAutoware/ros/src/genesis_path_follower/paths/trained_weightsDualLat.mat")
 
 	elseif KinMPCParams.platform == "abby"
 		primalNN_Data 	= matread("../catkin_ws/src/genesis_path_follower/paths/latNNNotWorking/trained_weightsPrimalLatBadVCRand10kDataTwoTraj_CPGDay4_1Cp.mat")
-		# primalNN_Data 	= matread("../catkin_ws/src/genesis_path_follower/paths/goodNNs/trained_weightsPrimalLat10k_CPGDay2BacktoDay1Tune.mat")
 		dualNN_Data 	= matread("../catkin_ws/src/genesis_path_follower/paths/trained_weightsDualLat.mat")
-	
 	else
 		println("Long NN Data not found!")
 	end
@@ -348,11 +345,14 @@ module GPSKinMPCPathFollowerFrenetLinLatNN
 		ey_0 = params[1]
 		epsi_0 = params[2]
 
+
 		tic()
-		z1 = max.( Wi_PLat*params + bi_PLat, 0  )
+		z1 = max.( Wi_PLat[:,1:3+2*N]*params + bi_PLat, 0  )
 		z2 = max.( W1_PLat*z1     + b1_PLat, 0  )
 		u_tilde_NN_vec = Wout_PLat*z2 + bout_PLat
 
+		# hack for smaller horizon problems
+		u_tilde_NN_vec = u_tilde_NN_vec[1:N*nu,:]
 
 		x_tilde_0 = params[1:3] 	
 

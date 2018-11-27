@@ -327,10 +327,17 @@ module GPSKinMPCPathFollowerFrenetLinLongNN
 	    d_dual = fu_tilde_vec
 
    		# calls the NN with two Hidden Layers
-		z1 = max.(Wi_DLong*params + bi_DLong, 0)
+		z1 = max.(Wi_DLong[: , 1:2+N*(2)] * params + bi_DLong, 0)
 		z2 = max.(W1_DLong*z1 + b1_DLong, 0)
 		lambda_tilde_NN_vec = Wout_DLong*z2 + bout_DLong
 		lambda_tilde_NN_vec = max.(lambda_tilde_NN_vec, 0)  	#Delta-Acceleration
+
+		#hack to get right dimension
+		lambda_tilde_NN_vec = lambda_tilde_NN_vec[1:N*(nf+ng)]
+
+
+		# println(size(lambda_tilde_NN_vec))
+		# println(size(Qdual_tmp))
 
 		dualObj_NN = -1/2 * lambda_tilde_NN_vec'*Qdual_tmp*lambda_tilde_NN_vec - (C_dual*(Q_dual\c_dual)+d_dual)'*lambda_tilde_NN_vec - 1/2*c_dual'*(Q_dual\c_dual) + const_dual
 
@@ -349,11 +356,17 @@ module GPSKinMPCPathFollowerFrenetLinLongNN
 		s_0 = 0
 		v_0 = params[1]
 
+		# println(size(params))
+		# println(size(Wi_PLong[: , 1:2+N*(2)]))
+
 		tic()
 		# calls the NN with two Hidden Layers
-		z1 = max.(Wi_PLong*params  + bi_PLong, 0)
+		z1 = max.(Wi_PLong[: , 1:2+N*2]*params  + bi_PLong, 0)
 		z2 = max.(W1_PLong*z1      + b1_PLong, 0)
 		u_tilde_NN_vec = Wout_PLong*z2 + bout_PLong  	#Delta-Acceleration
+
+		# hack to restrict appropriate dimension
+		u_tilde_NN_vec = u_tilde_NN_vec[1:N*nu,:];
 
 		# project
 		u_tilde_NN_vec = min.(u_tilde_NN_vec, u_tilde_ub)
