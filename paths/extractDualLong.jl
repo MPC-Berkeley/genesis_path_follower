@@ -16,6 +16,11 @@ import KinMPCParams
 const kmpcLinLong = GPSKinMPCPathFollowerFrenetLinLongGurobi  # short-hand-notation
 
 
+## File names
+inFile = "sim_GurobiGurobi_N4_trainingData.mat"
+outFile = "trainingData_Long_simN4.mat"
+##
+
 # Load as Many parameters as possible from MPC file to avoid parameter mis-match
 N 		= KinMPCParams.N
 dt 		= KinMPCParams.dt
@@ -24,9 +29,12 @@ nu 		= 1								# number of inputs u = df
 L_a 	= KinMPCParams.L_a				# from CoG to front axle (according to Jongsang)
 L_b 	= KinMPCParams.L_b				# from CoG to rear axle (according to Jongsang)
 
+
 ############## load all data ##############
 # longData = matread("NN_test_trainingData.mat")
-longData = matread("CPG_day4_long1A_trainingData.mat.mat")   				# bad
+longData = matread(inFile)   				# bad
+
+
 
 
 inputParam_long = longData["inputParam_long"]   # np.hstack((s_curr.T, v_curr.T ,a_prev.T, s_ref, v_ref ))
@@ -283,6 +291,8 @@ end
 
 println("===========================================")
 
+println("$(num_DataPoints) data points generated")
+
 println(" ")
 
 # println("max rel optVal residual: $(maximum(relOptVal_res_all))")
@@ -304,13 +314,13 @@ println("avg Rel dual_gap:  $(mean(Reldual_gap))")
 
 
 #save data
-matwrite("NN_test_CPGDay3_TotalDataLongTrafo2.mat", Dict(
+matwrite(outFile, Dict(
 	"inputParam_long" => inputParam_long,
 	"outputParamDacc_long" => outputParamDacc_longNew,
 	"outputParamDual_long" => outputParamDual_long,
 	"optVal_long" => optVal_long
 ))
-# println("---- done extracting and saving dual for LONG control ----")
+println("---- done extracting and saving dual for LONG control ----")
 
 
 

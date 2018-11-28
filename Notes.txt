@@ -1,0 +1,17 @@
+Random Notes:
+
+ - Authors: GXZ / MB
+
+
+To extract data from Simulations / Experiments, do the following:
+
+1. run sim/exp
+2. extract data from .bag -> .mat using 
+      python scripts/analysis/parse_bag.py -m Sim --infile bags/Frenet.bag --outfile paths/Frenet.mat
+      python scripts/analysis/parse_bag.py -m Real --infile bags/Frenet.bag --outfile paths/Frenet.mat
+
+3. extract training data by running
+      python extract_TrainingData.py
+
+4. extract dual variables for LONG
+      julia extractDualLong.jl
