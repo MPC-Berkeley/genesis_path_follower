@@ -86,7 +86,7 @@ class LanekeepingPublisher():
 		self.closedLoopData = ClosedLoopData(dt = 1.0 / rate, Time = 400., v0 = 8.0)
 		
 		#Initialization Parameters for LMPC controller; 
-		numSS_Points = 15; numSS_it = 2; N = 12
+		numSS_Points = 16; numSS_it = 2; N = 12
 		Qslack = np.diag([1., 1., 1., 1., 1., 1.]); Qlane  = np.array([15. , 10.]); Q = np.zeros((6,6))
 		R = np.zeros((2,2)); dR = np.array([10., 10.]); 
 		dt = 1.0 / rate; Laps = 10; TimeLMPC = 400
