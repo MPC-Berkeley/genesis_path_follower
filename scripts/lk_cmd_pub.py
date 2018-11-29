@@ -90,7 +90,7 @@ class LanekeepingPublisher():
 		#Initialization Parameters for LMPC controller; 
 		numSS_Points = 16; numSS_it = 2; N = 12
 		Qslack = 100*np.diag([1., 1., 1., 1., 1., 1.]); Qlane  = np.array([15. , 10.]); Q = np.zeros((6,6))
-		R = np.zeros((2,2)); dR = np.array([10., 10.]); 
+		R = np.zeros((2,2)); dR = np.array([100., 100.]); 
 		dt = 1.0 / rate; Laps = 10; TimeLMPC = 400
 		Solver = "CVX"; steeringDelay = 0; idDelay= 1; aConstr = np.array([self.accelMin, self.accelMax]) #min and max acceleration
 		
