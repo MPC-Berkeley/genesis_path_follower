@@ -965,11 +965,11 @@ def Compute_Q_M(SS, uSS, indexSelected, stateFeatures, inputFeatures, usedIt, la
     for it in usedIt:
         if idDelay == 0:
 
-            print(indexSelected)
+            
             X0 = np.append( X0, np.hstack((np.squeeze(SS[np.ix_(indexSelected[Counter], stateFeatures, [it])]),
                             np.squeeze(uSS[np.ix_(indexSelected[Counter] - inputDelay, inputFeatures, [it])], axis=2))), axis=0)
         else:
-            print(indexSelected)
+            
             # print indexSelected[Counter]
 
             # Aa = np.squeeze(SS[np.ix_(indexSelected[Counter], stateFeatures, [it])])

@@ -107,13 +107,16 @@ class VehicleSimulator():
 			X_n   = self.X   + deltaT * ( self.vx*np.cos(self.psi) - self.vy*np.sin(self.psi) )
 			Y_n   = self.Y   + deltaT * ( self.vx*np.sin(self.psi) + self.vy*np.cos(self.psi) )
 
+			noise_vx = np.maximum(-0.05, np.minimum(np.random.randn() * 0.01, 0.05))
+			noise_vy = np.maximum(-0.1, np.minimum(np.random.randn() * 0.01, 0.1))
+			noise_wz = np.maximum(-0.05, np.minimum(np.random.randn() * 0.005, 0.05))
 
 			self.X 	 = X_n
 			self.Y   = Y_n
 			self.psi = (psi_n + np.pi) % (2.0 * np.pi) - np.pi # https://stackoverflow.com/questions/15927755/opposite-of-numpy-unwrap
-			self.vx  = vx_n
-			self.vy  = vy_n
-			self.wz  = wz_n
+			self.vx  = vx_n + 0.01*noise_vx
+			self.vy  = vy_n + 0.01*noise_vy
+			self.wz  = wz_n + 0.05*noise_wz
 
 	def _update_low_level_control(self, dt_control):
 		# e_<n> = self.<n> - self.<n>_des

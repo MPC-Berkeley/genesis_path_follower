@@ -14,6 +14,8 @@ from lk_utils.Classes import LMPCprediction, ClosedLoopData
 import matplotlib.pyplot as plt
 import numpy as np
 import math
+import sys
+import pickle
 
 
 
@@ -87,7 +89,7 @@ class LanekeepingPublisher():
 		
 		#Initialization Parameters for LMPC controller; 
 		numSS_Points = 16; numSS_it = 2; N = 12
-		Qslack = np.diag([1., 1., 1., 1., 1., 1.]); Qlane  = np.array([15. , 10.]); Q = np.zeros((6,6))
+		Qslack = 100*np.diag([1., 1., 1., 1., 1., 1.]); Qlane  = np.array([15. , 10.]); Q = np.zeros((6,6))
 		R = np.zeros((2,2)); dR = np.array([10., 10.]); 
 		dt = 1.0 / rate; Laps = 10; TimeLMPC = 400
 		Solver = "CVX"; steeringDelay = 0; idDelay= 1; aConstr = np.array([self.accelMin, self.accelMax]) #min and max acceleration
@@ -123,7 +125,8 @@ class LanekeepingPublisher():
 		#Start testing!
 		t_start = rospy.Time.now()
 		print('Path Tracking Test: Started at %f' % (t_start.secs + t_start.nsecs*1e-9))
-
+		Path_Keeping_Data_Flag=0
+		Path_Keeping_Laps=2
 		while not rospy.is_shutdown():
 			t_now = rospy.Time.now()
 			dt = t_now - t_start
@@ -132,23 +135,30 @@ class LanekeepingPublisher():
 			#Populate localState and globalState objects from state publisher
 			self.localState.update(Ux = self.Ux, Uy = self.Uy, r = self.r)
 			self.globalState.update(posE = self.X, posN = self.Y, psi = self.psi)
+			self.mapMatch.localize(self.localState, self.globalState)
 
 			xMeasuredLoc = np.array([self.localState.Ux, self.localState.Uy, self.localState.r, self.localState.deltaPsi, self.localState.s, self.localState.e])
 			xMeasuredGlob  = np.array([self.localState.Ux, self.localState.Uy, self.localState.r, self.globalState.psi, self.globalState.posE, self.globalState.posN])
 
 
 			#Localize Vehicle
-			self.mapMatch.localize(self.localState, self.globalState)
+			
 			#print("Lateral Error is " + str(self.localState.e) )
 			
+			print "current state is: ", xMeasuredLoc
 			#check lap counter to see if lap elapsed
 			sNow = self.localState.s
 			if (self.oldS - sNow) > self.trackLength / 2:
-				self.lapCounter += 1
 				print(self.lapCounter)
 				print(self.timeCounter)
 				self.LMPC.addTrajectory(self.closedLoopData)
+				if Path_Keeping_Data_Flag==0 and self.lapCounter<=Path_Keeping_Laps:
+					file_name='/data/closedLoopData%s.obj' % self.lapCounter
+					file_data= open(sys.path[0]+file_name, 'wb')
+					pickle.dump(self.closedLoopData, file_data)
+					file_data.close()
 				self.closedLoopData.updateInitialConditions(xMeasuredLoc, xMeasuredGlob)
+				self.lapCounter += 1
 				self.timeCounter = 0
 
 			self.oldS = sNow
@@ -156,19 +166,30 @@ class LanekeepingPublisher():
 
 
 			#Calculate control inputs
-			if self.lapCounter <= 2:
-				self.controller.updateInput(self.localState, self.controlInput)
-				delta = self.controlInput.delta
-				Fx = self.controlInput.Fx
+			if Path_Keeping_Data_Flag==0:
+				if self.lapCounter <= Path_Keeping_Laps:
+					self.controller.updateInput(self.localState, self.controlInput)
+					delta = self.controlInput.delta
+					Fx = self.controlInput.Fx
 
-				# use F = m*a to get desired acceleration. Limit acceleration command to 2 m/s
-				accel = min( Fx / self.genesis.m , self.accelMax)
+					# use F = m*a to get desired acceleration. Limit acceleration command to 2 m/s
+					accel = min( Fx / self.genesis.m , self.accelMax)
 
-			else: 
+				else: 
+					self.LMPC.solve(xMeasuredLoc)
+					delta = self.LMPC.uPred[0,0]
+					accel = self.LMPC.uPred[0,1]
+			else:
+				while self.lapCounter<=Path_Keeping_Laps:
+					file_name='data/closedLoopData%s.obj' % self.lapCounter
+					file_data=open(sys.path[0]+file_name,'rb')
+					temp_closedLoopData= pickle.load(file_data)
+					file_data.close()
+					self.LMPC.addTrajectory(temp_closedLoopData)
+					self.lapCounter+=1
 				self.LMPC.solve(xMeasuredLoc)
 				delta = self.LMPC.uPred[0,0]
 				accel = self.LMPC.uPred[0,1]
-				
 
 
 
