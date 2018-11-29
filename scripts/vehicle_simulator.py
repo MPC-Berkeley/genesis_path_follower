@@ -114,9 +114,9 @@ class VehicleSimulator():
 			self.X 	 = X_n
 			self.Y   = Y_n
 			self.psi = (psi_n + np.pi) % (2.0 * np.pi) - np.pi # https://stackoverflow.com/questions/15927755/opposite-of-numpy-unwrap
-			self.vx  = vx_n + 0.01*noise_vx
-			self.vy  = vy_n + 0.01*noise_vy
-			self.wz  = wz_n + 0.05*noise_wz
+			self.vx  = vx_n + 0.1*noise_vx
+			self.vy  = vy_n + 0.1*noise_vy
+			self.wz  = wz_n + 0.1*noise_wz
 
 	def _update_low_level_control(self, dt_control):
 		# e_<n> = self.<n> - self.<n>_des
