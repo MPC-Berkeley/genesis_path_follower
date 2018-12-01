@@ -16,6 +16,7 @@ from lk_utils.path_lib import *
 from lk_utils.vehicle_lib import *
 from lk_utils.velocityprofiles import *
 from lk_utils.sim_lib import *
+from matplotlib.widgets import Slider
 
 class PlotGPSTrajectory():
 	'''
@@ -60,9 +61,11 @@ class PlotGPSTrajectory():
 	
 		self.enable_acc_pub   = rospy.Publisher("/control/enable_accel", UInt8, queue_size =2, latch=True)  ##Why queue_size = 10?
 		self.enable_steer_pub = rospy.Publisher("/control/enable_spas",  UInt8, queue_size =2, latch=True)
-		self.errorarray=[0];
+		self.patherrorarray=[0];
 		self.Uxarray=[0];
 		self.sarray=[0];
+		self.velerrorarray=[0];
+		self.speedProfilearray=[0];
 		#self.itercount=0; #counting no. of while loop iterations in def loop
 		self.r = rospy.Rate(50.0)  ##TODO: Can we run this fast?
 
@@ -91,13 +94,14 @@ class PlotGPSTrajectory():
 		
 		# Set up Plots includes full ("global") trajectory, target trajectory, MPC prediction trajectory, vehicle and Speed Profile
 		self.f = plt.figure()
-		self.ax2=self.f.add_subplot(211)
-		self.ax1=self.f.add_subplot(212)
+		self.ax2=plt.gca()
+		self.f2=plt.figure()
+		self.ax1=plt.gca()
 		self.ax = plt.gca()	
-                self.f2=plt.figure()
-		self.ax3=self.f2.add_subplot(211)
-		self.ax5=self.f2.add_subplot(212)
-		
+                self.f3=plt.figure()
+		self.ax3=plt.gca()
+		self.f4=plt.figure()
+		self.ax5=plt.gca()
 		
 		plt.ion()
 		#Create speed profile - choose between constant velocity limit or track-varying velocity limit
@@ -105,10 +109,7 @@ class PlotGPSTrajectory():
 		
 		#self.speedProfile = BasicProfile(self.genesis, self.path, self.path.friction, self.path.vMax, AxMax = 2.0)
 
-		self.ax1.plot(self.speedProfile.s, self.speedProfile.Ux,'b',label='Expected')
-		self.ax1.set_autoscaley_on(True)
-		plt.show()
-		self.ax1.set_ylabel('Expected and actual speed (m/s)')
+	
 		
 
 
@@ -251,28 +252,62 @@ class PlotGPSTrajectory():
 			self.f.canvas.draw()
 			plt.pause(0.001)
 			#print("Error is " + str(self.e) )
-			self.errorarray.append(self.e)
-			self.ax3.plot(self.errorarray,'r',label='Error')
-			self.ax3.set_ylabel('Error (m)')
-			self.ax3.set_autoscaley_on(True)
-
-			plt.show()
-
+			
 			#if len(self.errorarray)==100:
 				#self.ax3.clear()
 			#	self.errorarray=[0]
-				
-			self.Uxarray.append(self.Ux)
-			self.ax1.plot(self.Uxarray,'r',label='Actual')
-			plt.show()
 			
 			self.sarray.append(self.s)
-			self.ax5.plot(self.sarray,'g',label='Displacement')	
-			self.ax5.set_ylabel('Displacement(m)')
+			if len(self.sarray)==30:
+				del self.sarray[0]
+			self.Uxarray.append(self.Ux)
+			if len(self.Uxarray)==30:
+				del self.Uxarray[0]
+			self.temp=self.speedProfile.Ux
+			self.speedProfilearray.append(np.asscalar(self.speedProfile.Ux[self.itercount]))
+			self.velerrorarray.append(self.speedProfilearray[len(self.speedProfilearray)-1]-self.Ux)
+			print(len(self.speedProfilearray))
+			if len(self.velerrorarray)==30:
+				del self.velerrorarray[0]
+				self.ax1.clear()
+
+
+
+			
+			self.ax1.plot(self.sarray,self.velerrorarray,'g',label='Actual')
+			self.ax1.set_ylabel('Velocity Error (m/s)')
+			self.ax1.set_autoscalex_on(False)
+			self.ax1.set_autoscaley_on(True)
+			
+			plt.show()
+			#print((self.speedProfile.Ux[100]))
+
+
+			if len(self.speedProfilearray)==30:
+				del self.speedProfilearray[0]
+				self.ax5.clear()
+			self.ax5.plot(self.sarray,self.speedProfilearray,'r',label='Actual')
+			self.ax5.set_ylabel('Expected Speed (m/s)')
+		
 			self.ax5.set_autoscaley_on(True)
+		
+			self.patherrorarray.append(self.e)
+			if len(self.patherrorarray)==30:
+				del self.patherrorarray[0]
+				self.ax3.clear()
+			self.ax3.plot(self.sarray,self.patherrorarray,'b',label='Error')
+			self.ax3.set_ylabel('Path Tracking Error (m)')
+			self.ax3.set_autoscalex_on(False)
+			self.ax3.set_autoscaley_on(True)
+			
+
+			plt.show()
+
 			plt.xticks(visible=True)
 			plt.yticks(visible=True)
 			plt.show()
+			#print(len(self.errorarray))
+
 			if self.itercount==0:
 				self.ax1.legend(loc='lower right')
 				self.ax3.legend(loc='upper right')
