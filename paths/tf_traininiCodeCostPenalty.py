@@ -1,3 +1,5 @@
+# In this code we penalize the cost function as well and push it to go to optimal cost
+
 import numpy as np
 import matplotlib.pyplot as plt
 import tensorflow as tf
@@ -15,12 +17,25 @@ def unnormalize(x, mean, std):
     return x * std + mean
 
 #%% We have imported all dependencies
-df = sio.loadmat('longNNandData/NN_test_CPGDay4_SmoothRand10kAndOneTrajTrainingDataLong_2B.mat',squeeze_me=True, struct_as_record=False) # read data set using pandas
-# df = sio.loadmat('NN_test_trainingDataLatRFS.mat',squeeze_me=True, struct_as_record=False) # read data set using pandas
+df = sio.loadmat('dataMustContainSystemandWeightMatrices',squeeze_me=True, struct_as_record=False) # read data set using pandas
+
+# This stays the same as we do not change the feastures and labels 
 x_data = df['inputParam_long']
 y_data = df['outputParamDacc_long']
 x_data_t = x_data
 y_data_t = y_data
+
+# also load the optimal cost and cost penalty matrices with this part of the code 
+opt_cost = df['opt_val']            # array of optimal cost values 
+
+
+# Function for obtaining Axvec and Bxvec matrices, given a velocity and other params 
+#######################################################
+
+
+
+######################################################
+
 
 ###### TRY REMOVING #######
 # x_data, y_data, y_dataDual = shuffle(x_data, y_data, y_dataDual)
@@ -41,18 +56,17 @@ y_train = y_data[:train_length,:]                       # Training data
 
 x_test = x_data[train_length:, :]                       # Testing data
 y_test = y_data[train_length:,:]   
-y_data_t_test = y_data_t[train_length:, :]                     # Testing data
+y_data_t_test = y_data_t[train_length:, :]              # Testing data
 # y_testDual = y_dataDual[train_length:,:]              # Testing data 
 
 insize =  x_data.shape[1]
 outsize = y_data.shape[1]                               # Dimension of primal output data 
 # outsizeD = y_dataDual.shape[1]                        # Dimension of dual output data 
 
-xs = tf.placeholder(tf.float32, [insize, None])         #tf.placeholder("float")
-ys = tf.placeholder(tf.float32, [outsize, None])        #tf.placeholder("float")
+xs = tf.placeholder(tf.float32, [insize, None])         # tf.placeholder("float")
+ys = tf.placeholder(tf.float32, [outsize, None])        # tf.placeholder("float")
 lr = tf.placeholder(tf.float32)
 
-# ysD = tf.placeholder("float")
 #%%
 
 ################## PRIMAL NN TRAINING ##############################
@@ -76,24 +90,30 @@ W_O = tf.Variable(tf.random_uniform([outsize,neuron_sizeML]))
 b_O = tf.Variable(tf.random_uniform([outsize,1]))
 output = tf.add(tf.matmul(W_O,layer_2), b_O)
 
+## Here form the predicted states for obtaining the predicted cost function value 
+
+xpred = AxVec(xs(velcity_index))*xs(initial_state_index) + Bxvec(xs(velocity_index))*output
+cost_pred = np.transpose(xpred)*Qxvec*xpred + np.transpose(output)*Rxvec*output 
+
+##################################################################################
+
 #  O/p layer multiplying and adding bias then activation function
 #  notice output layer has one node only since performing #regression
 
-
-########### DOES THIS COMPUTE NORM OR ELEMENTWISE SQUARE???? #############  
+########### DOES THIS COMPUTE NORM OR ELEMENTWISE SQUARE #############  
 # https://stackoverflow.com/questions/41338509/tensorflow-mean-squared-error-loss-function
 # loss = tf.reduce_sum(tf.pow(prediction - Y,2))/(n_instances)
 # loss = tf.reduce_mean(tf.squared_difference(prediction, Y))
 # loss = tf.nn.l2_loss(prediction - Y)   # does not normalize w.r.t. #samples
 
-# WHAT IF WE USE A ONE-NORM INSTEAD OF 2-NORM?
+# WHAT IF WE USE A ONE-NORM INSTEAD OF 2-NORM
 # loss = tf.reduce_mean(tf.abs(y - y_data)) 
 # optimizer = tf.train.GradientDescentOptimizer(0.05) TO REDUCE OSCILLATION?
 
 # cost = tf.reduce_mean(tf.square(output-ys))            # our mean squared error cost function
-cost = tf.losses.mean_squared_error(output, ys)          #tf.reduce_mean(tf.squared_difference(output, ys))#+ tf.abs(output - ys) )
 
-train = tf.train.AdamOptimizer(lr).minimize(cost)      # GD and proximal GD working bad! Adam and RMS well.
+cost =  tf.losses.mean_squared_error(output, ys)  + (cost_pred-opt_val)        # tf.reduce_mean(tf.squared_difference(output, ys))#+ tf.abs(output - ys) )
+train = tf.train.AdamOptimizer(lr).minimize(cost)                              # GD and proximal GD working bad! Adam and RMS well.
 
 c_t = []
 c_test = []
