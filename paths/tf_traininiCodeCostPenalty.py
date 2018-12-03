@@ -52,7 +52,7 @@ train_length = int(np.floor(data_length*4/5))           # 80% data to train
 ## Split Training and Testing Data to not Overfit 
 x_train = x_data[:train_length, :]                      # Training data
 y_train = y_data[:train_length,:]                       # Training data
-# y_trainDual = y_dataDual[:train_length,:]               # Training data 
+# y_trainDual = y_dataDual[:train_length,:]             # Training data 
 
 x_test = x_data[train_length:, :]                       # Testing data
 y_test = y_data[train_length:,:]   
@@ -69,7 +69,7 @@ lr = tf.placeholder(tf.float32)
 
 #%%
 
-################## PRIMAL NN TRAINING ##############################
+################## NN TRAINING ##############################
 neuron_size = 10
 neuron_sizeML = neuron_size                             # Can vary size of the intermediate layer as well
 
@@ -112,7 +112,7 @@ cost_pred = np.transpose(xpred)*Qxvec*xpred + np.transpose(output)*Rxvec*output
 
 # cost = tf.reduce_mean(tf.square(output-ys))            # our mean squared error cost function
 
-cost =  tf.losses.mean_squared_error(output, ys)  + (cost_pred-opt_val)        # tf.reduce_mean(tf.squared_difference(output, ys))#+ tf.abs(output - ys) )
+cost =  tf.losses.mean_squared_error(output, ys)  + (cost_pred-opt_val).^2     # tf.reduce_mean(tf.squared_difference(output, ys))#+ tf.abs(output - ys) )
 train = tf.train.AdamOptimizer(lr).minimize(cost)                              # GD and proximal GD working bad! Adam and RMS well.
 
 c_t = []
