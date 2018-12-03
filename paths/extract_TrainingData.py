@@ -14,8 +14,8 @@ import argparse
 
 
 ### Define file names
-infile = '1clat_cpg5.mat'
-outfile = 'CPG_day5_lat1C_trainingData.mat'
+infile = 'CPG_Day5/vid3.mat'
+outfile = 'CPG_day5_long2B_trainingData.mat'
 
 
 ### script starts here

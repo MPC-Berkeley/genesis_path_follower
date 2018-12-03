@@ -50,7 +50,7 @@ test_inputParams = test_Data["inputParam_lat"]
 # test_optVal = test_Data["optVal_lat"]
 test_Ddf = test_Data["outputParamDdf_lat"]
 # test_dual = test_Data["outputParamDual_lat"]
-test_inputParams = test_inputParams[50:250,:]
+test_inputParams = test_inputParams[50:1550,:]
 num_DataPoints = size(test_inputParams,1)
 
 ###########################################################################
@@ -278,7 +278,6 @@ while iii <= num_DataPoints
 	# lambda_res[iii] = norm(test_dual[iii,:] - lambda_tilde_NN_vec)
 	
 	gap_primal[iii] = primObj_NN[1] - obj_primal
-
 	relGap_primal[iii] = gap_primal[iii] / obj_primal
 
 	# gap_dual[iii] = obj_primal - dualObj_NN[1]
