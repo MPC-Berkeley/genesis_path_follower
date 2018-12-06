@@ -39,8 +39,6 @@ class PlotGPSTrajectory():
 
 
 		# Set up Data
-		self.edges_in = bounds["in"]
-		self.edges_out = bounds["out"]
 
 		self.x_global_traj = grt.get_Xs()
 		self.y_global_traj = grt.get_Ys()
@@ -61,8 +59,6 @@ class PlotGPSTrajectory():
 		plt.ion()
 
 		# Road Edges
-		self.e1 = self.ax.plot(self.edges_in[:,0], self.edges_in[:,1])
-		self.e2 = self.ax.plot(self.edges_out[:,0], self.edges_out[:,1])
 		
 		# Trajectory 
 		self.l1, = self.ax.plot(self.x_global_traj, self.y_global_traj, 'k') 			
@@ -87,26 +83,24 @@ class PlotGPSTrajectory():
 		plt.axis('equal')
 		
 		# Zoomed Inset Plot: Based off tutorial/code here: http://akuederle.com/matplotlib-zoomed-up-inset
-		self.ax_zoom = zoomed_inset_axes(self.ax, 5, loc=2) # axis, zoom_factor, location (2 = upper left)
-		self.window = 25 # m
-		self.ze1 =  self.ax_zoom.plot(self.edges_in[:,0], self.edges_in[:,1], 'k--')
-		self.ze2 =  self.ax_zoom.plot(self.edges_out[:,0], self.edges_out[:,1], 'k--')
-		self.zl1, = self.ax_zoom.plot(self.x_global_traj, self.y_global_traj, 'k') 			
-		self.zl2, = self.ax_zoom.plot(self.x_ref_traj,    self.y_ref_traj, 'rx')	
-		self.zl3, = self.ax_zoom.plot(self.x_mpc_traj, self.y_mpc_traj, 'g*')
-		self.zvl0,= self.ax_zoom.plot(self.x_vehicle,      self.y_vehicle,      'bo',   MarkerSize= 8)
-		self.zvl1,= self.ax_zoom.plot(FrontBody[0,:],      FrontBody[1,:],      'gray', LineWidth = 2.5)
-		self.zvl2,= self.ax_zoom.plot(RearBody[0,:],       RearBody[1,:],       'gray', LineWidth = 2.5) 
-		self.zvl3,= self.ax_zoom.plot(FrontAxle[0,:],      FrontAxle[1,:],      'gray', LineWidth = 2.5)
-		self.zvl4,= self.ax_zoom.plot(RearAxle[0,:],       RearAxle[1,:],       'gray', LineWidth = 2.5)
-		self.zvl5,= self.ax_zoom.plot(RightFrontTire[0,:], RightFrontTire[1,:], 'r',    LineWidth = 3)
-		self.zvl6,= self.ax_zoom.plot(RightRearTire[0,:],  RightRearTire[1,:],  'k',    LineWidth = 3)
-		self.zvl7,= self.ax_zoom.plot(LeftFrontTire[0,:],  LeftFrontTire[1,:],  'r',    LineWidth = 3)
-		self.zvl8,= self.ax_zoom.plot(LeftRearTire[0,:],   LeftRearTire[1,:],   'k',    LineWidth = 3)
-		self.ax_zoom.set_xlim(self.x_vehicle - self.window, self.x_vehicle + self.window)
-		self.ax_zoom.set_ylim(self.y_vehicle - self.window, self.y_vehicle + self.window)
-		plt.yticks(visible=False)
-		plt.xticks(visible=False)
+		# self.ax_zoom = zoomed_inset_axes(self.ax, 5, loc=2) # axis, zoom_factor, location (2 = upper left)
+		# self.window = 25 # m
+		# self.zl1, = self.ax_zoom.plot(self.x_global_traj, self.y_global_traj, 'k') 			
+		# self.zl2, = self.ax_zoom.plot(self.x_ref_traj,    self.y_ref_traj, 'rx')	
+		# self.zl3, = self.ax_zoom.plot(self.x_mpc_traj, self.y_mpc_traj, 'g*')
+		# self.zvl0,= self.ax_zoom.plot(self.x_vehicle,      self.y_vehicle,      'bo',   MarkerSize= 8)
+		# self.zvl1,= self.ax_zoom.plot(FrontBody[0,:],      FrontBody[1,:],      'gray', LineWidth = 2.5)
+		# self.zvl2,= self.ax_zoom.plot(RearBody[0,:],       RearBody[1,:],       'gray', LineWidth = 2.5) 
+		# self.zvl3,= self.ax_zoom.plot(FrontAxle[0,:],      FrontAxle[1,:],      'gray', LineWidth = 2.5)
+		# self.zvl4,= self.ax_zoom.plot(RearAxle[0,:],       RearAxle[1,:],       'gray', LineWidth = 2.5)
+		# self.zvl5,= self.ax_zoom.plot(RightFrontTire[0,:], RightFrontTire[1,:], 'r',    LineWidth = 3)
+		# self.zvl6,= self.ax_zoom.plot(RightRearTire[0,:],  RightRearTire[1,:],  'k',    LineWidth = 3)
+		# self.zvl7,= self.ax_zoom.plot(LeftFrontTire[0,:],  LeftFrontTire[1,:],  'r',    LineWidth = 3)
+		# self.zvl8,= self.ax_zoom.plot(LeftRearTire[0,:],   LeftRearTire[1,:],   'k',    LineWidth = 3)
+		# self.ax_zoom.set_xlim(self.x_vehicle - self.window, self.x_vehicle + self.window)
+		# self.ax_zoom.set_ylim(self.y_vehicle - self.window, self.y_vehicle + self.window)
+		# plt.yticks(visible=False)
+		# plt.xticks(visible=False)
 		
 
 		rospy.init_node('vehicle_plotter', anonymous=True)
@@ -121,8 +115,8 @@ class PlotGPSTrajectory():
 			# Update MPC OL + Reference Trajectories.
 			self.l2.set_xdata(self.x_ref_traj); self.l2.set_ydata(self.y_ref_traj)
 			self.l3.set_xdata(self.x_mpc_traj); self.l3.set_ydata(self.y_mpc_traj)
-			self.zl2.set_xdata(self.x_ref_traj); self.zl2.set_ydata(self.y_ref_traj)
-			self.zl3.set_xdata(self.x_mpc_traj); self.zl3.set_ydata(self.y_mpc_traj)
+			# self.zl2.set_xdata(self.x_ref_traj); self.zl2.set_ydata(self.y_ref_traj)
+			# self.zl3.set_xdata(self.x_mpc_traj); self.zl3.set_ydata(self.y_mpc_traj)
 			
 			# Update Vehicle Plot.
 			FrontBody, RearBody, FrontAxle, RearAxle, RightFrontTire, RightRearTire, LeftFrontTire, LeftRearTire = \
@@ -148,27 +142,27 @@ class PlotGPSTrajectory():
 			self.vl8.set_ydata(LeftRearTire[1,:])
 
 
-			self.zvl0.set_xdata(self.x_vehicle)
-			self.zvl0.set_ydata(self.y_vehicle)
-			self.zvl1.set_xdata(FrontBody[0,:])
-			self.zvl1.set_ydata(FrontBody[1,:])
-			self.zvl2.set_xdata(RearBody[0,:])
-			self.zvl2.set_ydata(RearBody[1,:])
-			self.zvl3.set_xdata(FrontAxle[0,:])
-			self.zvl3.set_ydata(FrontAxle[1,:])
-			self.zvl4.set_xdata(RearAxle[0,:])
-			self.zvl4.set_ydata(RearAxle[1,:])
-			self.zvl5.set_xdata(RightFrontTire[0,:])
-			self.zvl5.set_ydata(RightFrontTire[1,:])
-			self.zvl6.set_xdata(RightRearTire[0,:])
-			self.zvl6.set_ydata(RightRearTire[1,:])
-			self.zvl7.set_xdata(LeftFrontTire[0,:])
-			self.zvl7.set_ydata(LeftFrontTire[1,:])
-			self.zvl8.set_xdata(LeftRearTire[0,:])
-			self.zvl8.set_ydata(LeftRearTire[1,:])
+			# self.zvl0.set_xdata(self.x_vehicle)
+			# self.zvl0.set_ydata(self.y_vehicle)
+			# self.zvl1.set_xdata(FrontBody[0,:])
+			# self.zvl1.set_ydata(FrontBody[1,:])
+			# self.zvl2.set_xdata(RearBody[0,:])
+			# self.zvl2.set_ydata(RearBody[1,:])
+			# self.zvl3.set_xdata(FrontAxle[0,:])
+			# self.zvl3.set_ydata(FrontAxle[1,:])
+			# self.zvl4.set_xdata(RearAxle[0,:])
+			# self.zvl4.set_ydata(RearAxle[1,:])
+			# self.zvl5.set_xdata(RightFrontTire[0,:])
+			# self.zvl5.set_ydata(RightFrontTire[1,:])
+			# self.zvl6.set_xdata(RightRearTire[0,:])
+			# self.zvl6.set_ydata(RightRearTire[1,:])
+			# self.zvl7.set_xdata(LeftFrontTire[0,:])
+			# self.zvl7.set_ydata(LeftFrontTire[1,:])
+			# self.zvl8.set_xdata(LeftRearTire[0,:])
+			# self.zvl8.set_ydata(LeftRearTire[1,:])
 			
-			self.ax_zoom.set_xlim(self.x_vehicle - self.window, self.x_vehicle + self.window)
-			self.ax_zoom.set_ylim(self.y_vehicle - self.window, self.y_vehicle + self.window)
+			# self.ax_zoom.set_xlim(self.x_vehicle - self.window, self.x_vehicle + self.window)
+			# self.ax_zoom.set_ylim(self.y_vehicle - self.window, self.y_vehicle + self.window)
 			
 			self.f.canvas.draw()
 			plt.pause(0.001)
