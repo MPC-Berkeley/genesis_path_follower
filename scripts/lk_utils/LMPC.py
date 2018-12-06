@@ -69,7 +69,7 @@ class ControllerLMPC():
         self.OldSteering = [0.0]*int(1 + steeringDelay)
         self.OldAccelera = [0.0]*int(1)
 
-        self.MaxNumPoint = 40
+        self.MaxNumPoint = 100
         self.itUsedSysID = 2
 
         self.lapSelected = []

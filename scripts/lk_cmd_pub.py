@@ -16,7 +16,7 @@ import numpy as np
 import math
 import sys
 import pickle
-
+import time
 
 
 #################################################################################################
@@ -42,8 +42,8 @@ class LanekeepingPublisher():
 		self.enable_acc_pub   = rospy.Publisher("/control/enable_accel", UInt8, queue_size =2, latch=True)  ##Why queue_size = 10?
 		self.enable_steer_pub = rospy.Publisher("/control/enable_spas",  UInt8, queue_size =2, latch=True)
 
-		rate = 10.0
-		self.rate = rospy.Rate(rate)  ##TODO: Can we run this fast?
+		self.rateHz = 10.0
+		self.rate = rospy.Rate(self.rateHz)  ##TODO: Can we run this fast?
 
 		#Initialize Path object
 		self.path = Path()
@@ -85,14 +85,14 @@ class LanekeepingPublisher():
 		self.lapCounter = 0
 
 
-		self.closedLoopData = ClosedLoopData(dt = 1.0 / rate, Time = 400., v0 = 8.0)
+		self.closedLoopData = ClosedLoopData(dt = 1.0 / self.rateHz, Time = 400., v0 = 8.0)
 		
 		#Initialization Parameters for LMPC controller; 
-		numSS_Points = 16; numSS_it = 2; N = 12
-		Qslack = 100*np.diag([1., 1., 1., 1., 1., 1.]); Qlane  = np.array([15. , 10.]); Q = np.zeros((6,6))
-		R = np.zeros((2,2)); dR = np.array([100., 100.]); 
-		dt = 1.0 / rate; Laps = 10; TimeLMPC = 400
-		Solver = "CVX"; steeringDelay = 0; idDelay= 1; aConstr = np.array([self.accelMin, self.accelMax]) #min and max acceleration
+		numSS_Points = 12; numSS_it = 2; N = 8
+		Qslack = 10*np.diag([10.,.1, 1., .1, 10., 1.]); Qlane  = np.array([15. , 10.]); Q = np.zeros((6,6))
+		R = 0*np.zeros((2,2)); dR = 2.0*np.array([25., 40.]); 
+		dt = 1.0 / self.rateHz; Laps = 10; TimeLMPC = 400
+		Solver = "OSQP"; steeringDelay = 0; idDelay= 1; aConstr = np.array([self.accelMin, self.accelMax]) #min and max acceleration
 		
 		SysID_Solver = "CVX" 
 		halfWidth = 3.0 #meters - hardcoded for now, can be property of map
@@ -179,6 +179,11 @@ class LanekeepingPublisher():
 					self.LMPC.solve(xMeasuredLoc)
 					delta = self.LMPC.uPred[0,0]
 					accel = self.LMPC.uPred[0,1]
+
+					print(self.LMPC.solverTime.total_seconds()+self.LMPC.linearizationTime.total_seconds())
+					if (self.LMPC.solverTime.total_seconds() + self.LMPC.linearizationTime.total_seconds()) > 1 / self.rateHz:
+						print("Error: not real time feasible")
+
 			else:
 				while self.lapCounter<=Path_Keeping_Laps:
 					file_name='data/closedLoopData%s.obj' % self.lapCounter
