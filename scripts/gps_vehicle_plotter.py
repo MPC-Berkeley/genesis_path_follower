@@ -87,6 +87,7 @@ class PlotGPSTrajectory():
 		self.deltapsi=0.
 		self.e=0.
 		self.s=0.
+		self.UxDes=0.
 
 		#Initialize vehicle
 		self.genesis = Vehicle('genesis')
@@ -156,7 +157,7 @@ class PlotGPSTrajectory():
 		self.vl7, = self.ax2.plot(LeftFrontTire[0,:],  LeftFrontTire[1,:],  'r',    LineWidth = 3)
 		self.vl8, = self.ax2.plot(LeftRearTire[0,:],   LeftRearTire[1,:],   'k',    LineWidth = 3)
 		
-		self.ax2.set_xlabel('X (m)'); self.ax2.set_ylabel('Y (m)')
+		self.ax2.set_xlabel('X (m)'); self.ax2.set_ylabel('Y (m)',fontsize=20)
 		
 		
 		# Zoomed Inset Plot: Based off tutorial/code here: http://akuederle.com/matplotlib-zoomed-up-inset
@@ -250,7 +251,7 @@ class PlotGPSTrajectory():
 			self.ax2_zoom.set_ylim(self.y_vehicle - self.window, self.y_vehicle + self.window)			
 			
 			self.f.canvas.draw()
-			plt.pause(0.001)
+			plt.pause(0.00001)
 			#print("Error is " + str(self.e) )
 			
 			#if len(self.errorarray)==100:
@@ -266,7 +267,7 @@ class PlotGPSTrajectory():
 			self.temp=self.speedProfile.Ux
 			self.speedProfilearray.append(np.asscalar(self.speedProfile.Ux[self.itercount]))
 			self.velerrorarray.append(self.speedProfilearray[len(self.speedProfilearray)-1]-self.Ux)
-			print(len(self.speedProfilearray))
+			
 			if len(self.velerrorarray)==30:
 				del self.velerrorarray[0]
 				self.ax1.clear()
@@ -274,30 +275,30 @@ class PlotGPSTrajectory():
 
 
 			
-			self.ax1.plot(self.sarray,self.velerrorarray,'g',label='Actual')
-			self.ax1.set_ylabel('Velocity Error (m/s)')
-			self.ax1.set_autoscalex_on(False)
+			self.ax1.plot(self.sarray,self.velerrorarray,'g',label='Velocity Error')
+			self.ax1.set_ylabel('Velocity Error (m/s)',fontsize=20)
+			self.ax1.set_xlim(min(self.sarray),max(self.sarray))
 			self.ax1.set_autoscaley_on(True)
 			
 			plt.show()
 			#print((self.speedProfile.Ux[100]))
 
-
+			
 			if len(self.speedProfilearray)==30:
 				del self.speedProfilearray[0]
 				self.ax5.clear()
-			self.ax5.plot(self.sarray,self.speedProfilearray,'r',label='Actual')
-			self.ax5.set_ylabel('Expected Speed (m/s)')
-		
+			self.ax5.plot(self.sarray,self.speedProfilearray,'r',label='Expected Speed')
+			self.ax5.set_ylabel('Expected Speed (m/s)',fontsize=20)
+			self.ax5.set_xlim(min(self.sarray),max(self.sarray))
 			self.ax5.set_autoscaley_on(True)
 		
 			self.patherrorarray.append(self.e)
 			if len(self.patherrorarray)==30:
 				del self.patherrorarray[0]
 				self.ax3.clear()
-			self.ax3.plot(self.sarray,self.patherrorarray,'b',label='Error')
-			self.ax3.set_ylabel('Path Tracking Error (m)')
-			self.ax3.set_autoscalex_on(False)
+			self.ax3.plot(self.sarray,self.patherrorarray,'b',label='Path Tracking Error')
+			self.ax3.set_ylabel('Path Tracking Error (m)',fontsize=20)
+			self.ax3.set_xlim(min(self.sarray),max(self.sarray))
 			self.ax3.set_autoscaley_on(True)
 			
 
@@ -328,12 +329,14 @@ class PlotGPSTrajectory():
 		self.Ux = msg.v
 		self.Ax = msg.a
 		self.delta =  msg.df
+		
 
 	def parseDisplayStateMessage(self,msg):
 		self.deltapsi=msg.deltapsi
 		self.s=msg.s
 		self.e=msg.e
 		self.Ux=msg.v
+	
 
 		
 	

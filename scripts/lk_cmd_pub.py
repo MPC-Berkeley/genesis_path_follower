@@ -143,7 +143,6 @@ class LanekeepingPublisher():
 			curr_state.v=self.localState.Ux
 			
 			
-			
 			self.displaystate_pub.publish(curr_state)
 			#Publish control inputs
 			self.steer_pub.publish(delta)
