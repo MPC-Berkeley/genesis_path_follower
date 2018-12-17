@@ -78,5 +78,6 @@ class PlotGPSTrajectory():
 		self.x_ref_traj = msg.xr
 		self.y_ref_traj = msg.yr
 
+
 if __name__=='__main__':
 	p = PlotGPSTrajectory()

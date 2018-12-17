@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from gps_utils import ref_gps_traj as r
 from genesis_path_follower.msg import state_est
 from genesis_path_follower.msg import mpc_path
+from genesis_path_follower.msg import prediction
 from plot_utils.getVehicleFrame import plotVehicle
 from mpl_toolkits.axes_grid1.inset_locator import zoomed_inset_axes
 import scipy.io as sio
@@ -42,6 +43,9 @@ class PlotGPSTrajectory():
 
 		self.x_global_traj = grt.get_Xs()
 		self.y_global_traj = grt.get_Ys()
+		self.yaws = grt.get_yaws()
+		self.cdists = grt.get_cdists()
+
 		self.x_ref_traj = self.x_global_traj[0]; self.y_ref_traj = self.y_global_traj[0]
 		self.x_mpc_traj = self.x_global_traj[0]; self.y_mpc_traj = self.y_global_traj[0]
 		self.x_vehicle = self.x_global_traj[0];  self.y_vehicle = self.y_global_traj[0]; self.psi_vehicle = yaw0
@@ -64,6 +68,13 @@ class PlotGPSTrajectory():
 		self.l1, = self.ax.plot(self.x_global_traj, self.y_global_traj, 'k') 			
 		self.l2, = self.ax.plot(self.x_ref_traj,    self.y_ref_traj, 'rx')	
 		self.l3, = self.ax.plot(self.x_mpc_traj, self.y_mpc_traj, 'g*')
+		self.s_predicted = []
+		self.ey_predicted = []
+		self.epsi_predicted = []
+		self.x_predicted = []
+		self.y_predicted = []
+		self.SSx = []
+		self.SSy = []
 		
 		# Vehicle coordinates
 		FrontBody, RearBody, FrontAxle, RearAxle, RightFrontTire, RightRearTire, LeftFrontTire, LeftRearTire = \
@@ -78,7 +89,10 @@ class PlotGPSTrajectory():
 		self.vl6, = self.ax.plot(RightRearTire[0,:],  RightRearTire[1,:],  'k',    LineWidth = 3)
 		self.vl7, = self.ax.plot(LeftFrontTire[0,:],  LeftFrontTire[1,:],  'r',    LineWidth = 3)
 		self.vl8, = self.ax.plot(LeftRearTire[0,:],   LeftRearTire[1,:],   'k',    LineWidth = 3)
-		
+		self.ss,  = self.ax.plot(self.SSx, self.SSy,'o')
+		self.en,  = self.ax.plot(self.x_predicted, self.y_predicted)
+
+
 		plt.xlabel('X (m)'); plt.ylabel('Y (m)')
 		plt.axis('equal')
 		
@@ -106,6 +120,7 @@ class PlotGPSTrajectory():
 		rospy.init_node('vehicle_plotter', anonymous=True)
 		rospy.Subscriber('state_est', state_est, self.update_state, queue_size=1)
 		rospy.Subscriber('mpc_path', mpc_path, self.update_mpc_trajectory, queue_size=1)
+		rospy.Subscriber('OL_predictions', prediction, self.update_prediction, queue_size=1)
 		self.loop()
 
 	def loop(self):
@@ -140,6 +155,11 @@ class PlotGPSTrajectory():
 			self.vl7.set_ydata(LeftFrontTire[1,:])
 			self.vl8.set_xdata(LeftRearTire[0,:])
 			self.vl8.set_ydata(LeftRearTire[1,:])
+
+			self.ss.set_xdata(self.SSx)
+			self.ss.set_ydata(self.SSy)
+			self.en.set_xdata(self.x_predicted)
+			self.en.set_ydata(self.y_predicted)
 
 
 			# self.zvl0.set_xdata(self.x_vehicle)
@@ -183,6 +203,39 @@ class PlotGPSTrajectory():
 		# Update the reference for the MPC module.
 		self.x_ref_traj = msg.xr
 		self.y_ref_traj = msg.yr
+
+	def update_prediction(self, msg):
+		self.s_predicted    = msg.s
+		self.ey_predicted   = msg.ey
+		self.epsi_predicted = msg.epsi
+		self.SSx = msg.SSx
+		self.SSy = msg.SSy
+
+		if self.s_predicted  ==[]:
+			self.x_predicted = []
+			self.y_predicted = []
+
+		else:
+			self.x_predicted, self.y_predicted = self.convertPathToGlobal()
+
+	def convertPathToGlobal(self):
+		#converts s and e vectors along a path defined by world into S and E coordinates
+		n = len(self.s_predicted)
+		E = np.zeros((n,1))
+		N = np.zeros((n,1))
+
+		s_predicted_array = np.array(self.s_predicted)
+
+		centE = np.interp(s_predicted_array, self.cdists, self.x_global_traj)
+		centN = np.interp(s_predicted_array, self.cdists, self.y_global_traj)
+		theta = np.interp(s_predicted_array, self.cdists, self.yaws)
+
+		for i in range(n):
+			E[i] = centE[i] - self.ey_predicted[i] * np.sin( np.pi / 2 - theta[i])
+			N[i] = centN[i] - self.ey_predicted[i] * np.cos( np.pi / 2 - theta[i])
+
+		return E, N
+
 
 if __name__=='__main__':
 	p = PlotGPSTrajectory()
