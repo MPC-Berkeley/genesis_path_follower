@@ -36,6 +36,7 @@ class PlotGPSTrajectory():
 		#Load road edge data
 		boundFile = rospy.get_param('road_edges')
 		bounds = sio.loadmat(boundFile)
+		self.halfWidth = rospy.get_param('vehicle/half_width')
 
 
 
