@@ -14,6 +14,7 @@
   <!-- Set track_using_time to False to use target_vel (m/s) instead. -->
   <param name="vehicle/track_using_time" type="bool" value="True" />
   <param name="vehicle/target_vel" type="double" value="1.0" />
+  <param name="vehicle/half_width" type="double" value="3.0" />
 
   <!-- Waypoints CSV to specify path. -->
   <!-- Set is_heading_info to true if Heading (N = 0) is used instead of Yaw (E = 0). --><!-- 
