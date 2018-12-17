@@ -40,6 +40,7 @@ add_message_files(
 	FILES
 	state_est.msg
 	mpc_path.msg
+	prediction.msg
 )
 
 generate_messages(

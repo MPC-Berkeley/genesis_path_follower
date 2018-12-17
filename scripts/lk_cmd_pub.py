@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import rospy  ##TODO: Cannot find rospy
 from genesis_path_follower.msg import state_est
+from genesis_path_follower.msg import prediction
 from std_msgs.msg import Float32
 from std_msgs.msg import UInt8
 from lk_utils.controllers import *
@@ -41,6 +42,9 @@ class LanekeepingPublisher():
 
 		self.enable_acc_pub   = rospy.Publisher("/control/enable_accel", UInt8, queue_size =2, latch=True)  ##Why queue_size = 10?
 		self.enable_steer_pub = rospy.Publisher("/control/enable_spas",  UInt8, queue_size =2, latch=True)
+		self.prediction_pub = rospy.Publisher('OL_predictions', prediction, queue_size=1)
+
+
 
 		self.rateHz = 10.0
 		self.rate = rospy.Rate(self.rateHz)  ##TODO: Can we run this fast?
@@ -80,6 +84,9 @@ class LanekeepingPublisher():
 		self.localState   = LocalState()
 		self.globalState  = GlobalState(self.path)
 		self.controlInput = ControlInput()
+		self.OL_predictions = prediction()
+
+
 
 		self.oldS = 0.
 		self.lapCounter = 0
@@ -88,11 +95,11 @@ class LanekeepingPublisher():
 		self.closedLoopData = ClosedLoopData(dt = 1.0 / self.rateHz, Time = 400., v0 = 8.0)
 		
 		#Initialization Parameters for LMPC controller; 
-		numSS_Points = 12; numSS_it = 2; N = 8
-		Qslack = 10*np.diag([10.,.1, 1., .1, 10., 1.]); Qlane  = np.array([15. , 10.]); Q = np.zeros((6,6))
-		R = 0*np.zeros((2,2)); dR = 2.0*np.array([25., 40.]); 
+		numSS_Points = 30; numSS_it = 2; N = 14
+		Qslack = 100*np.diag([10.,.1, 1., 0.1, 10., 1.]); Qlane  = np.array([15. , 10.]); Q = np.zeros((6,6))
+		R = 0*np.zeros((2,2)); dR = 20.0*np.array([2.5, 40.]); 
 		dt = 1.0 / self.rateHz; Laps = 10; TimeLMPC = 400
-		Solver = "OSQP"; steeringDelay = 0; idDelay= 1; aConstr = np.array([self.accelMin, self.accelMax]) #min and max acceleration
+		Solver = "OSQP"; steeringDelay = 0; idDelay= 0; aConstr = np.array([self.accelMin, self.accelMax]) #min and max acceleration
 		
 		SysID_Solver = "CVX" 
 		halfWidth = 3.0 #meters - hardcoded for now, can be property of map
@@ -179,6 +186,13 @@ class LanekeepingPublisher():
 					self.LMPC.solve(xMeasuredLoc)
 					delta = self.LMPC.uPred[0,0]
 					accel = self.LMPC.uPred[0,1]
+					self.OL_predictions.epsi = self.LMPC.xPred[:, 3]
+					self.OL_predictions.s    = self.LMPC.xPred[:, 4]
+					self.OL_predictions.ey   = self.LMPC.xPred[:, 5]
+					self.OL_predictions.SSx       = self.LMPC.SS_glob_PointSelectedTot[4, :]
+					self.OL_predictions.SSy       = self.LMPC.SS_glob_PointSelectedTot[5, :]
+					self.prediction_pub.publish(self.OL_predictions)
+
 
 					print(self.LMPC.solverTime.total_seconds()+self.LMPC.linearizationTime.total_seconds())
 					if (self.LMPC.solverTime.total_seconds() + self.LMPC.linearizationTime.total_seconds()) > 1 / self.rateHz:

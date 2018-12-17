@@ -109,6 +109,9 @@ class GPSRefTrajectory():
 
 	def get_yaws(self):
 		return self.trajectory[:,3]
+
+	def get_cdists(self):
+		return self.trajectory[:,6]
 		
 	# Main callback function to get the waypoints from the vehicle's initial pose and the prerecorded global trajectory.
 	def get_waypoints(self, X_init, Y_init, yaw_init, v_target=None):
