@@ -56,7 +56,6 @@ class PlotGPSTrajectory():
 			self.y_track_ib[i]=self.y_global_traj[i]-self.halfWidth*np.sin(self.yaws[i])
 			self.x_track_ob[i]=self.x_global_traj[i]+self.halfWidth*np.cos(self.yaws[i])
 			self.y_track_ob[i]=self.y_global_traj[i]+self.halfWidth*np.sin(self.yaws[i])
-			print(self.halfWidth*np.cos(self.yaws[i]),i)
 
 
 		self.cdists = grt.get_cdists()
