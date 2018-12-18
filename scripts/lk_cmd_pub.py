@@ -154,7 +154,7 @@ class LanekeepingPublisher():
 			
 			#print("Lateral Error is " + str(self.localState.e) )
 			
-			print "current state is: ", xMeasuredLoc
+			#print "current state is: ", xMeasuredLoc
 			#check lap counter to see if lap elapsed
 			sNow = self.localState.s
 			if (self.oldS - sNow) > self.trackLength / 2:
@@ -194,10 +194,13 @@ class LanekeepingPublisher():
 					self.OL_predictions.SSx       = self.LMPC.SS_glob_PointSelectedTot[4, :]
 					self.OL_predictions.SSy       = self.LMPC.SS_glob_PointSelectedTot[5, :]
 					self.prediction_pub.publish(self.OL_predictions)
-					self.OneStepPredicted=self.LMPC.xPred
-					print "Terminal Constraints Slack Variable : ", self.LMPC.slack
-					print "Lane Slack Variable : ", self.LMPC.laneSlack
-					print "One  Step Prediction Error : ", self.OneStepPredictionError
+					self.OneStepPredicted=self.LMPC.xPred[1,:]
+					#print "Terminal Constraints Slack Variable : ", self.LMPC.slack
+					#print "Lane Slack Variable : ", self.LMPC.laneSlack
+					#print "One  Step Prediction Error : ", self.OneStepPredictionError
+					if (self.OneStepPredictionError!=[]):
+						print "One Step Prediction Errors :"
+						print " Ux =", self.OneStepPredictionError[0]," Uy =", self.OneStepPredictionError[1]," r =",self.OneStepPredictionError[2]," deltaPsi =", self.OneStepPredictionError[3]," s =", self.OneStepPredictionError[4], " e =", self.OneStepPredictionError[5]
 
 
 					print(self.LMPC.solverTime.total_seconds()+self.LMPC.linearizationTime.total_seconds())
