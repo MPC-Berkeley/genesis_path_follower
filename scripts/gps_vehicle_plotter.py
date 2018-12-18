@@ -36,7 +36,7 @@ class PlotGPSTrajectory():
 		#Load road edge data
 		boundFile = rospy.get_param('road_edges')
 		bounds = sio.loadmat(boundFile)
-		self.halfWidth = rospy.get_param('vehicle/half_width')
+		self.halfWidth = rospy.get_param('half_width')
 
 
 
@@ -45,6 +45,20 @@ class PlotGPSTrajectory():
 		self.x_global_traj = grt.get_Xs()
 		self.y_global_traj = grt.get_Ys()
 		self.yaws = grt.get_yaws()
+
+		# Generating inner and outer track boundaries using halfWidth, global_traj and yaws
+		self.x_track_ib=np.zeros_like(self.x_global_traj)
+		self.y_track_ib=np.zeros_like(self.y_global_traj)
+		self.x_track_ob=np.zeros_like(self.x_global_traj)
+		self.y_track_ob=np.zeros_like(self.y_global_traj)
+		for i in range(len(self.x_global_traj)):
+			self.x_track_ib[i]=self.x_global_traj[i]-self.halfWidth*np.cos(self.yaws[i])
+			self.y_track_ib[i]=self.y_global_traj[i]-self.halfWidth*np.sin(self.yaws[i])
+			self.x_track_ob[i]=self.x_global_traj[i]+self.halfWidth*np.cos(self.yaws[i])
+			self.y_track_ob[i]=self.y_global_traj[i]+self.halfWidth*np.sin(self.yaws[i])
+			print(self.halfWidth*np.cos(self.yaws[i]),i)
+
+
 		self.cdists = grt.get_cdists()
 
 		self.x_ref_traj = self.x_global_traj[0]; self.y_ref_traj = self.y_global_traj[0]
@@ -69,6 +83,8 @@ class PlotGPSTrajectory():
 		self.l1, = self.ax.plot(self.x_global_traj, self.y_global_traj, 'k') 			
 		self.l2, = self.ax.plot(self.x_ref_traj,    self.y_ref_traj, 'rx')	
 		self.l3, = self.ax.plot(self.x_mpc_traj, self.y_mpc_traj, 'g*')
+		self.l4, = self.ax.plot(self.x_track_ib, self.y_track_ib, 'k')
+		self.l5, = self.ax.plot(self.x_track_ob, self.y_track_ob, 'k')
 		self.s_predicted = []
 		self.ey_predicted = []
 		self.epsi_predicted = []
