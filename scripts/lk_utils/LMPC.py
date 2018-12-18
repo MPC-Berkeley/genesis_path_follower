@@ -100,6 +100,8 @@ class ControllerLMPC():
 
         self.xPred = []
         self.uPred = []
+        self.slack = []
+        self.laneSlack = []
 
         startTimer = datetime.datetime.now()
         endTimer = datetime.datetime.now(); deltaTimer = endTimer - startTimer
@@ -207,11 +209,13 @@ class ControllerLMPC():
         self.solverTime = deltaTimer
 
         # Extract solution and set linerizations points
-        xPred, uPred, lambd, slack = _LMPC_GetPred(Solution, n, d, N, np)
+        xPred, uPred, lambd, laneSlack, slack = _LMPC_GetPred(Solution, n, d, N, np)
         self.zVector = np.dot(Succ_SS_PointSelectedTot, lambd)
         self.uVector = np.dot(Succ_uSS_PointSelectedTot, lambd)
 
         self.xPred = xPred.T
+        self.slack = slack.T
+        self.laneSlack=laneSlack.T
         if self.N == 1:
             self.uPred    = np.array([[uPred[0], uPred[1]]])
             self.LinInput =  np.array([[uPred[0], uPred[1]]])
@@ -759,7 +763,7 @@ def _LMPC_GetPred(Solution,n,d,N, np):
     slack = Solution[Solution.shape[0]-n-2*N:]
     laneSlack = Solution[Solution.shape[0]-2*N:]
 
-    return xPred, uPred, lambd, slack
+    return xPred, uPred, lambd,laneSlack, slack
 
 # ======================================================================================================================
 # ======================================================================================================================

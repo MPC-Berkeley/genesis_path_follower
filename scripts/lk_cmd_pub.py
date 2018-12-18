@@ -105,7 +105,8 @@ class LanekeepingPublisher():
 		self.halfWidth = rospy.get_param('half_width') #meters - hardcoded for now, can be property of map
 		self.LMPC  = ControllerLMPC(numSS_Points, numSS_it, N, Qslack, Qlane, Q, R, dR, dt, self.path, Laps, TimeLMPC, Solver, SysID_Solver, steeringDelay, idDelay, aConstr, self.trackLength, self.halfWidth) 
 		self.timeCounter = 0
-
+		self.OneStepPredicted=self.LMPC.xPred
+		self.OneStepPredictionError=self.LMPC.xPred
 		#Initialize map matching object - use closest style
 		self.mapMatch = MapMatch(self.path, "embed")
 		
@@ -146,7 +147,8 @@ class LanekeepingPublisher():
 
 			xMeasuredLoc = np.array([self.localState.Ux, self.localState.Uy, self.localState.r, self.localState.deltaPsi, self.localState.s, self.localState.e])
 			xMeasuredGlob  = np.array([self.localState.Ux, self.localState.Uy, self.localState.r, self.globalState.psi, self.globalState.posE, self.globalState.posN])
-
+			if (self.OneStepPredicted!=[]):
+				self.OneStepPredictionError=xMeasuredLoc-self.OneStepPredicted
 
 			#Localize Vehicle
 			
@@ -160,10 +162,10 @@ class LanekeepingPublisher():
 				print(self.timeCounter)
 				self.LMPC.addTrajectory(self.closedLoopData)
 				if Path_Keeping_Data_Flag==0 and self.lapCounter<=Path_Keeping_Laps:
-					file_name='/data/closedLoopData%s.obj' % self.lapCounter
-					file_data= open(sys.path[0]+file_name, 'wb')
-					pickle.dump(self.closedLoopData, file_data)
-					file_data.close()
+				 	file_name='/data/closedLoopData%s.obj' % self.lapCounter
+				 	file_data= open(sys.path[0]+file_name, 'wb')
+				 	pickle.dump(self.closedLoopData, file_data)
+				 	file_data.close()
 				self.closedLoopData.updateInitialConditions(xMeasuredLoc, xMeasuredGlob)
 				self.lapCounter += 1
 				self.timeCounter = 0
@@ -192,6 +194,10 @@ class LanekeepingPublisher():
 					self.OL_predictions.SSx       = self.LMPC.SS_glob_PointSelectedTot[4, :]
 					self.OL_predictions.SSy       = self.LMPC.SS_glob_PointSelectedTot[5, :]
 					self.prediction_pub.publish(self.OL_predictions)
+					self.OneStepPredicted=self.LMPC.xPred
+					print "Terminal Constraints Slack Variable : ", self.LMPC.slack
+					print "Lane Slack Variable : ", self.LMPC.laneSlack
+					print "One  Step Prediction Error : ", self.OneStepPredictionError
 
 
 					print(self.LMPC.solverTime.total_seconds()+self.LMPC.linearizationTime.total_seconds())
