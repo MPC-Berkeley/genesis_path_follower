@@ -194,7 +194,7 @@ class LanekeepingPublisher():
 					self.OL_predictions.SSx       = self.LMPC.SS_glob_PointSelectedTot[4, :]
 					self.OL_predictions.SSy       = self.LMPC.SS_glob_PointSelectedTot[5, :]
 					self.prediction_pub.publish(self.OL_predictions)
-					self.OneStepPredicted=self.LMPC.xPred
+					self.OneStepPredicted=self.LMPC.xPred[1,:]
 					print "Terminal Constraints Slack Variable : ", self.LMPC.slack
 					print "Lane Slack Variable : ", self.LMPC.laneSlack
 					print "One  Step Prediction Error : ", self.OneStepPredictionError
