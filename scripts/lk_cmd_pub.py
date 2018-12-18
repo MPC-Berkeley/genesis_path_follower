@@ -195,19 +195,13 @@ class LanekeepingPublisher():
 					self.OL_predictions.SSy       = self.LMPC.SS_glob_PointSelectedTot[5, :]
 					self.prediction_pub.publish(self.OL_predictions)
 					self.OneStepPredicted=self.LMPC.xPred[1,:]
-<<<<<<< HEAD
+					
 					#print "Terminal Constraints Slack Variable : ", self.LMPC.slack
 					#print "Lane Slack Variable : ", self.LMPC.laneSlack
 					#print "One  Step Prediction Error : ", self.OneStepPredictionError
 					if (self.OneStepPredictionError!=[]):
 						print "One Step Prediction Errors :"
 						print " Ux =", self.OneStepPredictionError[0]," Uy =", self.OneStepPredictionError[1]," r =",self.OneStepPredictionError[2]," deltaPsi =", self.OneStepPredictionError[3]," s =", self.OneStepPredictionError[4], " e =", self.OneStepPredictionError[5]
-=======
-					print "Terminal Constraints Slack Variable : ", self.LMPC.slack
-					print "Lane Slack Variable : ", self.LMPC.laneSlack
-					print "One  Step Prediction Error : ", self.OneStepPredictionError
->>>>>>> 001fe02d6f28d93a59c0af27e9b50845f48e6e41
-
 
 					print(self.LMPC.solverTime.total_seconds()+self.LMPC.linearizationTime.total_seconds())
 					if (self.LMPC.solverTime.total_seconds() + self.LMPC.linearizationTime.total_seconds()) > 1 / self.rateHz:
