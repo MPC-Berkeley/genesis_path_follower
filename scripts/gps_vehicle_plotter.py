@@ -108,6 +108,9 @@ class PlotGPSTrajectory():
 		self.ss,  = self.ax.plot(self.SSx, self.SSy,'o')
 		self.en,  = self.ax.plot(self.x_predicted, self.y_predicted)
 
+		#plot crosswalk location
+		self.cw = self.ax.plot([148.344], [-100.926],'o')
+
 
 		plt.xlabel('X (m)'); plt.ylabel('Y (m)')
 		plt.axis('equal')

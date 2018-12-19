@@ -30,6 +30,7 @@
   <node ns="vehicle" pkg="genesis_path_follower" type="lk_cmd_pub.py" name="mpc_node" output="screen"/>
   <node ns="vehicle" pkg="genesis_path_follower" type="vehicle_simulator.py" name="sim_node" output="log"/>
   <node ns="vehicle" pkg="genesis_path_follower" type="gps_vehicle_plotter.py" name="plot_node" output="screen"/>
+  <node ns = "vehicle" pkg="genesis_path_follower" type="simVisualizer.py" name ="crosswal_plot_node" output="screen"/> 
 
   <!-- Recording Node -->
   <arg name="exclude_topics" default="/image_raw"/>

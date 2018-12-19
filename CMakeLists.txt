@@ -41,6 +41,9 @@ add_message_files(
 	state_est.msg
 	mpc_path.msg
 	prediction.msg
+	cur_state.msg
+	plotting_state.msg
+	command.msg
 )
 
 generate_messages(

@@ -136,7 +136,7 @@ class LanekeepingPublisher():
 			
 			self.steer_pub.publish(delta)
 			self.accel_pub.publish(accel)
-			print(self.mapMatch.s)
+			print(self.localState.s)
 
 			self.rate.sleep()
 
