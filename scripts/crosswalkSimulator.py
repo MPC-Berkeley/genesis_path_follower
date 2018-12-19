@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 import rospy
 import numpy as np
-from utils import *
-from harpagornis.msg import action
-from harpagornis.msg import cur_state
-from harpagornis.msg import plotting_state
+from crosswalk_utils.utils import *
+from genesis_path_follower.msg import action
+from genesis_path_follower.msg import cur_state
+from genesis_path_follower.msg import plotting_state
 import matplotlib.pyplot as plt
 
 #Simulates the crosswalk-pedestrian interaction problem - supports running Sarah Thornton's

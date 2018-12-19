@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from crosswalk_utils.utils import *
-from harpagornis.msg import plotting_state
+from genesis_path_follower.msg import plotting_state
 from matplotlib import animation
 import pdb
 
