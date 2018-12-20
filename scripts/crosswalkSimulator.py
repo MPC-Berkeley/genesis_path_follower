@@ -16,6 +16,7 @@ class CrosswalkSimulator():
 	def __init__(self):
 		rospy.init_node('crosswalk_simulator', anonymous = True)
 		rospy.Subscriber('action',command, self.parseVehicleAction, queue_size = 2)
+		rospy.Subscriber('vehicle_state',vehicle_state, self.parseVehicleState, queue_size = 2)
 		self.state_pub = rospy.Publisher('cur_state',cur_state, queue_size = 1)
 		self.plot_pub  = rospy.Publisher('plotting_state',plotting_state,queue_size = 1)
 		self.accel_pub = rospy.Publisher("/control/accel", Float32, queue_size =2)
@@ -80,6 +81,10 @@ class CrosswalkSimulator():
 		self.prevAx_mps2 = self.currAx_mps2
 		self.currAx_mps2 = msg.action
 
+	def parseVehicleState(self, msg):
+		self.xV = msg.xV
+		self.dxV = msg.dxV
+
 	def simulateOneStep(self):
 		self.pedestrianAccel,_,_ = self.ped.getAccel(self.xP, self.dxP, self.xV, self.dxV, 0, self.crosswalk)
 
@@ -89,30 +94,11 @@ class CrosswalkSimulator():
 		commandedAccel = self.currAx_mps2
 		#append commanded accel to delayed input vector
 
-		if self.numDelayedSamples == 0:
-			self.actualAccel = commandedAccel
-		else:
-			#take the last input from the delayed input vector
-			self.actualAccel = self.delayedInputVector[-1]
-
-			#shift the delayed input vector by one
-			self.delayedInputVector = np.roll(self.delayedInputVector, 1)
-
-			#append to the delayed input vector
-			self.delayedInputVector[0] = commandedAccel
-
 
 		self.accel_pub.publish(commandedAccel)
-
-		#update simulation states with euler integration
-		self.dxV += self.dt * self.actualAccel
 		self.dxP += self.dt * self.pedestrianAccel
-
-		if self.dxV < 0:
-			self.dxV = 0 #car cannot go backward
-
-		self.xV += self.dt * self.dxV
 		self.xP += self.dt * self.dxP
+		
 		self.xFV += self.dt * self.dxFV
 
 		#update variables to publish to policy server. Note that prevAccel is updated in subscriber callback function
