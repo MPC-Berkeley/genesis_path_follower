@@ -3,7 +3,7 @@ import rospy
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
-from crosswalk_utils.utils import *
+from utils import *
 from genesis_path_follower.msg import plotting_state
 from matplotlib import animation
 import pdb

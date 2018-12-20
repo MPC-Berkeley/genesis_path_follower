@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 import rospy
 import numpy as np
-from crosswalk_utils.utils import *
-from genesis_path_follower.msg import action
+from utils import *
+from genesis_path_follower.msg import command
 from genesis_path_follower.msg import cur_state
 from genesis_path_follower.msg import plotting_state
+from std_msgs.msg import Float32
 import matplotlib.pyplot as plt
 
 #Simulates the crosswalk-pedestrian interaction problem - supports running Sarah Thornton's
@@ -14,9 +15,10 @@ class CrosswalkSimulator():
 
 	def __init__(self):
 		rospy.init_node('crosswalk_simulator', anonymous = True)
-		rospy.Subscriber('action',action, self.parseVehicleAction, queue_size = 2)
+		rospy.Subscriber('action',command, self.parseVehicleAction, queue_size = 2)
 		self.state_pub = rospy.Publisher('cur_state',cur_state, queue_size = 1)
 		self.plot_pub  = rospy.Publisher('plotting_state',plotting_state,queue_size = 1)
+		self.accel_pub = rospy.Publisher("/control/accel", Float32, queue_size =2)
 
 		self.rate = rospy.get_param('rate')
 		self.r = rospy.Rate(self.rate)
@@ -98,6 +100,9 @@ class CrosswalkSimulator():
 
 			#append to the delayed input vector
 			self.delayedInputVector[0] = commandedAccel
+
+
+		self.accel_pub.publish(commandedAccel)
 
 		#update simulation states with euler integration
 		self.dxV += self.dt * self.actualAccel

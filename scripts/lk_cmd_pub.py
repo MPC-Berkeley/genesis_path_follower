@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import rospy  ##TODO: Cannot find rospy
 from genesis_path_follower.msg import state_est
-from genesis_path_follower.msg import prediction
+from genesis_path_follower.msg import vehicle_state
 from std_msgs.msg import Float32
 from std_msgs.msg import UInt8
 from lk_utils.controllers import *
@@ -18,8 +18,7 @@ import time
 
 
 #################################################################################################
-### Integrates Ugo Rosolia's LMPC onto Genesis. First runs 3 laps of data using Nitin
-### Kapania's lanekeeping controller, than after lap 3 begins to LMPC. 
+### Lanekeeping controller from Nitin Kapania's thesis
 #################################################################################################
 
 class LanekeepingPublisher():
@@ -34,16 +33,14 @@ class LanekeepingPublisher():
 		rospy.init_node('lk_cmd_pub', anonymous=True)
 		rospy.Subscriber('state_est', state_est, self.parseStateEstMessage, queue_size=2)
 
-		self.accel_pub = rospy.Publisher("/control/accel", Float32, queue_size =2)
 		self.steer_pub = rospy.Publisher("/control/steer_angle", Float32, queue_size = 2)
 
 		self.enable_acc_pub   = rospy.Publisher("/control/enable_accel", UInt8, queue_size =2, latch=True)  ##Why queue_size = 10?
 		self.enable_steer_pub = rospy.Publisher("/control/enable_spas",  UInt8, queue_size =2, latch=True)
-		self.prediction_pub = rospy.Publisher('OL_predictions', prediction, queue_size=1)
+		self.vehiclestate_pub = rospy.Publisher("/vehicle/vehicle_state", vehicle_state, queue_size = 2, latch = True)
 
 
-
-		self.rateHz = 10.0
+		self.rateHz = rospy.get_param('rate')
 		self.rate = rospy.Rate(self.rateHz)  ##TODO: Can we run this fast?
 
 		#Initialize Path object
@@ -70,9 +67,6 @@ class LanekeepingPublisher():
 
 		#Create speed profile - choose between constant velocity limit or track-varying velocity limit
 		self.speedProfile  = BasicProfile(self.genesis, self.path, friction = 0.4, vMax = 15., AxMax = 2.0)
-
-		plt.plot(self.speedProfile.s, self.speedProfile.Ux)
-		plt.show()
 
 		#Create controller object - use lanekeeping
 		self.controller = LaneKeepingController(self.path, self.genesis, self.speedProfile)
@@ -110,15 +104,13 @@ class LanekeepingPublisher():
 		#Start testing!
 		t_start = rospy.Time.now()
 		print('Path Tracking Test: Started at %f' % (t_start.secs + t_start.nsecs*1e-9))
-		Path_Keeping_Data_Flag=0
-		Path_Keeping_Laps=2
 		while not rospy.is_shutdown():
 			t_now = rospy.Time.now()
 			dt = t_now - t_start
 			dt_secs = dt.secs + 1e-9 * dt.nsecs
 
 			#Populate localState and globalState objects from state publisher
-			self.localState.update(Ux = self.Ux, Uy = self.Uy, r = self.r)
+			self.localState.update(Ux = self.Ux)
 			self.globalState.update(posE = self.X, posN = self.Y, psi = self.psi)
 			self.mapMatch.localize(self.localState, self.globalState)
 
@@ -135,9 +127,16 @@ class LanekeepingPublisher():
 			accel = min( Fx / self.genesis.m , self.accelMax)
 			
 			self.steer_pub.publish(delta)
-			self.accel_pub.publish(accel)
+			#self.accel_pub.publish(accel)
 			print(self.localState.s)
 
+
+			#publish vehicle state for crosswalk simulator
+			veh_state = vehicle_state()
+			veh_state.xV = self.localState.s
+			veh_state.dxV = self.localState.Ux
+
+			self.vehiclestate_pub.publish(veh_state)
 			self.rate.sleep()
 
 		#Disable inputs after test is ended

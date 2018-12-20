@@ -44,6 +44,7 @@ add_message_files(
 	cur_state.msg
 	plotting_state.msg
 	command.msg
+  vehicle_state.msg
 )
 
 generate_messages(
