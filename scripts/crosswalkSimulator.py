@@ -5,6 +5,7 @@ from utils import *
 from genesis_path_follower.msg import command
 from genesis_path_follower.msg import cur_state
 from genesis_path_follower.msg import plotting_state
+from genesis_path_follower.msg import vehicle_state
 from std_msgs.msg import Float32
 import matplotlib.pyplot as plt
 
@@ -60,9 +61,6 @@ class CrosswalkSimulator():
 		self.xV = 0. #ego vehicle position, meters
 		self.dxV = self.v0 #ego vehicle velocity, meters / second
 
-		self.xFV = self.acceptedGap * self.v0 #follower vehicle position, meters
-		self.dxFV = self.v0 #follower vehicle velocity, meters per second
-
 		self.xP = self.ped.xP0 #pedestrian position, meters
 		self.dxP = self.ped.v0 #pedestrian velocity, meters / second
 		self.numTrials = 1
@@ -98,8 +96,6 @@ class CrosswalkSimulator():
 		self.accel_pub.publish(commandedAccel)
 		self.dxP += self.dt * self.pedestrianAccel
 		self.xP += self.dt * self.dxP
-		
-		self.xFV += self.dt * self.dxFV
 
 		#update variables to publish to policy server. Note that prevAccel is updated in subscriber callback function
 		self.velocity_mps = self.dxV #velocity of vehicle in mps
@@ -120,7 +116,6 @@ class CrosswalkSimulator():
 
 			#update gap and number of trials for next time
 			self.acceptedGap  = np.sqrt(self.gapVariance) * np.random.randn() + self.gapMu
-			self.xFV = self.acceptedGap * self.v0  
 			self.numTrials += 1
 			print('Starting Trial %d, with gap %02f seconds' % (self.numTrials, self.acceptedGap))
 			self.ped.updateGap(self.acceptedGap)
@@ -151,7 +146,6 @@ class CrosswalkSimulator():
 
 			plot_state.xP = self.xP
 			plot_state.xV = self.xV
-			plot_state.xFV = self.xFV
 			plot_state.ddxV = self.currAx_mps2
 			plot_state.time = self.time
 			plot_state.trialNumber = self.numTrials

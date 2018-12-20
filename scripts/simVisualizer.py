@@ -42,7 +42,6 @@ class PlotSimulationTrajectory():
 		#Initialize variables
 		self.xP = 0.0
 		self.xV = 0.0
-		self.xFV = 0.0
 		self.vehicleX = self.veh.lane * self.road.laneWidth + self.road.laneWidth / 2 - self.veh.width/2 #x position of vehicle - assumed constant
 		self.pedestrianY = self.crosswalk.start[1] #y position of pedestrian - assumed constant
 
@@ -53,12 +52,10 @@ class PlotSimulationTrajectory():
 
 		#initialize rectangles representing vehicle, following vehicle and pedestrian
 		self.vehRect = patches.Rectangle((0,0), self.veh.width, self.veh.height, fc = 'k')
-		self.followVehRect = patches.Rectangle((0,0), self.veh.width, self.veh.height, fc = 'c')
 		self.pedRect = patches.Rectangle((0,0), self.ped.radius, self.ped.radius, fc = 'r')
 
 		self.ax.add_patch(self.vehRect)
 		self.ax.add_patch(self.pedRect)
-		self.ax.add_patch(self.followVehRect)
 		self.accel = 0.
 
 		self.loop()
@@ -67,7 +64,6 @@ class PlotSimulationTrajectory():
 	def parsePlottingMessage(self, msg):
 		self.xP    = msg.xP
 		self.xV    = msg.xV
-		self.xFV   = msg.xFV
 		self.accel = msg.ddxV
 		self.acceptedGap = msg.acceptedGap
 
@@ -82,7 +78,7 @@ class PlotSimulationTrajectory():
 			self.vehRect.set_xy([self.vehicleX, self.xV])
 
 			#update position of follower vehicle and pedestrian 
-			self.followVehRect.set_xy([self.vehicleX, self.xFV])
+			# self.followVehRect.set_xy([self.vehicleX, self.xFV])
 			self.pedRect.set_xy([self.xP, self.pedestrianY])
 
 			plt.pause(.001)
