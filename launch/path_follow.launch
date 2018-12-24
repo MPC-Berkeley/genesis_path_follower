@@ -24,7 +24,7 @@
   <!--...................................................................-->
 
   <!-- MPC, State Publisher, and Plotting Nodes -->
-  <node ns="vehicle" pkg="genesis_path_follower" type="mpc_cmd_pub.jl" name="mpc_node" output="log"/>
+  <node ns="vehicle" pkg="genesis_path_follower" type="mpc_cmd_pub.py" name="mpc_node" output="log"/>
   <node ns="vehicle" pkg="genesis_path_follower" type="state_publisher.py" name="state_pub_node" output="log"/>
   <node ns="vehicle" pkg="genesis_path_follower" type="gps_plotter.py" name="plot_node" output="log"/>
 
