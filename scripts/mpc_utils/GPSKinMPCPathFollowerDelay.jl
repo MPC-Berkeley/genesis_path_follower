@@ -79,18 +79,29 @@ module GPSKinMPCPathFollowerDelay
 	@variable( mdl, a_min <= acc[1:N] <= a_max, start=0.0)
 	@variable( mdl, -steer_max <= d_f[1:N] <= steer_max, start=0.0)
 
-	# Input Steering Rate Constraints
+	# Input Steering Rate Constraints (with slack)
+	@variable( mdl, sl_df[1:N] >= 0.0, start=0.0) # slack on steering
 	@NLparameter(mdl, d_f_current == 0.0) # Current tire angle is a model parameter.
-	@NLconstraint(mdl, -steer_dmax*dt_control <= d_f[1]  - d_f_current <= steer_dmax*dt_control)
+	#@NLconstraint(mdl, -steer_dmax*dt_control - sl_df[1] <= d_f[1]  - d_f_current <= steer_dmax*dt_control + sl_df[1])
+	@NLconstraint(mdl, d_f[1]  - d_f_current + sl_df[1] >= -steer_dmax*dt_control)
+	@NLconstraint(mdl, d_f[1]  - d_f_current - sl_df[1] <= steer_dmax*dt_control)
     for i in 1:(N-1)
-        @constraint(mdl, -steer_dmax*dt <= d_f[i+1] - d_f[i] <= steer_dmax*dt)
+        #@constraint(mdl, -steer_dmax*dt - sl_df[i+1] <= d_f[i+1] - d_f[i] <= steer_dmax*dt + sl_df[i+1])
+		@constraint(mdl, d_f[i+1] - d_f[i] + sl_df[i+1] >= -steer_dmax*dt)
+		@constraint(mdl, d_f[i+1] - d_f[i] - sl_df[i+1] <= steer_dmax*dt)
     end
 
-	# Input Acceleration Rate Constraints
+	# Input Acceleration Rate Constraints (with slack)
+	@variable( mdl, sl_acc[1:N] >= 0.0, start=0.0) # slack on acceleration
 	@NLparameter(mdl, acc_current == 0.0) # Current acceleration is a model parameter.
-	@NLconstraint(mdl, -a_dmax*dt_control <= acc[1]  - acc_current <= a_dmax*dt_control)
-    for i in 1:(N-1)
-        @constraint(mdl, -a_dmax*dt <= acc[i+1] - acc[i] <= a_dmax*dt)
+	#@NLconstraint(mdl, -a_dmax*dt_control - sl_acc[1] <= acc[1]  - acc_current <= a_dmax*dt_control + sl_acc[1])
+	@NLconstraint(mdl, acc[1]  - acc_current + sl_acc[1] >= -a_dmax*dt_control)
+	@NLconstraint(mdl, acc[1]  - acc_current - sl_acc[1] <= a_dmax*dt_control)
+    
+	for i in 1:(N-1)
+        #@constraint(mdl, -a_dmax*dt - sl_acc[i+1] <= acc[i+1] - acc[i] <= a_dmax*dt + sl_acc[i+1])
+		@constraint(mdl, acc[i+1] - acc[i] + sl_acc[i+1] >= -a_dmax*dt)
+		@constraint(mdl, acc[i+1] - acc[i] - sl_acc[i+1] <= a_dmax*dt)
     end	
 
 	#### (3) Define Objective ####
@@ -107,7 +118,8 @@ module GPSKinMPCPathFollowerDelay
                            C_acc*sum{(acc[i])^2, i=1:N} +
                            C_df*sum{(d_f[i])^2, i=1:N} +
 						   C_dacc*sum{(acc[i+1] - acc[i])^2, i=1:(N-1)} +
-                           C_ddf*sum{(d_f[i+1] - d_f[i])^2, i=1:(N-1)}
+                           C_ddf*sum{(d_f[i+1] - d_f[i])^2, i=1:(N-1)} + 
+						   sum{ sl_df[i] + sl_acc[i], i=1:N}
 				)
 
 	#### (4) Define System Dynamics Constraints ####
