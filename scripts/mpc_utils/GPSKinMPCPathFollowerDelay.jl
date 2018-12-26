@@ -82,14 +82,14 @@ module GPSKinMPCPathFollowerDelay
 	# Input Steering Rate Constraints
 	@NLparameter(mdl, d_f_current == 0.0) # Current tire angle is a model parameter.
 	@NLconstraint(mdl, -steer_dmax*dt_control <= d_f[1]  - d_f_current <= steer_dmax*dt_control)
-    for i in 2:(N-1)
+    for i in 1:(N-1)
         @constraint(mdl, -steer_dmax*dt <= d_f[i+1] - d_f[i] <= steer_dmax*dt)
     end
 
 	# Input Acceleration Rate Constraints
 	@NLparameter(mdl, acc_current == 0.0) # Current acceleration is a model parameter.
 	@NLconstraint(mdl, -a_dmax*dt_control <= acc[1]  - acc_current <= a_dmax*dt_control)
-    for i in 2:(N-1)
+    for i in 1:(N-1)
         @constraint(mdl, -a_dmax*dt <= acc[i+1] - acc[i] <= a_dmax*dt)
     end	
 
