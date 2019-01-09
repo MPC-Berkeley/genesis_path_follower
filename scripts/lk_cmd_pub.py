@@ -128,7 +128,7 @@ class LanekeepingPublisher():
 			
 			self.steer_pub.publish(delta)
 			#self.accel_pub.publish(accel)
-			print(self.localState.s)
+			#print(self.localState.s)
 
 
 			#publish vehicle state for crosswalk simulator

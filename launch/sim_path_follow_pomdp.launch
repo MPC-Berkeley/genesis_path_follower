@@ -1,0 +1,59 @@
+<?xml version="1.0"?>
+
+<launch>
+	<!-- This launch file is intended to simulate a path following experiment with GPS.  Vehicle simulation, GPS plotting, and vehicle control are enabled. -->
+	
+	<!-- Pick between CPG + RFS coordinate systems here. -->
+	<!--rosparam command="load" file="$(find genesis_path_follower)/launch/rfs.yaml" ns="vehicle"/-->
+	<rosparam command="load" file="$(find genesis_path_follower)/launch/rfs.yaml" ns="vehicle"/>
+
+  <param name="vehicle/scripts_dir" type="str" value="$(find genesis_path_follower)/scripts/" />
+  
+  <!-- The trajectory can be generated using recorded time or a target velocity. -->
+  <!-- Set track_using_time to True to allow for time-varying velocity. -->
+  <!-- Set track_using_time to False to use target_vel (m/s) instead. -->
+  <param name="vehicle/track_using_time" type="bool" value="True" />
+  <param name="vehicle/target_vel" type="double" value="1.0" />
+  <param name="vehicle/half_width" type="double" value="3.0" />
+
+  <!-- Waypoints CSV to specify path. -->
+  <!-- Set is_heading_info to true if Heading (N = 0) is used instead of Yaw (E = 0). --><!-- 
+  <param name="vehicle/mat_waypoints" type="str" value="$(find genesis_path_follower)/paths/cpgSmoothModifiedFriction.mat" /> -->
+  <param name="vehicle/mat_waypoints" type="str" value="$(find genesis_path_follower)/paths/rfscrosswalk.mat" />
+  <param name="vehicle/road_edges" type="str" value="$(find genesis_path_follower)/paths/cpg_winding_track_edges.mat" />
+  <param name="vehicle/is_heading_info" type="bool" value="True"/>
+  <param name="vehicle/time_check_on" type="bool" value="False"/>
+
+
+  <param name="vehicle/roadFraction" type="double" value="0.7" />
+  <param name="vehicle/roadLength" type="double" value="100.0" />
+  <param name="vehicle/v0" type="double" value="0.0" />
+  <param name="vehicle/gapMu" type="double" value="4.0" />
+  <param name="vehicle/rate" type="double" value="10.0" />
+  <param name="vehicle/gapVariance" type="double" value="2.5" />
+  <param name="vehicle/pedStart"    type="string" value="right" />
+  <param name="vehicle/dt" type="double" value="0.1" />
+  <param name="vehicle/actuatorDelay" type="int" value="0" />
+  <param name="vehicle/carLane" type="int" value="3" />
+
+
+
+
+
+  <!--...................................................................-->
+
+  <!-- MPC, Simulation, and Plotting Nodes -->
+  <node ns="vehicle" pkg="genesis_path_follower" type="lk_cmd_pub.py" name="mpc_node" output="screen"/>
+  <node ns="vehicle" pkg="genesis_path_follower" type="vehicle_simulator.py" name="sim_node" output="log"/>
+  <node ns="vehicle" pkg="genesis_path_follower" type="gps_vehicle_plotter.py" name="plot_node" output="screen"/>
+  <node ns = "vehicle" pkg="genesis_path_follower" type="simVisualizer.py" name ="crosswalk_plot_node" output="screen"/> 
+  <node ns = "vehicle" pkg="genesis_path_follower" type="crosswalkSimulator.py" name ="crosswalk_simulator_node" output="screen"/> 
+  <node ns = "vehicle" pkg="genesis_path_follower" type="policyServer.jl" name ="policy_server" output="screen"/> 
+
+  <!-- Recording Node -->
+  <arg name="exclude_topics" default="/image_raw"/>
+
+  <node pkg="rosbag" type="record" name="rosbag_path_recorder" respawn="true" output="screen" 
+        args="-a -o $(find genesis_path_follower)/bags/sim_path_follow -x $(arg exclude_topics)" />
+
+</launch>
