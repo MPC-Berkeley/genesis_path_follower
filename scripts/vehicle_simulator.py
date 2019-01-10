@@ -31,7 +31,7 @@ class VehicleSimulator():
 		self.X   = rospy.get_param('X0', -300.0) 	# X position (m)
 		self.Y   = rospy.get_param('Y0', -450.0) 	# Y position (m)
 		self.psi = rospy.get_param('Psi0', 1.0) 	# yaw angle (rad)
-		self.vx  = rospy.get_param('v0', 0.0)		# longitudinal velocity (m/s)
+		self.vx  = 0                         		# longitudinal velocity (m/s)
 		self.vy  = 0.0								# lateral velocity (m/s)
 		self.wz  = 0.0								# yaw rate (rad/s)
 		

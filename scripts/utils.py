@@ -9,7 +9,7 @@ class Road:
         
         x0 = 0
         y0 = 0 #start at origin
-        self.numLanes = 4 
+        self.numLanes = 2
         self.laneWidth = 3.7 #meters
         self.length = length #meters
         self.fig, self.ax = plt.subplots(1)
@@ -50,7 +50,8 @@ class Crosswalk:
         self.roadFraction = roadFraction
 
         x,y = road.startIC
-        self.start = (x, y + road.length * self.roadFraction)
+        #self.start = (x, y + road.length * self.roadFraction)
+        self.start  = (x, 68.5)
         self.plot()
 
     def getAxis(self):
@@ -97,7 +98,7 @@ class Vehicle:
         self.height = 2.5 #meters
         self.state = "driving"
         self.kSpeed = 2.
-        self.xStop = crosswalk.start[1] - self.height * 1.5 #desired stop position
+        self.xStop = 63 #desired stop position
         self.stopBuffer = 2. #meters, give some room for vehicle to stop
         self.accelLim = 3.0 # m / s^2 comfortable braking acceleration
         self.brakeEmergencyLim = 9.0 # m/s^2 - allow car to brake at up to 9 m/s^2 if pedestrian gets too close
