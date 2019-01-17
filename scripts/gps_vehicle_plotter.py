@@ -330,13 +330,14 @@ class PlotGPSTrajectory():
 		self.Ax = msg.a
 		self.delta =  msg.df
 		
+		
 
 	def parseDisplayStateMessage(self,msg):
 		self.deltapsi=msg.deltapsi
 		self.s=msg.s
 		self.e=msg.e
 		self.Ux=msg.v
-	
+	        self.UxDes=msg.vdes
 
 		
 	
@@ -346,6 +347,7 @@ class PlotGPSTrajectory():
 		self.y_vehicle   = msg.y
 		self.psi_vehicle = msg.psi
 		self.df_vehicle  = msg.df
+                
 
 	def update_mpc_trajectory(self, msg):
 		# Update the MPC planned (open-loop) trajectory.

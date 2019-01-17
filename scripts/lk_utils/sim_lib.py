@@ -135,25 +135,25 @@ class LocalState:
         self.e = e
         self.deltaPsi = deltaPsi
         self.s = s
-
-    def update(self, Ux = 0, Uy = 0, r = 0, e = 0, deltaPsi = 0, s = 0):
+        
+    def update(self, Ux = 0, Uy = 0, r = 0, e = 0, deltaPsi = 0, s = 0, UxDes=0):
         self.Ux = Ux
         self.Uy = Uy
         self.r  = r
         self.e  = e
         self.deltaPsi = deltaPsi
         self.s = s
-
+        self.UxDes=UxDes
     def updateMapMatchStates(self, e, dPsi, s):
         self.e = e
         self.deltaPsi = dPsi
         self.s = s
-
+        
     def updateVelocityState(self, Ux, Uy, r):
         self.Ux = Ux
         self.Uy = Uy
         self.r  = r
-
+        self.UxDes=UxDes
     def printState(self):
         print("Ux is %.2f" %self.Ux) 
         print("Uy is %.2f" %self.Uy)

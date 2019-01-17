@@ -58,7 +58,8 @@ class LanekeepingPublisher():
 		self.delta = 0.
 		self.e=0.
 		self.deltapsi=0.
-		self.s=0.		
+		self.s=0.
+                self.UxDes=0.		
 		#Initialize vehicle
 		self.genesis = Vehicle('genesis')
 
@@ -95,6 +96,7 @@ class LanekeepingPublisher():
 		self.Ux = msg.v
 		self.Ax = msg.a
 		self.delta =  msg.df
+                  
 
 	def pub_loop(self):
 		#Start testing!
@@ -141,6 +143,7 @@ class LanekeepingPublisher():
 			curr_state.e=self.localState.e
 			curr_state.s=self.localState.s
 			curr_state.v=self.localState.Ux
+			curr_state.vdes=self.localState.UxDes
 			
 			
 			self.displaystate_pub.publish(curr_state)
