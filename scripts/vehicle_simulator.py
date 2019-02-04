@@ -35,8 +35,8 @@ class VehicleSimulator():
 		self.vy  = 0.0								# lateral velocity (m/s)
 		self.wz  = 0.0								# yaw rate (rad/s)
 		
-		self.acc_time_constant = 0.4 # s
-		self.df_time_constant  = 0.1 # s
+		self.acc_time_constant = 0.0 # s
+		self.df_time_constant  = 0.0 # s
 
 		self.pub_loop()
 

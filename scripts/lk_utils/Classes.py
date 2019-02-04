@@ -11,6 +11,7 @@ class LMPCprediction():
             TimeLMPC: maximum simulation time length [s]
             num_SSpoints: number used to buils SS at each time step
         """
+        self.oneStepPredictionError = np.zeros((n, TimeLMPC, Laps))
         self.PredictedStates = np.zeros((N+1, n, TimeLMPC, Laps))
         self.PredictedInputs = np.zeros((N, d, TimeLMPC, Laps))
 

@@ -18,6 +18,7 @@ import math
 import sys
 import pickle
 import time
+import os
 
 
 #################################################################################################
@@ -35,6 +36,9 @@ class LanekeepingPublisher():
 
 		#Initialize nodes, publishers, and subscribers
 		rospy.init_node('lk_cmd_pub', anonymous=True)
+
+		rospy.on_shutdown(self.shutdownFunc)
+
 		rospy.Subscriber('state_est', state_est, self.parseStateEstMessage, queue_size=2)
 
 		self.accel_pub = rospy.Publisher("/control/accel", Float32, queue_size =2)
@@ -65,8 +69,8 @@ class LanekeepingPublisher():
 		self.Ux = 0.
 		self.Ax = 0.
 		self.delta = 0.
-		self.accelMax = 2.0
-		self.accelMin = 5.0 #negative value implied by LMPC controller
+		self.accelMax = 9.8
+		self.accelMin = 9.8 #negative value implied by LMPC controller
 
 		#Initialize vehicle
 		self.genesis = Vehicle('genesis')
@@ -95,15 +99,20 @@ class LanekeepingPublisher():
 		self.closedLoopData = ClosedLoopData(dt = 1.0 / self.rateHz, Time = 400., v0 = 8.0)
 		
 		#Initialization Parameters for LMPC controller; 
-		numSS_Points = 30; numSS_it = 2; N = 14
-		Qslack = 100*np.diag([10.,.1, 1., 0.1, 10., 1.]); Qlane  = np.array([15. , 10.]); Q = np.zeros((6,6))
-		R = 0*np.zeros((2,2)); dR = 20.0*np.array([2.5, 40.]); 
-		dt = 1.0 / self.rateHz; Laps = 10; TimeLMPC = 400
+		numSS_Points = 60; numSS_it = 2; N = 10
+		Qslack  =  5 * np.diag([ 0.1, 0.1, 1, 0.1, 10, 1])          # Cost on the slack variable for the terminal constraint
+		Qlane   =  np.array([50, 10]) # Quadratic slack lane cost
+
+		Q = np.zeros((6,6))
+		R = 0*np.zeros((2,2)); dR =  10 * np.array([ 0.1, 1.0]) # Input rate cost u 
+		dt = 1.0 / self.rateHz; Laps = 50; TimeLMPC = 400
 		Solver = "OSQP"; steeringDelay = 0; idDelay= 0; aConstr = np.array([self.accelMin, self.accelMax]) #min and max acceleration
 		
 		SysID_Solver = "CVX" 
 		self.halfWidth = rospy.get_param('half_width') #meters - hardcoded for now, can be property of map
-		self.LMPC  = ControllerLMPC(numSS_Points, numSS_it, N, Qslack, Qlane, Q, R, dR, dt, self.path, Laps, TimeLMPC, Solver, SysID_Solver, steeringDelay, idDelay, aConstr, self.trackLength, self.halfWidth) 
+		self.LMPC  = ControllerLMPC(numSS_Points, numSS_it, N, Qslack, Qlane, Q,      R,      dR,      dt, self.path, Laps, TimeLMPC, Solver,      SysID_Solver,           steeringDelay, idDelay, aConstr, self.trackLength, self.halfWidth) 
+		self.openLoopData = LMPCprediction(N, 6, 2, TimeLMPC, numSS_Points, Laps)
+
 		self.timeCounter = 0
 		self.OneStepPredicted=self.LMPC.xPred
 		self.OneStepPredictionError=self.LMPC.xPred
@@ -116,6 +125,23 @@ class LanekeepingPublisher():
 		self.enable_acc_pub.publish(0) # enable acceleration control.
 
 		self.pub_loop()
+
+	def shutdownFunc(self):
+		homedir = os.path.expanduser("~")    
+		print("Start Saving Data")  
+		# == Start: Save Data
+		file_data = open(homedir+'/genesis_data'+'/ClosedLoopDataLMPC.obj', 'wb')
+		pickle.dump(self.closedLoopData, file_data)
+		print("Data Saved closedLoopData")    
+
+		pickle.dump(self.LMPC, file_data)
+		print("Data Saved LMPC")    
+
+		pickle.dump(self.openLoopData, file_data)	        
+		print("Data Saved openLoopData")    
+		file_data.close()
+		print("Data Saved Correctly")    
+		# == End: Save Data
 
 
 	def parseStateEstMessage(self, msg):
@@ -135,6 +161,9 @@ class LanekeepingPublisher():
 		print('Path Tracking Test: Started at %f' % (t_start.secs + t_start.nsecs*1e-9))
 		Path_Keeping_Data_Flag=0
 		Path_Keeping_Laps=2
+		oneStepPrediction = np.array([0, 0, 0, 0, 0, 0])
+
+
 		while not rospy.is_shutdown():
 			t_now = rospy.Time.now()
 			dt = t_now - t_start
@@ -162,10 +191,10 @@ class LanekeepingPublisher():
 				print(self.timeCounter)
 				self.LMPC.addTrajectory(self.closedLoopData)
 				if Path_Keeping_Data_Flag==0 and self.lapCounter<=Path_Keeping_Laps:
-				 	file_name='/data/closedLoopData%s.obj' % self.lapCounter
-				 	file_data= open(sys.path[0]+file_name, 'wb')
-				 	pickle.dump(self.closedLoopData, file_data)
-				 	file_data.close()
+					file_name='/data/closedLoopData%s.obj' % self.lapCounter
+					file_data= open(sys.path[0]+file_name, 'wb')
+					pickle.dump(self.closedLoopData, file_data)
+					file_data.close()
 				self.closedLoopData.updateInitialConditions(xMeasuredLoc, xMeasuredGlob)
 				self.lapCounter += 1
 				self.timeCounter = 0
@@ -184,10 +213,35 @@ class LanekeepingPublisher():
 					# use F = m*a to get desired acceleration. Limit acceleration command to 2 m/s
 					accel = min( Fx / self.genesis.m , self.accelMax)
 
+					self.steer_pub.publish(delta)
+					self.accel_pub.publish(accel)
+
 				else: 
-					self.LMPC.solve(xMeasuredLoc)
-					delta = self.LMPC.uPred[0,0]
-					accel = self.LMPC.uPred[0,1]
+					self.steer_pub.publish(delta)
+					self.accel_pub.publish(accel)
+
+					uApplied = np.array([delta, accel])
+
+					self.LMPC.OldInput = uApplied
+					self.LMPC.OldSteering.append(delta)
+					self.LMPC.OldAccelera.append(accel)
+
+					self.LMPC.OldSteering.pop(0)
+					self.LMPC.OldAccelera.pop(0)    
+					# print Controller.OldAccelera, Controller.OldSteering
+
+					oneStepPredictionError = xMeasuredLoc - oneStepPrediction # Subtract the local measurement to the previously predicted one step
+
+					uRealApplied = [self.LMPC.OldSteering[-1 - self.LMPC.steeringDelay], self.LMPC.OldAccelera[-1]]
+					
+
+					# print uAppliedDelay, Controller.OldSteering
+					oneStepPrediction, oneStepPredictionTime = self.LMPC.oneStepPrediction(xMeasuredLoc, uRealApplied, 0)
+				
+					self.LMPC.solve(oneStepPrediction)
+					delta = self.LMPC.uPred[0 + self.LMPC.steeringDelay, 0]
+					accel = self.LMPC.uPred[0, 1]
+
 					self.OL_predictions.epsi = self.LMPC.xPred[:, 3]
 					self.OL_predictions.s    = self.LMPC.xPred[:, 4]
 					self.OL_predictions.ey   = self.LMPC.xPred[:, 5]
@@ -196,14 +250,21 @@ class LanekeepingPublisher():
 					self.prediction_pub.publish(self.OL_predictions)
 					self.OneStepPredicted=self.LMPC.xPred[1,:]
 					
+
+					self.openLoopData.oneStepPredictionError[:,self.timeCounter, self.LMPC.it]      = oneStepPredictionError               
+					self.openLoopData.PredictedStates[0:(self.LMPC.N+1),:,self.timeCounter, self.LMPC.it] = self.LMPC.xPred
+					self.openLoopData.PredictedInputs[0:(self.LMPC.N), :, self.timeCounter, self.LMPC.it] = self.LMPC.uPred
+					self.openLoopData.SSused[:, :, self.timeCounter, self.LMPC.it]                  = self.LMPC.SS_PointSelectedTot
+					self.openLoopData.Qfunused[:, self.timeCounter, self.LMPC.it]                   = self.LMPC.Qfun_SelectedTot
+
 					#print "Terminal Constraints Slack Variable : ", self.LMPC.slack
 					#print "Lane Slack Variable : ", self.LMPC.laneSlack
 					#print "One  Step Prediction Error : ", self.OneStepPredictionError
-					if (self.OneStepPredictionError!=[]):
-						print "One Step Prediction Errors :"
-						print " Ux =", self.OneStepPredictionError[0]," Uy =", self.OneStepPredictionError[1]," r =",self.OneStepPredictionError[2]," deltaPsi =", self.OneStepPredictionError[3]," s =", self.OneStepPredictionError[4], " e =", self.OneStepPredictionError[5]
+					# if (self.OneStepPredictionError!=[]):
+					# 	print "One Step Prediction Errors :"
+					# 	print " Ux =", self.OneStepPredictionError[0]," Uy =", self.OneStepPredictionError[1]," r =",self.OneStepPredictionError[2]," deltaPsi =", self.OneStepPredictionError[3]," s =", self.OneStepPredictionError[4], " e =", self.OneStepPredictionError[5]
 
-					print(self.LMPC.solverTime.total_seconds()+self.LMPC.linearizationTime.total_seconds())
+					# print(self.LMPC.solverTime.total_seconds()+self.LMPC.linearizationTime.total_seconds())
 					if (self.LMPC.solverTime.total_seconds() + self.LMPC.linearizationTime.total_seconds()) > 1 / self.rateHz:
 						print("Error: not real time feasible")
 
@@ -226,34 +287,27 @@ class LanekeepingPublisher():
 			#Save the data
 			
 			uApplied = np.array([delta, accel])
-			solverTime = 0.
-			sysIDTime = 0.
-			contrTime = 0.
+			solverTime = self.LMPC.solverTime.total_seconds()
+			sysIDTime = self.LMPC.linearizationTime.total_seconds()
+			contrTime = self.LMPC.solverTime.total_seconds() + self.LMPC.linearizationTime.total_seconds()
 			measSteering = 0.0
 
 			self.closedLoopData.addMeasurement(xMeasuredGlob, xMeasuredLoc, uApplied, solverTime, sysIDTime, contrTime, measSteering)
-			self.timeCounter = self.timeCounter + 1
 
 			if self.lapCounter >= 1:
 				self.LMPC.addPoint(xMeasuredLoc, xMeasuredGlob, uApplied, self.timeCounter)
 
-
-			#Publish control inputs
-
-			self.steer_pub.publish(delta)
-			self.accel_pub.publish(accel)
+			self.timeCounter = self.timeCounter + 1
 
 			self.rate.sleep()
 
 		#Disable inputs after test is ended
 		self.enable_steer_pub.publish(0) # disable steering control.
 		self.enable_acc_pub.publish(0) # disable acceleration control.
-
+		
 
 
 if __name__=="__main__":
 	print 'Starting Controller.'
-	try:
-		lk = LanekeepingPublisher()
-	except rospy.ROSInterruptException:
-		pass # to handle node shutdown cleanly
+	lk = LanekeepingPublisher()
+
