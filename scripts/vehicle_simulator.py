@@ -4,6 +4,7 @@ import numpy as np
 import math
 from std_msgs.msg import Float32 as float_msg
 from genesis_path_follower.msg import state_est
+import lk_utils.tiremodel_lib as tm
 
 class VehicleSimulator():
 	'''
@@ -75,6 +76,11 @@ class VehicleSimulator():
 		Iz  = 5520.1			# kg*m2 (vehicle inertia)
 		C_alpha_f = 200000    # N/rad	(front tire cornering stiffness)
 		C_alpha_r = 250000	# N/rad	(rear tire cornering stiffness)
+		muP = 1.0
+		muS = 1.0
+		g = 9.81
+		Fzf = m*lr*g/(lr+lf)   #Maximum force on front vehicles
+		Fzr = m*lf*g/(lr+lf)   #Maximium force on rear vehicles
 
 		deltaT = self.dt_model/disc_steps
 		self._update_low_level_control(self.dt_model)
@@ -88,8 +94,11 @@ class VehicleSimulator():
 				alpha_r = - np.arctan2( self.vy-lr*self.wz , self.vx)        		
 			
 			# Compute lateral force at front and rear tire (linear model)
-			Fyf = C_alpha_f * alpha_f
-			Fyr = C_alpha_r * alpha_r
+			# Fyf = C_alpha_f * alpha_f
+			# Fyr = C_alpha_r * alpha_r
+
+			Fyf = tm.fiala(C_alpha_f, muP, muS, -alpha_f, Fzf)
+			Fyr = tm.fiala(C_alpha_r, muP, muS, -alpha_r, Fzr)
 
 			# Propagate the vehicle dynamics deltaT seconds ahead.
 			# Max with 0 is to prevent moving backwards.

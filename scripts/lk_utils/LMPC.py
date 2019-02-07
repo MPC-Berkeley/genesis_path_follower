@@ -22,7 +22,7 @@ class ControllerLMPC():
         update: this function can be used to set SS, Qfun, uSS and the iteration index.
     """
 
-    def __init__(self, numSS_Points, numSS_it, N, Qslack, Qlane, Q, R, dR, dt,  map, Laps, TimeLMPC, Solver, SysID_Solver, steeringDelay, idDelay, aConstr, trackLength, halfWidth):
+    def __init__(self, numSS_Points, numSS_it, N, Qslack, Qlane, Q, R, dR, dt,  path, Laps, TimeLMPC, Solver, SysID_Solver, steeringDelay, idDelay, aConstr, trackLength, halfWidth):
         """Initialization
         Arguments:
             numSS_Points: number of points selected from the previous trajectories to build SS
@@ -31,7 +31,7 @@ class ControllerLMPC():
             Q,R: weight to define cost function h(x,u) = ||x||_Q + ||u||_R
             dR: weight to define the input rate cost h(x,u) = ||x_{k+1}-x_k||_dR
             n,d: state and input dimensiton
-            map: map
+            path: path
             Laps: maximum number of laps the controller can run (used to avoid dynamic allocation)
             TimeLMPC: maximum time [s] that an lap can last (used to avoid dynamic allocation)
             Solver: solver used in the reformulation of the LMPC as QP
@@ -47,7 +47,7 @@ class ControllerLMPC():
         self.n = int(Q.shape[1])
         self.d = int(R.shape[1])
         self.dt = dt
-        self.map = map
+        self.path = path
         self.Solver = Solver            
         self.SysID_Solver = SysID_Solver
         self.A = []
@@ -135,7 +135,7 @@ class ControllerLMPC():
         Qslack       = self.Qslack
         LinPoints    = self.LinPoints
         LinInput     = self.LinInput
-        map          = self.map
+        path          = self.path
 
         # Select laps from SS based on LapTime, always keep the last lap
         sortedLapTime = np.argsort(self.Qfun[0, 0:it])
@@ -553,7 +553,7 @@ def _SelectPoints(LMPC, it, x0, numSS_Points):
     SS_glob     = LMPC.SS_glob
     Qfun        = LMPC.Qfun
     xPred       = LMPC.xPred
-    map         = LMPC.map
+    path         = LMPC.path
     TrackLength = LMPC.trackLength
     currIt      = LMPC.it
     TimeSS  = LMPC.TimeSS
@@ -817,7 +817,7 @@ def RegressionAndLinearization(ControllerLMPC, i):
     steeringDelay   = ControllerLMPC.steeringDelay
     acceleraDelay   = ControllerLMPC.acceleraDelay
     idDelay         = ControllerLMPC.idDelay
-    map             = ControllerLMPC.map
+    path             = ControllerLMPC.path
 
     usedIt = sortedLapTime[0:ControllerLMPC.itUsedSysID] # range(ControllerLMPC.it-ControllerLMPC.itUsedSysID, ControllerLMPC.it)
 
@@ -915,7 +915,13 @@ def RegressionAndLinearization(ControllerLMPC, i):
         print "s is negative, here the state: \n", LinPoints
 
     startTimer = datetime.datetime.now()  # Start timer for LMPC iteration
-    cur = Curvature(s, map)
+
+    if s > ControllerLMPC.trackLength:
+        s_wrap = s - ControllerLMPC.trackLength
+    else:
+        s_wrap = s
+
+    cur = Curvature(s_wrap, path)
     den = 1 - cur * ey
     # ===========================
     # ===== Linearize epsi ======

@@ -42,56 +42,57 @@ def main():
 
 	grt = r.GPSRefTrajectory(mat_filename=mat_name, LAT0=lat0, LON0=lon0, YAW0=yaw0) # only 1 should be valid.
 
-	# Plot Lap Time
-	plt.figure()
-	plt.plot([i*LMPController.dt for i in LMPController.LapCounter[1:LMPController.it]], '-o', label="Lap Time")
-	plt.legend()
-	plt.show()
-
-	# Plot First Path Following Lap and Learning laps
-	LapToPlotLearningProcess = [2, 4, 7]
-	
-	plotClosedLoopLMPC(LMPController, grt, LapToPlotLearningProcess)
-	plt.show()
-	
-	LapToPlot = [3, 4, 10]
-	plotClosedLoopLMPC(LMPController, grt, LapToPlot)
-	plt.show()
-
-	# plotMeasuredAndAppliedSteering(LMPController, LapToPlotLearningProcess)
+	# # Plot Lap Time
+	# plt.figure()
+	# plt.plot([i*LMPController.dt for i in LMPController.LapCounter[1:LMPController.it]], '-o', label="Lap Time")
+	# plt.legend()
 	# plt.show()
 
-	# Plot Best Laps
-	# LapToPlot      = range(0, LMPController.it)
-	# BestNunberLaps = 2
-	# SortedTimes    = np.sort(LMPController.LapCounter[1:LMPController.it])
-	# LapToPlot      = np.argsort(LMPController.LapCounter[1:LMPController.it])[0:BestNunberLaps]
-	# # LapToPlot = range(15,19)
+	# # Plot First Path Following Lap and Learning laps
+	# LapToPlotLearningProcess = [2, 4, 7]
 	
-	LapToPlot = [10, 11]
-	plotClosedLoopColorLMPC(LMPController, grt, LapToPlot)
+	# plotClosedLoopLMPC(LMPController, grt, LapToPlotLearningProcess)
+	# plt.show()
 	
-	pdb.set_trace()
+	# LapToPlot = [3, 4, 10]
+	# plotClosedLoopLMPC(LMPController, grt, LapToPlot)
+	# plt.show()
 
-	plotClosedLoopLMPC(LMPController, grt, LapToPlot)
-	# Plot Acceleration
-	# plotAccelerations(LMPController, LapToPlot, map)
+	# # plotMeasuredAndAppliedSteering(LMPController, LapToPlotLearningProcess)
+	# # plt.show()
+
+	# # Plot Best Laps
+	# # LapToPlot      = range(0, LMPController.it)
+	# # BestNunberLaps = 2
+	# # SortedTimes    = np.sort(LMPController.LapCounter[1:LMPController.it])
+	# # LapToPlot      = np.argsort(LMPController.LapCounter[1:LMPController.it])[0:BestNunberLaps]
+	# # # LapToPlot = range(15,19)
 	
-	plt.show()
+	# LapToPlot = [10, 11,15]
+	# plotClosedLoopColorLMPC(LMPController, grt, LapToPlot)
+	
+	# pdb.set_trace()
 
-	# Plot One Step Prediction Error
-	LapsToPlot = [3, 4, 10]
-	plotOneStepPreditionError(LMPController, LMPCOpenLoopData, LapsToPlot)
-	plt.show()
+	# plotClosedLoopLMPC(LMPController, grt, LapToPlot)
+	# # Plot Acceleration
+	# # plotAccelerations(LMPController, LapToPlot, map)
+	
+	# plt.show()
 
-	# Computational Time    
-	plotComputationalTime(LMPController, LapToPlot)
-	plt.show()
+	# # Plot One Step Prediction Error
+	# LapsToPlot = [3, 4, 10, 18]
+	# plotOneStepPreditionError(LMPController, LMPCOpenLoopData, LapsToPlot)
+	# plt.show()
+
+	# # Computational Time    
+	# plotComputationalTime(LMPController, LapToPlot)
+	# plt.show()
 
 	print "Do you wanna create xy gif? [Lap #/n]"
 	inputKeyBoard = raw_input()
 	if inputKeyBoard != "n":
-		animation_xy(grt, LMPCOpenLoopData, LMPController, int(inputKeyBoard))
+		# animation_xy(grt, LMPCOpenLoopData, LMPController, int(inputKeyBoard))
+		saveGif_xyResults(grt, LMPCOpenLoopData, LMPController, int(inputKeyBoard))
 
 	# print "Do you wanna create state gif? [Lap #/n]"
 	# inputKeyBoard = raw_input()
@@ -605,8 +606,15 @@ def animation_xy(grt, LMPCOpenLoopData, LMPController, it):
 		SSpoints_x = np.zeros((numSS_Points, 1)); SSpoints_y = np.zeros((numSS_Points, 1))
 
 		for j in range(0, N+1):
-			xPred[j,0], yPred[j,0]  = convertPathToGlobal(grt, LMPCOpenLoopData.PredictedStates[j, 4, i, it],
-															 LMPCOpenLoopData.PredictedStates[j, 5, i, it] )
+			if LMPCOpenLoopData.PredictedStates[j, 4, i, it] > LMPController.trackLength:
+				sPredicted = LMPCOpenLoopData.PredictedStates[j, 4, i, it] - LMPController.trackLength
+			else:
+				sPredicted = LMPCOpenLoopData.PredictedStates[j, 4, i, it] 
+
+			xPred[j,0], yPred[j,0]  = convertPathToGlobal(grt, sPredicted,
+															   LMPCOpenLoopData.PredictedStates[j, 5, i, it] )
+
+
 
 			if j == 0:
 				x = SS_glob[i, 4, it]
@@ -619,10 +627,13 @@ def animation_xy(grt, LMPCOpenLoopData, LMPController, it):
 						  y - l * np.sin(psi) - w * np.cos(psi), y - l * np.sin(psi) + w * np.cos(psi)]
 
 
-
-
 		for j in range(0, numSS_Points):
-			SSpoints_x[j,0], SSpoints_y[j,0] = convertPathToGlobal(grt, LMPCOpenLoopData.SSused[4, j, i, it],
+			if LMPCOpenLoopData.SSused[4, j, i, it] > LMPController.trackLength:
+				sPredicted = LMPCOpenLoopData.SSused[4, j, i, it] - LMPController.trackLength
+			else:
+				sPredicted = LMPCOpenLoopData.SSused[4, j, i, it]
+
+			SSpoints_x[j,0], SSpoints_y[j,0] = convertPathToGlobal(grt, sPredicted,
 																	 LMPCOpenLoopData.SSused[5, j, i, it])
 		SSpoints.set_data(SSpoints_x, SSpoints_y)
 
@@ -737,29 +748,32 @@ def animation_states(map, LMPCOpenLoopData, LMPController, it):
 		plt.draw()
 		plt.pause(1e-17)
 
-def saveGif_xyResults(map, LMPCOpenLoopData, LMPController, it):
+def saveGif_xyResults(grt, LMPCOpenLoopData, LMPController, it):
 	SS_glob = LMPController.SS_glob
 	LapCounter = LMPController.LapCounter
 	SS = LMPController.SS
 	uSS = LMPController.uSS
 
-	Points = int(np.floor(10 * (map.PointAndTangent[-1, 3] + map.PointAndTangent[-1, 4])))
-	Points1 = np.zeros((Points, 2))
-	Points2 = np.zeros((Points, 2))
-	Points0 = np.zeros((Points, 2))
-	for i in range(0, Points):
-		Points1[i, :] = map.getGlobalPosition(i * 0.1, map.halfWidth)
-		Points2[i, :] = map.getGlobalPosition(i * 0.1, -map.halfWidth)
-		Points0[i, :] = map.getGlobalPosition(i * 0.1, 0)
-
-	pdb.set_trace()
+	
 	fig = plt.figure()
-	# plt.ylim((-5, 1.5))
-	fig.set_tight_layout(True)
-	plt.plot(map.PointAndTangent[:, 0], map.PointAndTangent[:, 1], 'o')
-	plt.plot(Points0[:, 0], Points0[:, 1], '--')
-	plt.plot(Points1[:, 0], Points1[:, 1], '-b')
-	plt.plot(Points2[:, 0], Points2[:, 1], '-b')
+	x_global_traj = grt.get_Xs()
+	y_global_traj = grt.get_Ys()
+	plt.plot(x_global_traj, y_global_traj, 'k') 
+
+	yaws = grt.get_yaws()
+	x_track_ib=np.zeros_like(x_global_traj)
+	y_track_ib=np.zeros_like(y_global_traj)
+	x_track_ob=np.zeros_like(x_global_traj)
+	y_track_ob=np.zeros_like(y_global_traj)
+	for i in range(len(x_global_traj)):
+		x_track_ib[i]=x_global_traj[i]-LMPController.halfWidth*np.cos(yaws[i])
+		y_track_ib[i]=y_global_traj[i]-LMPController.halfWidth*np.sin(yaws[i])
+		x_track_ob[i]=x_global_traj[i]+LMPController.halfWidth*np.cos(yaws[i])
+		y_track_ob[i]=y_global_traj[i]+LMPController.halfWidth*np.sin(yaws[i])
+
+	plt.plot(x_track_ib, y_track_ib, 'k')
+	plt.plot(x_track_ob, y_track_ob, 'k')
+
 	plt.plot(SS_glob[0:LapCounter[it], 4, it], SS_glob[0:LapCounter[it], 5, it], '-ok', label="Closed-loop trajectory", markersize=1,zorder=-1)
 
 	ax = plt.axes()
@@ -787,8 +801,13 @@ def saveGif_xyResults(map, LMPCOpenLoopData, LMPController, it):
 		SSpoints_x = np.zeros((numSS_Points, 1)); SSpoints_y = np.zeros((numSS_Points, 1))
 
 		for j in range(0, N + 1):
-			xPred[j, 0], yPred[j, 0] = map.getGlobalPosition(LMPCOpenLoopData.PredictedStates[j, 4, i, it],
-															 LMPCOpenLoopData.PredictedStates[j, 5, i, it])
+			if LMPCOpenLoopData.PredictedStates[j, 4, i, it] > LMPController.trackLength:
+				sPredicted = LMPCOpenLoopData.PredictedStates[j, 4, i, it] - LMPController.trackLength
+			else:
+				sPredicted = LMPCOpenLoopData.PredictedStates[j, 4, i, it] 
+
+			xPred[j,0], yPred[j,0]  = convertPathToGlobal(grt, sPredicted,
+															   LMPCOpenLoopData.PredictedStates[j, 5, i, it] )
 
 			if j == 0:
 				x = SS_glob[i, 4, it]
@@ -801,8 +820,14 @@ def saveGif_xyResults(map, LMPCOpenLoopData, LMPController, it):
 						 y - l * np.sin(psi) - w * np.cos(psi), y - l * np.sin(psi) + w * np.cos(psi)]
 
 		for j in range(0, numSS_Points):
-			SSpoints_x[j, 0], SSpoints_y[j, 0] = map.getGlobalPosition(LMPCOpenLoopData.SSused[4, j, i, it],
-																	   LMPCOpenLoopData.SSused[5, j, i, it])
+			if LMPCOpenLoopData.SSused[4, j, i, it] > LMPController.trackLength:
+				sPredicted = LMPCOpenLoopData.SSused[4, j, i, it] - LMPController.trackLength
+			else:
+				sPredicted = LMPCOpenLoopData.SSused[4, j, i, it]
+
+			SSpoints_x[j,0], SSpoints_y[j,0] = convertPathToGlobal(grt, sPredicted,
+																	 LMPCOpenLoopData.SSused[5, j, i, it])
+
 		SSpoints.set_data(SSpoints_x, SSpoints_y)
 
 		line.set_data(xPred, yPred)
@@ -813,8 +838,8 @@ def saveGif_xyResults(map, LMPCOpenLoopData, LMPController, it):
 	
 	print("Before exiting")    
 	pdb.set_trace()
-	anim.save('home/nkapania/barc/workspace/src/barc/src/Tools/gif/ClosedLoop/ClosedLoop.gif', dpi=80, writer='imagemagick')
-	anim.save('gif/ClosedLoop/ClosedLoop.gif', dpi=80, writer='imagemagick')
+	anim.save('/home/nkapania/catkin_ws/src/genesis_path_follower/scripts/gif/closedLoop/ClosedLoop.gif', dpi=80, writer='imagemagick')
+	# anim.save('gif/ClosedLoop/ClosedLoop.gif', dpi=80, writer='imagemagick')
 
 def saveGif_xyResultsSysID(map, LMPCOpenLoopData, LMPController, it):
 	SS_glob = LMPController.SS_glob

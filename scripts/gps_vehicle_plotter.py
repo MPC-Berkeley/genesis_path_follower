@@ -105,8 +105,8 @@ class PlotGPSTrajectory():
 		self.vl6, = self.ax.plot(RightRearTire[0,:],  RightRearTire[1,:],  'k',    LineWidth = 3)
 		self.vl7, = self.ax.plot(LeftFrontTire[0,:],  LeftFrontTire[1,:],  'r',    LineWidth = 3)
 		self.vl8, = self.ax.plot(LeftRearTire[0,:],   LeftRearTire[1,:],   'k',    LineWidth = 3)
-		self.ss,  = self.ax.plot(self.SSx, self.SSy,'o')
-		self.en,  = self.ax.plot(self.x_predicted, self.y_predicted)
+		self.ss,  = self.ax.plot(self.SSx, self.SSy,'bs')
+		self.en,  = self.ax.plot(self.x_predicted, self.y_predicted, '-ro')
 
 
 		plt.xlabel('X (m)'); plt.ylabel('Y (m)')
@@ -239,8 +239,12 @@ class PlotGPSTrajectory():
 		n = len(self.s_predicted)
 		E = np.zeros((n,1))
 		N = np.zeros((n,1))
+		trackLength = self.cdists[-1]
 
-		s_predicted_array = np.array(self.s_predicted)
+		
+		s_predicted_array = np.array(self.s_predicted) - trackLength*1.0*(self.s_predicted>trackLength)
+
+
 
 		centE = np.interp(s_predicted_array, self.cdists, self.x_global_traj)
 		centN = np.interp(s_predicted_array, self.cdists, self.y_global_traj)

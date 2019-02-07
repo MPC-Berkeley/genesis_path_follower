@@ -291,6 +291,7 @@ class LanekeepingPublisher():
 			sysIDTime = self.LMPC.linearizationTime.total_seconds()
 			contrTime = self.LMPC.solverTime.total_seconds() + self.LMPC.linearizationTime.total_seconds()
 			measSteering = 0.0
+			measAccel    = 0.0
 
 			self.closedLoopData.addMeasurement(xMeasuredGlob, xMeasuredLoc, uApplied, solverTime, sysIDTime, contrTime, measSteering)
 
