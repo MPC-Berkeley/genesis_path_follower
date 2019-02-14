@@ -830,7 +830,7 @@ def RegressionAndLinearization(ControllerLMPC, i):
 
     # Compute Index to use
     h = 2 * 5
-    lamb = 0.0
+    lamb = 0.000001
     stateFeatures = [0, 1, 2]
     ConsiderInput = 1
 

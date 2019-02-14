@@ -88,18 +88,18 @@ def main():
 	# plotComputationalTime(LMPController, LapToPlot)
 	# plt.show()
 
-	print "Do you wanna create xy gif? [Lap #/n]"
-	inputKeyBoard = raw_input()
-	if inputKeyBoard != "n":
-		# animation_xy(grt, LMPCOpenLoopData, LMPController, int(inputKeyBoard))
-		saveGif_xyResults(grt, LMPCOpenLoopData, LMPController, int(inputKeyBoard))
-
-	# print "Do you wanna create state gif? [Lap #/n]"
+	# print "Do you wanna create xy gif? [Lap #/n]"
 	# inputKeyBoard = raw_input()
 	# if inputKeyBoard != "n":
-	# 	Save_statesAnimation(map, LMPCOpenLoopData, LMPController, int(inputKeyBoard))
-	# # pdb.set_trace()
-	# # animation_states(map, LMPCOpenLoopData, LMPController, 10)
+	# 	# animation_xy(grt, LMPCOpenLoopData, LMPController, int(inputKeyBoard))
+	# 	saveGif_xyResults(grt, LMPCOpenLoopData, LMPController, int(inputKeyBoard))
+
+	print "Do you wanna create state gif? [Lap #/n]"
+	inputKeyBoard = raw_input()
+	if inputKeyBoard != "n":
+		Save_statesAnimation(grt, LMPCOpenLoopData, LMPController, int(inputKeyBoard))
+	# pdb.set_trace()
+	# animation_states(map, LMPCOpenLoopData, LMPController, 10)
 
 	# print "Do you wanna create xy gif for sys ID? [Lap #/n]"
 	# inputKeyBoard = raw_input()
@@ -841,7 +841,7 @@ def saveGif_xyResults(grt, LMPCOpenLoopData, LMPController, it):
 	anim.save('/home/nkapania/catkin_ws/src/genesis_path_follower/scripts/gif/closedLoop/ClosedLoop.gif', dpi=80, writer='imagemagick')
 	# anim.save('gif/ClosedLoop/ClosedLoop.gif', dpi=80, writer='imagemagick')
 
-def saveGif_xyResultsSysID(map, LMPCOpenLoopData, LMPController, it):
+def saveGif_xyResultsSysID(grt, LMPCOpenLoopData, LMPController, it):
 	SS_glob = LMPController.SS_glob
 	LapCounter = LMPController.LapCounter
 	SS = LMPController.SS
@@ -1003,7 +1003,7 @@ def ComputeIndex(h, SS, uSS, LapCounter, it, x0, stateFeatures, scaling, MaxNumP
 
 	return index, K
 
-def Save_statesAnimation(map, LMPCOpenLoopData, LMPController, it):
+def Save_statesAnimation(grt, LMPCOpenLoopData, LMPController, it):
 	SS_glob = LMPController.SS_glob
 	LapCounter = LMPController.LapCounter
 	SS = LMPController.SS
@@ -1051,20 +1051,25 @@ def Save_statesAnimation(map, LMPCOpenLoopData, LMPController, it):
 	plt.ylabel("ey")
 	plt.xlabel("s")
 
-	Points = int(np.floor(10 * (map.PointAndTangent[-1, 3] + map.PointAndTangent[-1, 4])))
-	Points1 = np.zeros((Points, 2))
-	Points2 = np.zeros((Points, 2))
-	Points0 = np.zeros((Points, 2))
-	for i in range(0, int(Points)):
-		Points1[i, :] = map.getGlobalPosition(i * 0.1, map.halfWidth)
-		Points2[i, :] = map.getGlobalPosition(i * 0.1, -map.halfWidth)
-		Points0[i, :] = map.getGlobalPosition(i * 0.1, 0)
-
 	axtr = fig.add_subplot(3, 2, 6)
-	plt.plot(map.PointAndTangent[:, 0], map.PointAndTangent[:, 1], 'o')
-	plt.plot(Points0[:, 0], Points0[:, 1], '--')
-	plt.plot(Points1[:, 0], Points1[:, 1], '-b')
-	plt.plot(Points2[:, 0], Points2[:, 1], '-b')
+	x_global_traj = grt.get_Xs()
+	y_global_traj = grt.get_Ys()
+	plt.plot(x_global_traj, y_global_traj, 'k') 
+
+	yaws = grt.get_yaws()
+	x_track_ib=np.zeros_like(x_global_traj)
+	y_track_ib=np.zeros_like(y_global_traj)
+	x_track_ob=np.zeros_like(x_global_traj)
+	y_track_ob=np.zeros_like(y_global_traj)
+	for i in range(len(x_global_traj)):
+		x_track_ib[i]=x_global_traj[i]-LMPController.halfWidth*np.cos(yaws[i])
+		y_track_ib[i]=y_global_traj[i]-LMPController.halfWidth*np.sin(yaws[i])
+		x_track_ob[i]=x_global_traj[i]+LMPController.halfWidth*np.cos(yaws[i])
+		y_track_ob[i]=y_global_traj[i]+LMPController.halfWidth*np.sin(yaws[i])
+
+	plt.plot(x_track_ib, y_track_ib, 'k')
+	plt.plot(x_track_ob, y_track_ob, 'k')
+
 	plt.plot(SS_glob[0:LapCounter[it], 4, it], SS_glob[0:LapCounter[it], 5, it], '-ok')
 
 	SSpoints_x = []; SSpoints_y = []
@@ -1095,19 +1100,29 @@ def Save_statesAnimation(map, LMPCOpenLoopData, LMPController, it):
 		SSpoints_x = np.zeros((numSS_Points, 1));SSpoints_y = np.zeros((numSS_Points, 1))
 
 		for j in range(0, N + 1):
-			xPred[j, 0], yPred[j, 0] = map.getGlobalPosition(LMPCOpenLoopData.PredictedStates[j, 4, i, it],
-															 LMPCOpenLoopData.PredictedStates[j, 5, i, it])
+			if LMPCOpenLoopData.PredictedStates[j, 4, i, it] > LMPController.trackLength:
+				sPredicted = LMPCOpenLoopData.PredictedStates[j, 4, i, it] - LMPController.trackLength
+			else:
+				sPredicted = LMPCOpenLoopData.PredictedStates[j, 4, i, it] 
+
+			xPred[j,0], yPred[j,0]  = convertPathToGlobal(grt, sPredicted,
+															   LMPCOpenLoopData.PredictedStates[j, 5, i, it] )
 
 		for j in range(0, numSS_Points):
-			SSpoints_x[j, 0], SSpoints_y[j, 0] = map.getGlobalPosition(LMPCOpenLoopData.SSused[4, j, i, it],
-																	   LMPCOpenLoopData.SSused[5, j, i, it])
+			if LMPCOpenLoopData.SSused[4, j, i, it] > LMPController.trackLength:
+				sPredicted = LMPCOpenLoopData.SSused[4, j, i, it] - LMPController.trackLength
+			else:
+				sPredicted = LMPCOpenLoopData.SSused[4, j, i, it]
+
+			SSpoints_x[j,0], SSpoints_y[j,0] = convertPathToGlobal(grt, sPredicted,
+																	 LMPCOpenLoopData.SSused[5, j, i, it])
 
 		line_tr.set_data(xPred, yPred)
 		SSpoints_tr.set_data(SSpoints_x, SSpoints_y)
 
 	anim = FuncAnimation(fig, update, frames=np.arange(0, int(LMPController.LapCounter[it])), interval=100)
 
-	anim.save('ClosedLoopStates.gif', dpi=80, writer='imagemagick')
+	anim.save('/home/nkapania/catkin_ws/src/genesis_path_follower/scripts/gif/closedLoop/ClosedLoop.gif', dpi=80, writer='imagemagick')
 
 
 main()
