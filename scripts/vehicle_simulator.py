@@ -94,11 +94,11 @@ class VehicleSimulator():
 				alpha_r = - np.arctan2( self.vy-lr*self.wz , self.vx)        		
 			
 			# Compute lateral force at front and rear tire (linear model)
-			# Fyf = C_alpha_f * alpha_f
-			# Fyr = C_alpha_r * alpha_r
+			#Fyf = C_alpha_f * alpha_f
+			#Fyr = C_alpha_r * alpha_r
 
-			Fyf = tm.fiala(C_alpha_f, muP, muS, -alpha_f, Fzf)
-			Fyr = tm.fiala(C_alpha_r, muP, muS, -alpha_r, Fzr)
+			Fyf = tm.fiala(C_alpha_f, muP, muS, np.array([-alpha_f]), Fzf)
+			Fyr = tm.fiala(C_alpha_r, muP, muS, np.array([-alpha_r]), Fzr)
 
 			# Propagate the vehicle dynamics deltaT seconds ahead.
 			# Max with 0 is to prevent moving backwards.

@@ -99,7 +99,7 @@ class LanekeepingPublisher():
 		self.closedLoopData = ClosedLoopData(dt = 1.0 / self.rateHz, Time = 400., v0 = 8.0)
 		
 		#Initialization Parameters for LMPC controller; 
-		numSS_Points = 60; numSS_it = 2; N = 10
+		numSS_Points = 40; numSS_it = 2; N = 10
 		Qslack  =  5 * np.diag([ 0.1, 0.1, 1, 0.1, 10, 1])          # Cost on the slack variable for the terminal constraint
 		Qlane   =  np.array([50, 10]) # Quadratic slack lane cost
 
