@@ -15,6 +15,8 @@ class VehicleSimulator():
 		rospy.init_node('vehicle_simulator', anonymous=True)
 		rospy.Subscriber('/control/accel', float_msg, self._acc_cmd_callback, queue_size=1)
 		rospy.Subscriber('/control/steer_angle', float_msg, self._df_cmd_callback, queue_size=1)
+		self.measAccel_pub = rospy.Publisher('Measured_Accel', float_msg, queue_size=1)
+		self.measSteering_pub = rospy.Publisher('Measured_Steering', float_msg, queue_size=1)
 		self.state_pub = rospy.Publisher('state_est', state_est, queue_size=1)
 
 		self.tcmd_a = None	# rostime (s) of received acc command
@@ -57,6 +59,8 @@ class VehicleSimulator():
 			curr_state.df  = self.df
 
 			self.state_pub.publish(curr_state)
+			self.measSteering_pub.publish(0.2)
+			self.measAccel_pub.publish(0.2)
 			self.r.sleep()
 
 	def _acc_cmd_callback(self, msg):
