@@ -86,7 +86,6 @@ class ControllerLMPC():
         self.sysIDTime   = -10000 * np.ones((NumPoints, Laps))    # Input associated with the points in SS
         self.contrTime   = -10000 * np.ones((NumPoints, Laps))    # Input associated with the points in SS
         self.measSteering= -10000 * np.ones((NumPoints, 1, Laps))    # Input associated with the points in SS
-
         # Initialize the controller iteration
         self.it      = 0
 
