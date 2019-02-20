@@ -61,8 +61,7 @@ def main():
 	plotMeasuredAndAppliedSteering(LMPController, LapToPlotLearningProcess)
 	plt.show()
 
-	plotMeasuredAndAppliedAccel(LMPController, LapToPlotLearningProcess)
-	plt.show()
+
 
 	# # Plot Best Laps
 	# # LapToPlot      = range(0, LMPController.it)
@@ -540,22 +539,6 @@ def plotMeasuredAndAppliedSteering(LMPController, LapToPlot):
 	plt.legend()
 	plt.ylabel('Steering [rad]')
 
-def plotMeasuredAndAppliedAccel(LMPController, LapToPlot):
-	plotColors = ['b','g','r','c','y','k','m','b','g','r','c','y','k','m']
-
-	SS_glob = LMPController.SS_glob
-	LapCounter  = LMPController.LapCounter
-	SS      = LMPController.SS
-	uSS     = LMPController.uSS
-
-	plt.figure()
-	counter = 0
-	for i in LapToPlot:
-		plt.plot(SS[0:LapCounter[i]-1, 4, i], uSS[0:LapCounter[i] - 1, 0, i], '-o', color=plotColors[counter], label="commanded Acceleration")
-		plt.plot(SS[0:LapCounter[i]-1, 4, i], LMPController.measAccel[0:LapCounter[i] - 1, 0, i], '--*', color=plotColors[counter], label="meausred Acceleration")
-		counter += 1
-	plt.legend()
-	plt.ylabel('Accel [m/s^2]')
 
 
 def convertPathToGlobal(grt, s, e):

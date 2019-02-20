@@ -40,8 +40,6 @@ class LanekeepingPublisher():
 		rospy.on_shutdown(self.shutdownFunc)
 
 		rospy.Subscriber('state_est', state_est, self.parseStateEstMessage, queue_size=2)
-		rospy.Subscriber("Measured_Steering", Float32, self.get_measSteering, queue_size=2)
-		rospy.Subscriber("Measured_Accel", Float32, self.get_measAccel, queue_size=2)
 
 		self.accel_pub = rospy.Publisher("/control/accel", Float32, queue_size =2)
 		self.steer_pub = rospy.Publisher("/control/steer_angle", Float32, queue_size = 2)
@@ -91,8 +89,6 @@ class LanekeepingPublisher():
 		self.globalState  = GlobalState(self.path)
 		self.controlInput = ControlInput()
 		self.OL_predictions = prediction()
-		self.measAccel=0.0
-		self.measSteering=0.0
 
 
 		self.oldS = 0.
@@ -160,12 +156,8 @@ class LanekeepingPublisher():
 		self.r = msg.wz  #switching from Borrelli's notation to Hedrick's
 
 
-	def get_measSteering(self, msg):
-		self.measSteering= msg.data
-		#print(msg.data)
 
-	def get_measAccel(self, msg):
-		self.measAccel= msg.data
+		#print(msg.data)
 
 	def pub_loop(self):
 		#Start testing!
@@ -185,9 +177,9 @@ class LanekeepingPublisher():
 			self.localState.update(Ux = self.Ux, Uy = self.Uy, r = self.r)
 			self.globalState.update(posE = self.X, posN = self.Y, psi = self.psi)
 			self.mapMatch.localize(self.localState, self.globalState)
-
 			xMeasuredLoc = np.array([self.localState.Ux, self.localState.Uy, self.localState.r, self.localState.deltaPsi, self.localState.s, self.localState.e])
 			xMeasuredGlob  = np.array([self.localState.Ux, self.localState.Uy, self.localState.r, self.globalState.psi, self.globalState.posE, self.globalState.posN])
+			measSteering=self.delta
 			if (self.OneStepPredicted!=[]):
 				self.OneStepPredictionError=xMeasuredLoc-self.OneStepPredicted
 
@@ -221,14 +213,11 @@ class LanekeepingPublisher():
 
 				self.steer_pub.publish(delta)
 				self.accel_pub.publish(accel)
-				measSteering = self.measSteering
-				measAccel    = self.measAccel
 
 			else: 
 				self.steer_pub.publish(delta)
 				self.accel_pub.publish(accel)
-				measSteering = self.measSteering
-				measAccel    = self.measAccel
+
 
 				uApplied = np.array([delta, accel])
 
@@ -292,7 +281,7 @@ class LanekeepingPublisher():
 			contrTime = self.LMPC.solverTime.total_seconds() + self.LMPC.linearizationTime.total_seconds()
 			
 
-			self.closedLoopData.addMeasurement(xMeasuredGlob, xMeasuredLoc, uApplied, solverTime, sysIDTime, contrTime, measSteering, measAccel)
+			self.closedLoopData.addMeasurement(xMeasuredGlob, xMeasuredLoc, uApplied, solverTime, sysIDTime, contrTime, measSteering)
 
 			if self.lapCounter >= 1:
 				self.LMPC.addPoint(xMeasuredLoc, xMeasuredGlob, uApplied, self.timeCounter)

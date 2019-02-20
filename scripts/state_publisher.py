@@ -153,6 +153,8 @@ def pub_loop():
 		curr_state.df  = df
 
 		state_pub.publish(curr_state)
+		
+
 		r.sleep()
 
 if __name__=='__main__':
