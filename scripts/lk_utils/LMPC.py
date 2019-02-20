@@ -86,7 +86,6 @@ class ControllerLMPC():
         self.sysIDTime   = -10000 * np.ones((NumPoints, Laps))    # Input associated with the points in SS
         self.contrTime   = -10000 * np.ones((NumPoints, Laps))    # Input associated with the points in SS
         self.measSteering= -10000 * np.ones((NumPoints, 1, Laps))    # Input associated with the points in SS
-        self.measAccel   = -10000 * np.ones((NumPoints, 1, Laps))
         # Initialize the controller iteration
         self.it      = 0
 
@@ -260,7 +259,6 @@ class ControllerLMPC():
         self.sysIDTime[0:(self.TimeSS[it] + 1), it]  = np.squeeze(ClosedLoopData.sysIDTime[0:(self.TimeSS[it] + 1), :])
         self.contrTime[0:(self.TimeSS[it] + 1), it]  = np.squeeze(ClosedLoopData.contrTime[0:(self.TimeSS[it] + 1), :])
         self.measSteering[0:(self.TimeSS[it] + 1),:, it] = ClosedLoopData.measSteering[0:(self.TimeSS[it] + 1), :]
-        self.measAccel[0:(self.TimeSS[it] + 1),:, it] = ClosedLoopData.measAccel[0:(self.TimeSS[it] + 1), :]
         self.it = self.it + 1
 
     def addPoint(self, x, x_glob, u, i):

@@ -34,7 +34,6 @@ class ClosedLoopData():
         self.dt = dt
         self.Points = int(Time / dt)  # Number of points in the simulation
         self.measSteering = np.zeros((self.Points, 1))  # Initialize the input vector
-        self.measAccel = np.zeros((self.Points, 1))
         self.u = np.zeros((self.Points, 2))  # Initialize the input vector
         self.x = np.zeros((self.Points + 1, 6))  # Initialize state vector (In curvilinear abscissas)
         self.x_glob = np.zeros((self.Points + 1, 6))  # Initialize the state vector in absolute reference frame
@@ -58,7 +57,7 @@ class ClosedLoopData():
         self.x_glob[1:, :] = np.zeros((self.x.shape[0]-1, 6))
         self.SimTime = -1
 
-    def addMeasurement(self, xMeasuredGlob, xMeasuredLoc, uApplied, solverTime, sysIDTime, contrTime, measSteering, measAccel):
+    def addMeasurement(self, xMeasuredGlob, xMeasuredLoc, uApplied, solverTime, sysIDTime, contrTime, measSteering):
         """Add point to the object ClosedLoopData
         xMeasuredGlob: measured state in the inerial reference frame
         xMeasuredLoc: measured state in the curvilinear reference frame
@@ -72,4 +71,3 @@ class ClosedLoopData():
         self.sysIDTime[self.SimTime, :]   = sysIDTime
         self.contrTime[self.SimTime, :]   = contrTime
         self.measSteering[self.SimTime, :]      = measSteering
-        self.measAccel[self.SimTime, :]      = measAccel
