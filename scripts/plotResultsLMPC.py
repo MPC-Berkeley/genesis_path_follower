@@ -88,11 +88,11 @@ def main():
 	# plotComputationalTime(LMPController, LapToPlot)
 	# plt.show()
 
-	# print "Do you wanna create xy gif? [Lap #/n]"
-	# inputKeyBoard = raw_input()
-	# if inputKeyBoard != "n":
-	# 	# animation_xy(grt, LMPCOpenLoopData, LMPController, int(inputKeyBoard))
-	# 	saveGif_xyResults(grt, LMPCOpenLoopData, LMPController, int(inputKeyBoard))
+	print "Do you wanna create xy gif? [Lap #/n]"
+	inputKeyBoard = raw_input()
+	if inputKeyBoard != "n":
+		# animation_xy(grt, LMPCOpenLoopData, LMPController, int(inputKeyBoard))
+		saveGif_xyResults(grt, LMPCOpenLoopData, LMPController, int(inputKeyBoard))
 
 	print "Do you wanna create state gif? [Lap #/n]"
 	inputKeyBoard = raw_input()
@@ -837,8 +837,7 @@ def saveGif_xyResults(grt, LMPCOpenLoopData, LMPController, it):
 	anim = FuncAnimation(fig, update, frames=np.arange(0, int(LMPController.LapCounter[it])), interval=100)
 	
 	print("Before exiting")    
-	pdb.set_trace()
-	anim.save('/home/nkapania/catkin_ws/src/genesis_path_follower/scripts/gif/closedLoop/ClosedLoop.gif', dpi=80, writer='imagemagick')
+	anim.save('/home/nkapania/catkin_ws/src/genesis_path_follower/scripts/gif/ClosedLoopXY/ClosedLoop.gif', dpi=80, writer='imagemagick')
 	# anim.save('gif/ClosedLoop/ClosedLoop.gif', dpi=80, writer='imagemagick')
 
 def saveGif_xyResultsSysID(grt, LMPCOpenLoopData, LMPController, it):
