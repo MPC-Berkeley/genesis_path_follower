@@ -100,11 +100,11 @@ class LanekeepingPublisher():
 		
 		#Initialization Parameters for LMPC controller; 
 		numSS_Points = 40; numSS_it = 2; N = 10
-		Qslack  =  5 * np.diag([ 0.1, 0.1, 1, 0.1, 10, 1])          # Cost on the slack variable for the terminal constraint
+		Qslack  =  5 * np.diag([ 1.0, 0.1, 1, 0.1, 10, 1])          # Cost on the slack variable for the terminal constraint
 		Qlane   =  np.array([50, 10]) # Quadratic slack lane cost
 
 		Q = np.zeros((6,6))
-		R = 0*np.zeros((2,2)); dR =  10 * np.array([ 0.1, 1.0]) # Input rate cost u 
+		R = 0*np.zeros((2,2)); dR =  1 * np.array([ 0.1, 1.0]) # Input rate cost u 
 		dt = 1.0 / self.rateHz; Laps = 50; TimeLMPC = 400
 		Solver = "OSQP"; steeringDelay = 0; idDelay= 0; aConstr = np.array([self.accelMin, self.accelMax]) #min and max acceleration
 		
