@@ -1,6 +1,6 @@
 import sys
 from lk_utils.Classes import LMPCprediction, ClosedLoopData
-
+import rospkg
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
@@ -49,7 +49,7 @@ def main():
 	# plt.show()
 
 	# # Plot First Path Following Lap and Learning laps
-	# LapToPlotLearningProcess = [2, 4, 7]
+	LapToPlotLearningProcess = [2, 4, 6]
 	
 	# plotClosedLoopLMPC(LMPController, grt, LapToPlotLearningProcess)
 	# plt.show()
@@ -58,8 +58,10 @@ def main():
 	# plotClosedLoopLMPC(LMPController, grt, LapToPlot)
 	# plt.show()
 
-	# # plotMeasuredAndAppliedSteering(LMPController, LapToPlotLearningProcess)
-	# # plt.show()
+	plotMeasuredAndAppliedSteering(LMPController, LapToPlotLearningProcess)
+	plt.show()
+
+
 
 	# # Plot Best Laps
 	# # LapToPlot      = range(0, LMPController.it)
@@ -536,6 +538,7 @@ def plotMeasuredAndAppliedSteering(LMPController, LapToPlot):
 		counter += 1
 	plt.legend()
 	plt.ylabel('Steering [rad]')
+
 
 
 def convertPathToGlobal(grt, s, e):
@@ -1120,8 +1123,8 @@ def Save_statesAnimation(grt, LMPCOpenLoopData, LMPController, it):
 		SSpoints_tr.set_data(SSpoints_x, SSpoints_y)
 
 	anim = FuncAnimation(fig, update, frames=np.arange(0, int(LMPController.LapCounter[it])), interval=100)
-
-	anim.save('/home/nkapania/catkin_ws/src/genesis_path_follower/scripts/gif/closedLoop/ClosedLoop.gif', dpi=80, writer='imagemagick')
-
+	rospack = rospkg.RosPack()
+	pkg_path=rospack.get_path('genesis_path_follower')
+	anim.save(pkg_path+'/scripts/gif/closedLoop/ClosedLoop.gif', dpi=80, writer='imagemagick')
 
 main()

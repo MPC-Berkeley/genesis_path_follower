@@ -91,7 +91,6 @@ class LanekeepingPublisher():
 		self.OL_predictions = prediction()
 
 
-
 		self.oldS = 0.
 		self.lapCounter = 0
 
@@ -128,7 +127,8 @@ class LanekeepingPublisher():
 
 	def shutdownFunc(self):
 		homedir = os.path.expanduser("~")    
-		print("Start Saving Data")  
+		print("Start Saving Data")
+		print(homedir)  
 		# == Start: Save Data
 		file_data = open(homedir+'/genesis_data'+'/ClosedLoopDataLMPC.obj', 'wb')
 		pickle.dump(self.closedLoopData, file_data)
@@ -155,6 +155,10 @@ class LanekeepingPublisher():
 		self.Ux = msg.vx #switching from Borrelli's notation to Hedrick's
 		self.r = msg.wz  #switching from Borrelli's notation to Hedrick's
 
+
+
+		#print(msg.data)
+
 	def pub_loop(self):
 		#Start testing!
 		t_start = rospy.Time.now()
@@ -173,9 +177,9 @@ class LanekeepingPublisher():
 			self.localState.update(Ux = self.Ux, Uy = self.Uy, r = self.r)
 			self.globalState.update(posE = self.X, posN = self.Y, psi = self.psi)
 			self.mapMatch.localize(self.localState, self.globalState)
-
 			xMeasuredLoc = np.array([self.localState.Ux, self.localState.Uy, self.localState.r, self.localState.deltaPsi, self.localState.s, self.localState.e])
 			xMeasuredGlob  = np.array([self.localState.Ux, self.localState.Uy, self.localState.r, self.globalState.psi, self.globalState.posE, self.globalState.posN])
+			measSteering=self.delta
 			if (self.OneStepPredicted!=[]):
 				self.OneStepPredictionError=xMeasuredLoc-self.OneStepPredicted
 
@@ -190,11 +194,6 @@ class LanekeepingPublisher():
 				print(self.lapCounter)
 				print(self.timeCounter)
 				self.LMPC.addTrajectory(self.closedLoopData)
-				if Path_Keeping_Data_Flag==0 and self.lapCounter<=Path_Keeping_Laps:
-					file_name='/data/closedLoopData%s.obj' % self.lapCounter
-					file_data= open(sys.path[0]+file_name, 'wb')
-					pickle.dump(self.closedLoopData, file_data)
-					file_data.close()
 				self.closedLoopData.updateInitialConditions(xMeasuredLoc, xMeasuredGlob)
 				self.lapCounter += 1
 				self.timeCounter = 0
@@ -204,81 +203,71 @@ class LanekeepingPublisher():
 
 
 			#Calculate control inputs
-			if Path_Keeping_Data_Flag==0:
-				if self.lapCounter <= Path_Keeping_Laps:
-					self.controller.updateInput(self.localState, self.controlInput)
-					delta = self.controlInput.delta
-					Fx = self.controlInput.Fx
+			if self.lapCounter <= Path_Keeping_Laps:
+				self.controller.updateInput(self.localState, self.controlInput)
+				delta = self.controlInput.delta
+				Fx = self.controlInput.Fx
 
-					# use F = m*a to get desired acceleration. Limit acceleration command to 2 m/s
-					accel = min( Fx / self.genesis.m , self.accelMax)
+				# use F = m*a to get desired acceleration. Limit acceleration command to 2 m/s
+				accel = min( Fx / self.genesis.m , self.accelMax)
 
-					self.steer_pub.publish(delta)
-					self.accel_pub.publish(accel)
+				self.steer_pub.publish(delta)
+				self.accel_pub.publish(accel)
 
-				else: 
-					self.steer_pub.publish(delta)
-					self.accel_pub.publish(accel)
+			else: 
+				self.steer_pub.publish(delta)
+				self.accel_pub.publish(accel)
 
-					uApplied = np.array([delta, accel])
 
-					self.LMPC.OldInput = uApplied
-					self.LMPC.OldSteering.append(delta)
-					self.LMPC.OldAccelera.append(accel)
+				uApplied = np.array([delta, accel])
 
-					self.LMPC.OldSteering.pop(0)
-					self.LMPC.OldAccelera.pop(0)    
-					# print Controller.OldAccelera, Controller.OldSteering
+				self.LMPC.OldInput = uApplied
+				self.LMPC.OldSteering.append(delta)
+				self.LMPC.OldAccelera.append(accel)
 
-					oneStepPredictionError = xMeasuredLoc - oneStepPrediction # Subtract the local measurement to the previously predicted one step
+				self.LMPC.OldSteering.pop(0)
+				self.LMPC.OldAccelera.pop(0)    
+				# print Controller.OldAccelera, Controller.OldSteering
 
-					uRealApplied = [self.LMPC.OldSteering[-1 - self.LMPC.steeringDelay], self.LMPC.OldAccelera[-1]]
-					
+				oneStepPredictionError = xMeasuredLoc - oneStepPrediction # Subtract the local measurement to the previously predicted one step
 
-					# print uAppliedDelay, Controller.OldSteering
-					oneStepPrediction, oneStepPredictionTime = self.LMPC.oneStepPrediction(xMeasuredLoc, uRealApplied, 0)
+				uRealApplied = [self.LMPC.OldSteering[-1 - self.LMPC.steeringDelay], self.LMPC.OldAccelera[-1]]
 				
-					self.LMPC.solve(oneStepPrediction)
-					delta = self.LMPC.uPred[0 + self.LMPC.steeringDelay, 0]
-					accel = self.LMPC.uPred[0, 1]
 
-					self.OL_predictions.epsi = self.LMPC.xPred[:, 3]
-					self.OL_predictions.s    = self.LMPC.xPred[:, 4]
-					self.OL_predictions.ey   = self.LMPC.xPred[:, 5]
-					self.OL_predictions.SSx       = self.LMPC.SS_glob_PointSelectedTot[4, :]
-					self.OL_predictions.SSy       = self.LMPC.SS_glob_PointSelectedTot[5, :]
-					self.prediction_pub.publish(self.OL_predictions)
-					self.OneStepPredicted=self.LMPC.xPred[1,:]
-					
+				# print uAppliedDelay, Controller.OldSteering
+				oneStepPrediction, oneStepPredictionTime = self.LMPC.oneStepPrediction(xMeasuredLoc, uRealApplied, 0)
+			
+				self.LMPC.solve(oneStepPrediction)
+				delta = self.LMPC.uPred[0 + self.LMPC.steeringDelay, 0]
+				accel = self.LMPC.uPred[0, 1]
 
-					self.openLoopData.oneStepPredictionError[:,self.timeCounter, self.LMPC.it]      = oneStepPredictionError               
-					self.openLoopData.PredictedStates[0:(self.LMPC.N+1),:,self.timeCounter, self.LMPC.it] = self.LMPC.xPred
-					self.openLoopData.PredictedInputs[0:(self.LMPC.N), :, self.timeCounter, self.LMPC.it] = self.LMPC.uPred
-					self.openLoopData.SSused[:, :, self.timeCounter, self.LMPC.it]                  = self.LMPC.SS_PointSelectedTot
-					self.openLoopData.Qfunused[:, self.timeCounter, self.LMPC.it]                   = self.LMPC.Qfun_SelectedTot
+				self.OL_predictions.epsi = self.LMPC.xPred[:, 3]
+				self.OL_predictions.s    = self.LMPC.xPred[:, 4]
+				self.OL_predictions.ey   = self.LMPC.xPred[:, 5]
+				self.OL_predictions.SSx       = self.LMPC.SS_glob_PointSelectedTot[4, :]
+				self.OL_predictions.SSy       = self.LMPC.SS_glob_PointSelectedTot[5, :]
+				self.prediction_pub.publish(self.OL_predictions)
+				self.OneStepPredicted=self.LMPC.xPred[1,:]
+				
 
-					#print "Terminal Constraints Slack Variable : ", self.LMPC.slack
-					#print "Lane Slack Variable : ", self.LMPC.laneSlack
-					#print "One  Step Prediction Error : ", self.OneStepPredictionError
-					# if (self.OneStepPredictionError!=[]):
-					# 	print "One Step Prediction Errors :"
-					# 	print " Ux =", self.OneStepPredictionError[0]," Uy =", self.OneStepPredictionError[1]," r =",self.OneStepPredictionError[2]," deltaPsi =", self.OneStepPredictionError[3]," s =", self.OneStepPredictionError[4], " e =", self.OneStepPredictionError[5]
+				self.openLoopData.oneStepPredictionError[:,self.timeCounter, self.LMPC.it]      = oneStepPredictionError               
+				self.openLoopData.PredictedStates[0:(self.LMPC.N+1),:,self.timeCounter, self.LMPC.it] = self.LMPC.xPred
+				self.openLoopData.PredictedInputs[0:(self.LMPC.N), :, self.timeCounter, self.LMPC.it] = self.LMPC.uPred
+				self.openLoopData.SSused[:, :, self.timeCounter, self.LMPC.it]                  = self.LMPC.SS_PointSelectedTot
+				self.openLoopData.Qfunused[:, self.timeCounter, self.LMPC.it]                   = self.LMPC.Qfun_SelectedTot
 
-					# print(self.LMPC.solverTime.total_seconds()+self.LMPC.linearizationTime.total_seconds())
-					if (self.LMPC.solverTime.total_seconds() + self.LMPC.linearizationTime.total_seconds()) > 1 / self.rateHz:
-						print("Error: not real time feasible")
+				#print "Terminal Constraints Slack Variable : ", self.LMPC.slack
+				#print "Lane Slack Variable : ", self.LMPC.laneSlack
+				#print "One  Step Prediction Error : ", self.OneStepPredictionError
+				# if (self.OneStepPredictionError!=[]):
+				# 	print "One Step Prediction Errors :"
+				# 	print " Ux =", self.OneStepPredictionError[0]," Uy =", self.OneStepPredictionError[1]," r =",self.OneStepPredictionError[2]," deltaPsi =", self.OneStepPredictionError[3]," s =", self.OneStepPredictionError[4], " e =", self.OneStepPredictionError[5]
 
-			else:
-				while self.lapCounter<=Path_Keeping_Laps:
-					file_name='data/closedLoopData%s.obj' % self.lapCounter
-					file_data=open(sys.path[0]+file_name,'rb')
-					temp_closedLoopData= pickle.load(file_data)
-					file_data.close()
-					self.LMPC.addTrajectory(temp_closedLoopData)
-					self.lapCounter+=1
-				self.LMPC.solve(xMeasuredLoc)
-				delta = self.LMPC.uPred[0,0]
-				accel = self.LMPC.uPred[0,1]
+				# print(self.LMPC.solverTime.total_seconds()+self.LMPC.linearizationTime.total_seconds())
+				if (self.LMPC.solverTime.total_seconds() + self.LMPC.linearizationTime.total_seconds()) > 1 / self.rateHz:
+					print("Error: not real time feasible")
+
+			
 
 
 
@@ -290,8 +279,7 @@ class LanekeepingPublisher():
 			solverTime = self.LMPC.solverTime.total_seconds()
 			sysIDTime = self.LMPC.linearizationTime.total_seconds()
 			contrTime = self.LMPC.solverTime.total_seconds() + self.LMPC.linearizationTime.total_seconds()
-			measSteering = 0.0
-			measAccel    = 0.0
+			
 
 			self.closedLoopData.addMeasurement(xMeasuredGlob, xMeasuredLoc, uApplied, solverTime, sysIDTime, contrTime, measSteering)
 
