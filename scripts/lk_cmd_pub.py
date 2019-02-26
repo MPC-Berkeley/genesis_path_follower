@@ -218,6 +218,8 @@ class LanekeepingPublisher():
 				self.steer_pub.publish(delta)
 				self.accel_pub.publish(accel)
 
+				# if self.lapCounter > 10:
+				# 	self.LMPC.numSS_it = 4;
 
 				uApplied = np.array([delta, accel])
 

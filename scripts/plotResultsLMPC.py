@@ -839,8 +839,9 @@ def saveGif_xyResults(grt, LMPCOpenLoopData, LMPController, it):
 
 	anim = FuncAnimation(fig, update, frames=np.arange(0, int(LMPController.LapCounter[it])), interval=100)
 	
-	print("Before exiting")    
-	anim.save('/home/nkapania/catkin_ws/src/genesis_path_follower/scripts/gif/ClosedLoopXY/ClosedLoop.gif', dpi=80, writer='imagemagick')
+	print("Before exiting") 
+	anim.save('/home/mpc/GenesisAutoware/ros/src/genesis_path_follower/scripts/gif/closedLoopXY/closedLoop.gif', dpi=80, writer='imagemagick')   
+	# anim.save('/home/nkapania/catkin_ws/src/genesis_path_follower/scripts/gif/ClosedLoopXY/ClosedLoop.gif', dpi=80, writer='imagemagick')
 	# anim.save('gif/ClosedLoop/ClosedLoop.gif', dpi=80, writer='imagemagick')
 
 def saveGif_xyResultsSysID(grt, LMPCOpenLoopData, LMPController, it):
@@ -1125,6 +1126,7 @@ def Save_statesAnimation(grt, LMPCOpenLoopData, LMPController, it):
 	anim = FuncAnimation(fig, update, frames=np.arange(0, int(LMPController.LapCounter[it])), interval=100)
 	rospack = rospkg.RosPack()
 	pkg_path=rospack.get_path('genesis_path_follower')
-	anim.save(pkg_path+'/scripts/gif/closedLoop/ClosedLoop.gif', dpi=80, writer='imagemagick')
+	# anim.save(pkg_path+'/scripts/gif/closedLoop/ClosedLoop.gif', dpi=80, writer='imagemagick')
+	anim.save('/home/mpc/GenesisAutoware/ros/src/genesis_path_follower/scripts/gif/closedLoopState/closedLoop.gif', dpi=80, writer='imagemagick')   
 
 main()
