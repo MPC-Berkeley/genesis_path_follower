@@ -148,6 +148,7 @@ def pub_loop():
 		curr_state.y   = Y
 		curr_state.psi = psi
 		curr_state.v   = vel
+		# curr_state.vx  = 
 		
 		curr_state.a   = acc_filt
 		curr_state.df  = df

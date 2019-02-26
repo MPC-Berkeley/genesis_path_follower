@@ -69,14 +69,16 @@ class LanekeepingPublisher():
 		self.Ux = 0.
 		self.Ax = 0.
 		self.delta = 0.
-		self.accelMax = 9.8
-		self.accelMin = 9.8 #negative value implied by LMPC controller
+		# self.accelMax = 9.8
+		# self.accelMin = 9.8 #negative value implied by LMPC controller
+		self.accelMax = 1.8
+		self.accelMin = 3.8 #negative value implied by LMPC controller
 
 		#Initialize vehicle
 		self.genesis = Vehicle('genesis')
 
 		#Create speed profile - choose between constant velocity limit or track-varying velocity limit
-		self.speedProfile  = BasicProfile(self.genesis, self.path, friction = 0.4, vMax = 15., AxMax = 2.0)
+		self.speedProfile  = BasicProfile(self.genesis, self.path, friction = 0.5, vMax = 6., AxMax = 0.5)
 
 		plt.plot(self.speedProfile.s, self.speedProfile.Ux)
 		plt.show()
