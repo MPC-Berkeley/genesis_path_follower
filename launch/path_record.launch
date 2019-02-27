@@ -6,7 +6,6 @@
 	<!-- Pick between CPG + RFS coordinate systems here. -->
 	<!--rosparam command="load" file="$(find genesis_path_follower)/launch/rfs.yaml" ns="vehicle"/-->
 	<rosparam command="load" file="$(find genesis_path_follower)/launch/thunderhill.yaml" ns="vehicle"/>
-
   <param name="vehicle/scripts_dir" type="str" value="$(find genesis_path_follower)/scripts/" />
 
   <!-- The trajectory can be generated using recorded time or a target velocity. -->

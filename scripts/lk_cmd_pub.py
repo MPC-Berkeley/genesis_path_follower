@@ -76,6 +76,7 @@ class LanekeepingPublisher():
 		self.accelMax = 4.0
 		self.accelMin = 5.0 #negative value implied by LMPC controller
 
+
 		#Initialize vehicle
 		self.genesis = Vehicle('genesis')
 
@@ -97,7 +98,6 @@ class LanekeepingPublisher():
 
 		self.oldS = 0.
 		self.lapCounter = 0
-
 
 		self.closedLoopData = ClosedLoopData(dt = 1.0 / self.rateHz, Time = 800., v0 = 8.0)
 		
@@ -160,7 +160,6 @@ class LanekeepingPublisher():
 		self.r     = msg.wz  #switching from Borrelli's notation to Hedrick's
 
 
-
 		#print(msg.data)
 
 	def pub_loop(self):
@@ -221,9 +220,6 @@ class LanekeepingPublisher():
 			else: 
 				self.steer_pub.publish(delta)
 				self.accel_pub.publish(accel)
-
-				# if self.lapCounter > 8:
-				# 	self.dR = 1 * np.array([ 1.0, 1.0]);
 
 				uApplied = np.array([delta, accel])
 

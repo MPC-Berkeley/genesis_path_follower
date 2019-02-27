@@ -75,12 +75,15 @@ def main():
 	# # # LapToPlot = range(15,19)
 	
 	# LapToPlot = [10, 11,15]
+
+	# plotClosedLoopColorLMPC(LMPController, grt, LapToPlot)
 	
 	# pdb.set_trace()
 
 	# plotClosedLoopLMPC(LMPController, grt, LapToPlot)
-	# Plot Acceleration
-	# plotAccelerations(LMPController, LapToPlot, map)
+
+	# # Plot Acceleration
+	# # plotAccelerations(LMPController, LapToPlot, map)
 	
 	# plt.show()
 
@@ -845,6 +848,7 @@ def saveGif_xyResults(grt, LMPCOpenLoopData, LMPController, it):
 	print("Before exiting") 
 	anim.save('/home/mpc/GenesisAutoware/ros/src/genesis_path_follower/scripts/gif/closedLoopXY/closedLoop.gif', dpi=80, writer='imagemagick')   
 	# anim.save('/home/nkapania/catkin_ws/src/genesis_path_follower/scripts/gif/ClosedLoopXY/ClosedLoop.gif', dpi=80, writer='imagemagick')
+
 	# anim.save('gif/ClosedLoop/ClosedLoop.gif', dpi=80, writer='imagemagick')
 
 def saveGif_xyResultsSysID(grt, LMPCOpenLoopData, LMPController, it):
@@ -1131,5 +1135,6 @@ def Save_statesAnimation(grt, LMPCOpenLoopData, LMPController, it):
 	pkg_path=rospack.get_path('genesis_path_follower')
 	# anim.save(pkg_path+'/scripts/gif/closedLoop/ClosedLoop.gif', dpi=80, writer='imagemagick')
 	anim.save('/home/mpc/GenesisAutoware/ros/src/genesis_path_follower/scripts/gif/closedLoopState/closedLoop.gif', dpi=80, writer='imagemagick')   
+
 
 main()
