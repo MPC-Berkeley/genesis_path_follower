@@ -67,18 +67,20 @@ class LanekeepingPublisher():
 		self.Y = self.path.posN[0]
 		self.psi = self.path.roadPsi[0]
 		self.Ux = 0.
+		self.Uy = 0
+		self.r = 0
 		self.Ax = 0.
 		self.delta = 0.
 		# self.accelMax = 9.8
 		# self.accelMin = 9.8 #negative value implied by LMPC controller
-		self.accelMax = 1.8
-		self.accelMin = 3.8 #negative value implied by LMPC controller
+		self.accelMax = 4.0
+		self.accelMin = 5.0 #negative value implied by LMPC controller
 
 		#Initialize vehicle
 		self.genesis = Vehicle('genesis')
 
 		#Create speed profile - choose between constant velocity limit or track-varying velocity limit
-		self.speedProfile  = BasicProfile(self.genesis, self.path, friction = 0.5, vMax = 6., AxMax = 0.5)
+		self.speedProfile  = BasicProfile(self.genesis, self.path, friction = 0.1, vMax = 8., AxMax = 2.)
 
 		plt.plot(self.speedProfile.s, self.speedProfile.Ux)
 		plt.show()
@@ -97,17 +99,18 @@ class LanekeepingPublisher():
 		self.lapCounter = 0
 
 
-		self.closedLoopData = ClosedLoopData(dt = 1.0 / self.rateHz, Time = 400., v0 = 8.0)
+		self.closedLoopData = ClosedLoopData(dt = 1.0 / self.rateHz, Time = 800., v0 = 8.0)
 		
 		#Initialization Parameters for LMPC controller; 
 		numSS_Points = 40; numSS_it = 2; N = 10
-		Qslack  =  5 * np.diag([ 1.0, 0.1, 1, 0.1, 10, 1])          # Cost on the slack variable for the terminal constraint
+		Qslack  =  5 * np.diag([ 1.0, 0.1, 0.1, 0.1, 10, 1])          # Cost on the slack variable for the terminal constraint
 		Qlane   =  np.array([50, 10]) # Quadratic slack lane cost
 
 		Q = np.zeros((6,6))
-		R = 0*np.zeros((2,2)); dR =  1 * np.array([ 0.1, 1.0]) # Input rate cost u 
-		dt = 1.0 / self.rateHz; Laps = 50; TimeLMPC = 400
-		Solver = "OSQP"; steeringDelay = 0; idDelay= 0; aConstr = np.array([self.accelMin, self.accelMax]) #min and max acceleration
+		# R = 0*np.zeros((2,2)); dR =  1 * np.array([ 25.0, 1.0]) # Input rate cost u 
+		R = np.array([[1.0, 0.0],[0.0, 0.0]]); dR =  1 * np.array([ 10.0, 1.0]) # Input rate cost u 
+		dt = 1.0 / self.rateHz; Laps = 50; TimeLMPC = 800
+		Solver = "OSQP"; steeringDelay = 2; idDelay= 0; aConstr = np.array([self.accelMin, self.accelMax]) #min and max acceleration
 		
 		SysID_Solver = "CVX" 
 		self.halfWidth = rospy.get_param('half_width') #meters - hardcoded for now, can be property of map
@@ -147,15 +150,14 @@ class LanekeepingPublisher():
 
 
 	def parseStateEstMessage(self, msg):
-		self.X = msg.x
-		self.Y = msg.y
-		self.psi = msg.psi
-		self.Ux = msg.v
-		self.Ax = msg.a
-		self.delta =  msg.df
-		self.Uy = msg.vy #switching from Borrelli's notation to Hedrick's
-		self.Ux = msg.vx #switching from Borrelli's notation to Hedrick's
-		self.r = msg.wz  #switching from Borrelli's notation to Hedrick's
+		self.X     = msg.x
+		self.Y     = msg.y
+		self.psi   = msg.psi
+		self.Ax    = msg.a
+		self.delta = msg.df
+		self.Uy    = 0 #msg.vy #switching from Borrelli's notation to Hedrick's
+		self.Ux    = msg.vx #switching from Borrelli's notation to Hedrick's
+		self.r     = 0 # msg.wz  #switching from Borrelli's notation to Hedrick's
 
 
 
@@ -220,8 +222,8 @@ class LanekeepingPublisher():
 				self.steer_pub.publish(delta)
 				self.accel_pub.publish(accel)
 
-				# if self.lapCounter > 10:
-				# 	self.LMPC.numSS_it = 4;
+				# if self.lapCounter > 8:
+				# 	self.dR = 1 * np.array([ 1.0, 1.0]);
 
 				uApplied = np.array([delta, accel])
 

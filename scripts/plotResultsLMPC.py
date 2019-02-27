@@ -42,23 +42,27 @@ def main():
 
 	grt = r.GPSRefTrajectory(mat_filename=mat_name, LAT0=lat0, LON0=lon0, YAW0=yaw0) # only 1 should be valid.
 
-	# # Plot Lap Time
-	# plt.figure()
-	# plt.plot([i*LMPController.dt for i in LMPController.LapCounter[1:LMPController.it]], '-o', label="Lap Time")
-	# plt.legend()
-	# plt.show()
+	# Plot Lap Time
+	plt.figure()
+	plt.plot([i*LMPController.dt for i in LMPController.LapCounter[1:LMPController.it]], '-o', label="Lap Time")
+	plt.legend()
+	plt.show()
 
-	# # Plot First Path Following Lap and Learning laps
-	LapToPlotLearningProcess = [2, 4, 6]
-	
-	# plotClosedLoopLMPC(LMPController, grt, LapToPlotLearningProcess)
-	# plt.show()
-	
-	# LapToPlot = [3, 4, 10]
-	# plotClosedLoopLMPC(LMPController, grt, LapToPlot)
-	# plt.show()
-
+	# Plot First initial learning
+	LapToPlotLearningProcess = [2, 5, 7, 15]	
+	plotClosedLoopLMPC(LMPController, grt, LapToPlotLearningProcess)
 	plotMeasuredAndAppliedSteering(LMPController, LapToPlotLearningProcess)
+	plotOneStepPreditionError(LMPController, LMPCOpenLoopData, LapToPlotLearningProcess)
+	
+	plotClosedLoopColorLMPC(LMPController, grt, LapToPlotLearningProcess)
+	plt.show()
+	
+	# Now convergence
+	LapToPlot = [15, 18, 20, 25]
+	plotClosedLoopLMPC(LMPController, grt, LapToPlot)
+	plotMeasuredAndAppliedSteering(LMPController, LapToPlot)
+	plotOneStepPreditionError(LMPController, LMPCOpenLoopData, LapToPlot)
+	plotClosedLoopColorLMPC(LMPController, grt, LapToPlot)
 	plt.show()
 
 
@@ -71,13 +75,12 @@ def main():
 	# # # LapToPlot = range(15,19)
 	
 	# LapToPlot = [10, 11,15]
-	# plotClosedLoopColorLMPC(LMPController, grt, LapToPlot)
 	
 	# pdb.set_trace()
 
 	# plotClosedLoopLMPC(LMPController, grt, LapToPlot)
-	# # Plot Acceleration
-	# # plotAccelerations(LMPController, LapToPlot, map)
+	# Plot Acceleration
+	# plotAccelerations(LMPController, LapToPlot, map)
 	
 	# plt.show()
 
