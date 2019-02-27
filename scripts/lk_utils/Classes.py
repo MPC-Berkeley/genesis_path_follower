@@ -24,7 +24,7 @@ class ClosedLoopData():
     Attributes:
         updateInitialConditions: function which updates initial conditions and clear the memory
     """
-    def __init__(self, dt, Time, v0):
+    def __init__(self, dt, Time, v0, n):
         """Initialization
         Arguments:
             dt: discretization time
@@ -35,8 +35,8 @@ class ClosedLoopData():
         self.Points = int(Time / dt)  # Number of points in the simulation
         self.measSteering = np.zeros((self.Points, 1))  # Initialize the input vector
         self.u = np.zeros((self.Points, 2))  # Initialize the input vector
-        self.x = np.zeros((self.Points + 1, 6))  # Initialize state vector (In curvilinear abscissas)
-        self.x_glob = np.zeros((self.Points + 1, 6))  # Initialize the state vector in absolute reference frame
+        self.x = np.zeros((self.Points + 1, n))  # Initialize state vector (In curvilinear abscissas)
+        self.x_glob = np.zeros((self.Points + 1, n))  # Initialize the state vector in absolute reference frame
         self.solverTime = np.zeros((self.Points + 1, 1))  # Initialize state vector (In curvilinear abscissas)
         self.sysIDTime  = np.zeros((self.Points + 1, 1))  # Initialize state vector (In curvilinear abscissas)
         self.contrTime  = np.zeros((self.Points + 1, 1))  # Initialize state vector (In curvilinear abscissas)
@@ -44,6 +44,7 @@ class ClosedLoopData():
         self.x[0,0] = v0
         self.x_glob[0,0] = v0
         self.CurrentState = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        self.n = n
 
     def updateInitialConditions(self, x, x_glob):
         """Clears memory and resets initial condition
@@ -53,8 +54,8 @@ class ClosedLoopData():
         self.x[0, :] = x
         self.x_glob[0, :] = x_glob
 
-        self.x[1:, :] = np.zeros((self.x.shape[0]-1, 6))
-        self.x_glob[1:, :] = np.zeros((self.x.shape[0]-1, 6))
+        self.x[1:, :] = np.zeros((self.x.shape[0]-1, self.n))
+        self.x_glob[1:, :] = np.zeros((self.x.shape[0]-1, self.n))
         self.SimTime = -1
 
     def addMeasurement(self, xMeasuredGlob, xMeasuredLoc, uApplied, solverTime, sysIDTime, contrTime, measSteering):

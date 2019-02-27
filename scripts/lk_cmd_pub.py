@@ -98,23 +98,26 @@ class LanekeepingPublisher():
 		self.oldS = 0.
 		self.lapCounter = 0
 
-		self.closedLoopData = ClosedLoopData(dt = 1.0 / self.rateHz, Time = 800., v0 = 8.0)
+		self.dimState = 7
+		self.closedLoopData = ClosedLoopData(dt = 1.0 / self.rateHz, Time = 400., v0 = 8.0, n=self.dimState)
 		
 		#Initialization Parameters for LMPC controller; 
-		numSS_Points = 40; numSS_it = 2; N = 10
-		Qslack  =  5 * np.diag([ 1.0, 0.1, 0.1, 0.1, 10, 1])          # Cost on the slack variable for the terminal constraint
+		numSS_Points = 40; numSS_it = 2; N = 9
+		# Qslack  =  5 * np.diag([ 1.0, 0.1, 0.1, 0.1, 10, 1, 0])          # Cost on the slack variable for the terminal constraint
+		Qslack  =  10 * np.diag([ 1.0, 0.1, 0.1, 0.1, 10.0, 1.0, 1.0])          # Cost on the slack variable for the terminal constraint
 		Qlane   =  np.array([50, 10]) # Quadratic slack lane cost
 
-		Q = np.zeros((6,6))
-		R = 0*np.zeros((2,2)); dR =  1 * np.array([ 25.0, 1.0]) # Input rate cost u 
+		Q = np.zeros((self.dimState,self.dimState))
+		R = Qslack  =  10 * np.diag([ 1.0, 0.1, 0.1, 0.1, 10.0, 1.0, 1.0])          # Cost on the slack variable for the terminal constraint
+		R = np.array([[1.0, 0.0],[0.0, 0.0]]); dR =  1 * np.array([ 0.1, 1.0]) # Input rate cost u 
 		#R = np.array([[1.0, 0.0],[0.0, 0.0]]); dR =  1 * np.array([ 10.0, 1.0]) # Input rate cost u 
-		dt = 1.0 / self.rateHz; Laps = 50; TimeLMPC = 800
-		Solver = "OSQP"; steeringDelay = 1; idDelay= 0; aConstr = np.array([self.accelMin, self.accelMax]) #min and max acceleration
+		dt = 1.0 / self.rateHz; Laps = 50; TimeLMPC = 400
+		Solver = "OSQP"; steeringDelay = 0; idDelay= 0; aConstr = np.array([self.accelMin, self.accelMax]) #min and max acceleration
 		
 		SysID_Solver = "CVX" 
 		self.halfWidth = rospy.get_param('half_width') #meters - hardcoded for now, can be property of map
 		self.LMPC  = ControllerLMPC(numSS_Points, numSS_it, N, Qslack, Qlane, Q,      R,      dR,      dt, self.path, Laps, TimeLMPC, Solver,      SysID_Solver,           steeringDelay, idDelay, aConstr, self.trackLength, self.halfWidth) 
-		self.openLoopData = LMPCprediction(N, 6, 2, TimeLMPC, numSS_Points, Laps)
+		self.openLoopData = LMPCprediction(N, self.dimState, 2, TimeLMPC, numSS_Points, Laps)
 
 		self.timeCounter = 0
 		self.OneStepPredicted=self.LMPC.xPred
@@ -167,8 +170,10 @@ class LanekeepingPublisher():
 		print('Path Tracking Test: Started at %f' % (t_start.secs + t_start.nsecs*1e-9))
 		Path_Keeping_Data_Flag=0
 		Path_Keeping_Laps=2
-		oneStepPrediction = np.array([0, 0, 0, 0, 0, 0])
+		oneStepPrediction = np.zeros((self.dimState))
 
+		firstOrderDelay = 1
+		delta = 0.0
 
 		while not rospy.is_shutdown():
 			t_now = rospy.Time.now()
@@ -179,8 +184,11 @@ class LanekeepingPublisher():
 			self.localState.update(Ux = self.Ux, Uy = self.Uy, r = self.r)
 			self.globalState.update(posE = self.X, posN = self.Y, psi = self.psi)
 			self.mapMatch.localize(self.localState, self.globalState)
-			xMeasuredLoc = np.array([self.localState.Ux, self.localState.Uy, self.localState.r, self.localState.deltaPsi, self.localState.s, self.localState.e])
-			xMeasuredGlob  = np.array([self.localState.Ux, self.localState.Uy, self.localState.r, self.globalState.psi, self.globalState.posE, self.globalState.posN])
+			xMeasuredLoc = np.array([self.localState.Ux, self.localState.Uy, self.localState.r, self.localState.deltaPsi, self.localState.s, self.localState.e, self.delta])
+			xMeasuredGlob  = np.array([self.localState.Ux, self.localState.Uy, self.localState.r, self.globalState.psi, self.globalState.posE, self.globalState.posN, self.delta])
+			
+			# xMeasuredLoc = np.array([self.localState.Ux, self.localState.Uy, self.localState.r, self.localState.deltaPsi, self.localState.s, self.localState.e, delta])
+			# xMeasuredGlob  = np.array([self.localState.Ux, self.localState.Uy, self.localState.r, self.globalState.psi, self.globalState.posE, self.globalState.posN, delta])
 			measSteering=self.delta
 			if (self.OneStepPredicted!=[]):
 				self.OneStepPredictionError=xMeasuredLoc-self.OneStepPredicted
@@ -233,8 +241,11 @@ class LanekeepingPublisher():
 
 				oneStepPredictionError = xMeasuredLoc - oneStepPrediction # Subtract the local measurement to the previously predicted one step
 
-				uRealApplied = [self.LMPC.OldSteering[-1 - self.LMPC.steeringDelay], self.LMPC.OldAccelera[-1]]
-				
+				if firstOrderDelay == 0:
+					uRealApplied = [self.LMPC.OldSteering[-1 - self.LMPC.steeringDelay], self.LMPC.OldAccelera[-1]]
+				else:
+					uRealApplied = [self.delta, self.LMPC.OldAccelera[-1]]
+							
 
 				# print uAppliedDelay, Controller.OldSteering
 				oneStepPrediction, oneStepPredictionTime = self.LMPC.oneStepPrediction(xMeasuredLoc, uRealApplied, 0)
@@ -268,6 +279,7 @@ class LanekeepingPublisher():
 				# print(self.LMPC.solverTime.total_seconds()+self.LMPC.linearizationTime.total_seconds())
 				if (self.LMPC.solverTime.total_seconds() + self.LMPC.linearizationTime.total_seconds()) > 1 / self.rateHz:
 					print("Error: not real time feasible")
+					print self.LMPC.solverTime.total_seconds() + self.LMPC.linearizationTime.total_seconds()
 
 			
 
@@ -276,8 +288,11 @@ class LanekeepingPublisher():
 			#print("Accel Desired (mps2) is " + str(accel) )
 
 			#Save the data
+			if firstOrderDelay == 0:
+				uApplied = np.array([delta, accel])
+			else:	
+				uApplied = np.array([self.delta, accel])
 			
-			uApplied = np.array([delta, accel])
 			solverTime = self.LMPC.solverTime.total_seconds()
 			sysIDTime = self.LMPC.linearizationTime.total_seconds()
 			contrTime = self.LMPC.solverTime.total_seconds() + self.LMPC.linearizationTime.total_seconds()
