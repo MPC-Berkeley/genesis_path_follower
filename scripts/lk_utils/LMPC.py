@@ -136,6 +136,9 @@ class ControllerLMPC():
         LinInput     = self.LinInput
         path          = self.path
 
+        if (it>=9):
+            R = np.array([[1.0, 0.0],[0.0, 0.0]]); dR =  1 * np.array([ 10.0, 1.0])
+
         # Select laps from SS based on LapTime, always keep the last lap
         sortedLapTime = np.argsort(self.Qfun[0, 0:it])
         if sortedLapTime[0] != it-1:
