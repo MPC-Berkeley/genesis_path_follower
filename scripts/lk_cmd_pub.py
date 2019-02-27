@@ -107,10 +107,10 @@ class LanekeepingPublisher():
 		Qlane   =  np.array([50, 10]) # Quadratic slack lane cost
 
 		Q = np.zeros((6,6))
-		# R = 0*np.zeros((2,2)); dR =  1 * np.array([ 25.0, 1.0]) # Input rate cost u 
-		R = np.array([[1.0, 0.0],[0.0, 0.0]]); dR =  1 * np.array([ 10.0, 1.0]) # Input rate cost u 
+		R = 0*np.zeros((2,2)); dR =  1 * np.array([ 25.0, 1.0]) # Input rate cost u 
+		#R = np.array([[1.0, 0.0],[0.0, 0.0]]); dR =  1 * np.array([ 10.0, 1.0]) # Input rate cost u 
 		dt = 1.0 / self.rateHz; Laps = 50; TimeLMPC = 800
-		Solver = "OSQP"; steeringDelay = 2; idDelay= 0; aConstr = np.array([self.accelMin, self.accelMax]) #min and max acceleration
+		Solver = "OSQP"; steeringDelay = 1; idDelay= 0; aConstr = np.array([self.accelMin, self.accelMax]) #min and max acceleration
 		
 		SysID_Solver = "CVX" 
 		self.halfWidth = rospy.get_param('half_width') #meters - hardcoded for now, can be property of map
@@ -155,9 +155,9 @@ class LanekeepingPublisher():
 		self.psi   = msg.psi
 		self.Ax    = msg.a
 		self.delta = msg.df
-		self.Uy    = 0 #msg.vy #switching from Borrelli's notation to Hedrick's
+		self.Uy    = msg.vy #msg.vy #switching from Borrelli's notation to Hedrick's
 		self.Ux    = msg.vx #switching from Borrelli's notation to Hedrick's
-		self.r     = 0 # msg.wz  #switching from Borrelli's notation to Hedrick's
+		self.r     = msg.wz  #switching from Borrelli's notation to Hedrick's
 
 
 
