@@ -76,7 +76,6 @@ class LanekeepingPublisher():
 		self.accelMax = 4.0
 		self.accelMin = 5.0 #negative value implied by LMPC controller
 
-
 		#Initialize vehicle
 		self.genesis = Vehicle('genesis')
 
@@ -220,6 +219,7 @@ class LanekeepingPublisher():
 			else: 
 				self.steer_pub.publish(delta)
 				self.accel_pub.publish(accel)
+
 
 				uApplied = np.array([delta, accel])
 

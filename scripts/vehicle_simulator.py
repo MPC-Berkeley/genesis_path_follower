@@ -97,7 +97,6 @@ class VehicleSimulator():
 			# Compute lateral force at front and rear tire (linear model)
 			#Fyf = C_alpha_f * alpha_f
 			#Fyr = C_alpha_r * alpha_r
-
 			Fyf = tm.fiala(C_alpha_f, muP, muS, np.array([-alpha_f]), Fzf)
 			Fyr = tm.fiala(C_alpha_r, muP, muS, np.array([-alpha_r]), Fzr)
 
