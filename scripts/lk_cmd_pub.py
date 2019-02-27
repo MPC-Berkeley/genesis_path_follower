@@ -109,7 +109,7 @@ class LanekeepingPublisher():
 		R = 0*np.zeros((2,2)); dR =  1 * np.array([ 25.0, 1.0]) # Input rate cost u 
 		#R = np.array([[1.0, 0.0],[0.0, 0.0]]); dR =  1 * np.array([ 10.0, 1.0]) # Input rate cost u 
 		dt = 1.0 / self.rateHz; Laps = 50; TimeLMPC = 800
-		Solver = "OSQP"; steeringDelay = 1; idDelay= 0; aConstr = np.array([self.accelMin, self.accelMax]) #min and max acceleration
+		Solver = "OSQP"; steeringDelay = 0; idDelay= 0; aConstr = np.array([self.accelMin, self.accelMax]) #min and max acceleration
 		
 		SysID_Solver = "CVX" 
 		self.halfWidth = rospy.get_param('half_width') #meters - hardcoded for now, can be property of map
@@ -217,6 +217,9 @@ class LanekeepingPublisher():
 				self.accel_pub.publish(accel)
 
 			else: 
+
+				if (self.lapCounter>=9):
+					self.LMPC.R = np.array([[1.0, 0.0],[0.0, 0.0]]); self.LMPC.dR =  1 * np.array([ 1.0, 1.0])
 				self.steer_pub.publish(delta)
 				self.accel_pub.publish(accel)
 
