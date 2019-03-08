@@ -64,8 +64,6 @@ class ControllerLMPC():
 
         self.zVector = np.array([0.0, 0.0, 0.0, 0.0, 10.0, 0.0])
 
-        self.OldInput = np.zeros((1,2))
-
         self.OldSteering = [0.0]*int(1 + steeringDelay)
         self.OldAccelera = [0.0]*int(1)
 
@@ -828,7 +826,7 @@ def RegressionAndLinearization(ControllerLMPC, i):
     Ai = np.zeros((n, n))
     Bi = np.zeros((n, d + d*idDelay))
     Ci = np.zeros((n, 1))
-
+    time_localreg=datetime.datetime.now()
     # Compute Index to use
     h = 2 * 5
     lamb = 0.000001
@@ -904,10 +902,12 @@ def RegressionAndLinearization(ControllerLMPC, i):
         indInpDelay.append(inputFeatures[0])
         indInpDelay.append(indInpDelay[0]+d)
         Ai[yIndex, stateFeatures], Bi[yIndex, indInpDelay], Ci[yIndex] = LMPC_LocLinReg(Q_lat, b, stateFeatures,
+       
                                                                                       inputFeatures, qp, SysID_Solver, idDelay)
-
+    time_localreg=datetime.datetime.now()-time_localreg
     # ===========================
     # ===== Linearization =======
+    time_lnzn=datetime.datetime.now()
     vx = x0[0]; vy   = x0[1]
     wz = x0[2]; epsi = x0[3]
     s  = x0[4]; ey   = x0[5]
@@ -961,8 +961,9 @@ def RegressionAndLinearization(ControllerLMPC, i):
 
     Ai[5, :] = [dey_vx, dey_vy, dey_wz, dey_epsi, dey_s, dey_ey]
     Ci[5]    = ey + dt * (vx * np.sin(epsi) + vy * np.cos(epsi)) - np.dot(Ai[5, :], x0)
-
+    time_lnzn=datetime.datetime.now()-time_lnzn
     endTimer = datetime.datetime.now(); deltaTimer_tv = endTimer - startTimer
+    print time_localreg, time_lnzn
 
     return Ai, Bi, Ci, indexSelected
 

@@ -108,7 +108,7 @@ class LanekeepingPublisher():
 		Q = np.zeros((6,6))
 		R = 0*np.zeros((2,2)); dR =  1 * np.array([ 25.0, 1.0]) # Input rate cost u 
 		#R = np.array([[1.0, 0.0],[0.0, 0.0]]); dR =  1 * np.array([ 10.0, 1.0]) # Input rate cost u 
-		dt = 1.0 / self.rateHz; Laps = 50; TimeLMPC = 800
+		dt = 1.0 / self.rateHz; Laps = 50; TimeLMPC = 500
 		Solver = "OSQP"; steeringDelay = 0; idDelay= 0; aConstr = np.array([self.accelMin, self.accelMax]) #min and max acceleration
 		
 		SysID_Solver = "CVX" 
@@ -181,7 +181,7 @@ class LanekeepingPublisher():
 			self.mapMatch.localize(self.localState, self.globalState)
 			xMeasuredLoc = np.array([self.localState.Ux, self.localState.Uy, self.localState.r, self.localState.deltaPsi, self.localState.s, self.localState.e])
 			xMeasuredGlob  = np.array([self.localState.Ux, self.localState.Uy, self.localState.r, self.globalState.psi, self.globalState.posE, self.globalState.posN])
-			measSteering=self.delta
+			
 			if (self.OneStepPredicted!=[]):
 				self.OneStepPredictionError=xMeasuredLoc-self.OneStepPredicted
 
@@ -215,18 +215,15 @@ class LanekeepingPublisher():
 
 				self.steer_pub.publish(delta)
 				self.accel_pub.publish(accel)
-
-			else: 
-
-				if (self.lapCounter>=9):
-					self.LMPC.R = np.array([[1.0, 0.0],[0.0, 0.0]]); self.LMPC.dR =  1 * np.array([ 1.0, 1.0])
-				self.steer_pub.publish(delta)
-				self.accel_pub.publish(accel)
-
-
+				measSteering=self.delta
 				uApplied = np.array([delta, accel])
 
-				self.LMPC.OldInput = uApplied
+			else: 
+				self.steer_pub.publish(delta)
+				self.accel_pub.publish(accel)
+				measSteering=self.delta
+				uApplied = np.array([delta, accel])
+
 				self.LMPC.OldSteering.append(delta)
 				self.LMPC.OldAccelera.append(accel)
 
@@ -279,8 +276,6 @@ class LanekeepingPublisher():
 			#print("Accel Desired (mps2) is " + str(accel) )
 
 			#Save the data
-			
-			uApplied = np.array([delta, accel])
 			solverTime = self.LMPC.solverTime.total_seconds()
 			sysIDTime = self.LMPC.linearizationTime.total_seconds()
 			contrTime = self.LMPC.solverTime.total_seconds() + self.LMPC.linearizationTime.total_seconds()
