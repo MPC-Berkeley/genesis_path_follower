@@ -963,7 +963,7 @@ def RegressionAndLinearization(ControllerLMPC, i):
     Ci[5]    = ey + dt * (vx * np.sin(epsi) + vy * np.cos(epsi)) - np.dot(Ai[5, :], x0)
     time_lnzn=datetime.datetime.now()-time_lnzn
     endTimer = datetime.datetime.now(); deltaTimer_tv = endTimer - startTimer
-    print time_localreg, time_lnzn
+    # print time_localreg, time_lnzn
 
     return Ai, Bi, Ci, indexSelected
 

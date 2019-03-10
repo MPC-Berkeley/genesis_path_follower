@@ -19,15 +19,16 @@ class VehicleSimulator():
 
 		self.tcmd_a = None	# rostime (s) of received acc command
 		self.tcmd_d = None	# rostime (s) of received df command
+		self.tcmd_d_prev = None
 		self.acc = 0.0		# actual acceleration (m/s^2)
 		self.df = 0.0		# actual steering angle (rad)
 		self.acc_des = 0.0	# desired acceleration	(m/s^2)
 		self.df_des = 0.0	# desired steering_angle (rad)
-
+		self.df_ref=self.df #reference for enforcing steering rate constraint
 		self.dt_model = 0.01				# vehicle model update period (s) and frequency (Hz)
 		self.hz = int(1.0/self.dt_model)
 		self.r = rospy.Rate(self.hz)
-		
+		self.enable_steering_rate_constr=True
 		# Simulated Vehicle State.
 		self.X   = rospy.get_param('X0', -300.0) 	# X position (m)
 		self.Y   = rospy.get_param('Y0', -450.0) 	# Y position (m)
@@ -65,8 +66,11 @@ class VehicleSimulator():
 		self.acc_des = msg.data
 
 	def _df_cmd_callback(self, msg):
+		self.tcmd_d_prev=self.tcmd_d
 		self.tcmd_d = rospy.Time.now()
 		self.df_des    = msg.data
+		self.df_ref=self.df 
+
 
 	def _update_vehicle_model(self, disc_steps = 10):
 		# Genesis Parameters from HCE:
@@ -133,6 +137,11 @@ class VehicleSimulator():
 		# or kp = alpha, low pass filter gain
 		# kp = alpha = discretization time/(time constant + discretization time)
 		# This is just to simulate some first order control delay in acceleration/steering.
+		if self.tcmd_d_prev is not None and self.enable_steering_rate_constr is True:
+			time_elapsed=self.tcmd_d-self.tcmd_d_prev
+			max_steering_change=0.5*time_elapsed.to_sec()
+			if np.abs(self.df_des-self.df_ref) > max_steering_change:
+				self.df_des=self.df_ref+max_steering_change*(self.df_des-self.df_ref)/np.abs(self.df_des-self.df_ref)
 		self.acc = dt_control/(dt_control + self.acc_time_constant) * (self.acc_des - self.acc) + self.acc
 		self.df  = dt_control/(dt_control + self.df_time_constant)  * (self.df_des  - self.df) + self.df
 
