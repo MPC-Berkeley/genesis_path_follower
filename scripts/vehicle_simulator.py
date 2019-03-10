@@ -137,13 +137,14 @@ class VehicleSimulator():
 		# or kp = alpha, low pass filter gain
 		# kp = alpha = discretization time/(time constant + discretization time)
 		# This is just to simulate some first order control delay in acceleration/steering.
+		df_des=self.df_des
 		if self.tcmd_d_prev is not None and self.enable_steering_rate_constr is True:
 			time_elapsed=self.tcmd_d-self.tcmd_d_prev
 			max_steering_change=0.5*time_elapsed.to_sec()
 			if np.abs(self.df_des-self.df_ref) > max_steering_change:
-				self.df_des=self.df_ref+max_steering_change*(self.df_des-self.df_ref)/np.abs(self.df_des-self.df_ref)
+				df_des=self.df_ref+max_steering_change*(self.df_des-self.df_ref)/np.abs(self.df_des-self.df_ref)
 		self.acc = dt_control/(dt_control + self.acc_time_constant) * (self.acc_des - self.acc) + self.acc
-		self.df  = dt_control/(dt_control + self.df_time_constant)  * (self.df_des  - self.df) + self.df
+		self.df  = dt_control/(dt_control + self.df_time_constant)  * (df_des  - self.df) + self.df
 
 if __name__=='__main__':
 	print 'Starting Simulator.'

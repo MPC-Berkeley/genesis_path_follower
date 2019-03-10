@@ -49,7 +49,7 @@ def main():
 	plt.show()
 	pdb.set_trace()
 	# Plot First initial learning
-	LapToPlotLearningProcess = [2, 5, 7, 15]	
+	LapToPlotLearningProcess = [2, 3,4, 5, 7]	
 	plotClosedLoopLMPC(LMPController, grt, LapToPlotLearningProcess)
 	plotMeasuredAndAppliedSteering(LMPController, LapToPlotLearningProcess)
 	plotOneStepPreditionError(LMPController, LMPCOpenLoopData, LapToPlotLearningProcess)
