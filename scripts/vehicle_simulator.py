@@ -25,6 +25,7 @@ class VehicleSimulator():
 		self.acc_des = 0.0	# desired acceleration	(m/s^2)
 		self.df_des = 0.0	# desired steering_angle (rad)
 		self.df_ref=self.df #reference for enforcing steering rate constraint
+		self.df_delay=self.df
 		self.dt_model = 0.01				# vehicle model update period (s) and frequency (Hz)
 		self.hz = int(1.0/self.dt_model)
 		self.r = rospy.Rate(self.hz)
@@ -32,8 +33,8 @@ class VehicleSimulator():
 		# Simulated Vehicle State.
 		self.X   = rospy.get_param('X0', -300.0) 	# X position (m)
 		self.Y   = rospy.get_param('Y0', -450.0) 	# Y position (m)
-		self.psi = rospy.get_param('Psi0', 1.0) 	# yaw angle (rad)
-		self.vx  = rospy.get_param('V0', 0.0)		# longitudinal velocity (m/s)
+		self.psi = rospy.get_param('Psi0', 0.0) 	# yaw angle (rad)
+		self.vx  = rospy.get_param('V0', 1.0)		# longitudinal velocity (m/s)
 		self.vy  = 0.0								# lateral velocity (m/s)
 		self.wz  = 0.0								# yaw rate (rad/s)
 		
@@ -88,7 +89,11 @@ class VehicleSimulator():
 		Fzr = m*lf*g/(lr+lf)   #Maximium force on rear vehicles
 
 		deltaT = self.dt_model/disc_steps
+		self.df_delay=self.df
 		self._update_low_level_control(self.dt_model)
+		#self. df, self.df_delay = self.df_delay, self.df
+
+		#print (self.df, self.df_delay)
 		for i in range(disc_steps):			
 
 			# Compute tire slip angle
@@ -106,12 +111,12 @@ class VehicleSimulator():
 
 			# Propagate the vehicle dynamics deltaT seconds ahead.
 			# Max with 0 is to prevent moving backwards.
-			vx_n  = max(0.0, self.vx  + deltaT * ( self.acc - 1/m*Fyf*np.sin(self.df) + self.wz*self.vy ) )
+			vx_n  = max(0.0, self.vx  + deltaT * ( self.acc - 1/m*Fyf*np.sin(self.df_delay) + self.wz*self.vy ) )
 			
 			# Ensure only forward driving.
 			if vx_n > 1e-6:
-				vy_n  = self.vy  + deltaT * ( 1.0/m*(Fyf*np.cos(self.df) + Fyr) - self.wz*self.vx )
-				wz_n  = self.wz  + deltaT * ( 1.0/Iz*(lf*Fyf*np.cos(self.df) - lr*Fyr) )
+				vy_n  = self.vy  + deltaT * ( 1.0/m*(Fyf*np.cos(self.df_delay) + Fyr) - self.wz*self.vx )
+				wz_n  = self.wz  + deltaT * ( 1.0/Iz*(lf*Fyf*np.cos(self.df_delay) - lr*Fyr) )
 			else:
 				vy_n = 0.0
 				wz_n = 0.0
@@ -138,13 +143,18 @@ class VehicleSimulator():
 		# kp = alpha = discretization time/(time constant + discretization time)
 		# This is just to simulate some first order control delay in acceleration/steering.
 		df_des=self.df_des
+		#self.df_delay=self.df
 		if self.tcmd_d_prev is not None and self.enable_steering_rate_constr is True:
 			time_elapsed=self.tcmd_d-self.tcmd_d_prev
 			max_steering_change=0.5*time_elapsed.to_sec()
 			if np.abs(self.df_des-self.df_ref) > max_steering_change:
 				df_des=self.df_ref+max_steering_change*(self.df_des-self.df_ref)/np.abs(self.df_des-self.df_ref)
 		self.acc = dt_control/(dt_control + self.acc_time_constant) * (self.acc_des - self.acc) + self.acc
-		self.df  = dt_control/(dt_control + self.df_time_constant)  * (df_des  - self.df) + self.df
+		self.df = dt_control/(dt_control + self.df_time_constant)  * (df_des  - self.df) + self.df
+		#swapping
+		#print self.df, self.df_delay
+		#self.df, self.df_delay=self.df_delay, self.df
+		#print self.df, self.df_delay
 
 if __name__=='__main__':
 	print 'Starting Simulator.'
