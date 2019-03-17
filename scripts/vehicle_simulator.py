@@ -79,11 +79,11 @@ class VehicleSimulator():
 		lr = 1.4987  			# m  	(CoG to rear axle)
 		d  = 0.945	 			# m  	(half-width, currently unused)
 		m  = 2303.1   			# kg 	(vehicle mass)
-		Iz  = 5520.1			# kg*m2 (vehicle inertia)
+		Iz  = 5520.			# kg*m2 (vehicle inertia)
 		C_alpha_f = 200000    # N/rad	(front tire cornering stiffness)
 		C_alpha_r = 250000	# N/rad	(rear tire cornering stiffness)
-		muP = 1.0
-		muS = 1.0
+		muF = 0.97     #front friction coeff
+		muR = 1.02
 		g = 9.81
 		Fzf = m*lr*g/(lr+lf)   #Maximum force on front vehicles
 		Fzr = m*lf*g/(lr+lf)   #Maximium force on rear vehicles
@@ -106,8 +106,8 @@ class VehicleSimulator():
 			# Compute lateral force at front and rear tire (linear model)
 			#Fyf = C_alpha_f * alpha_f
 			#Fyr = C_alpha_r * alpha_r
-			Fyf = tm.fiala(C_alpha_f, muP, muS, np.array([-alpha_f]), Fzf)
-			Fyr = tm.fiala(C_alpha_r, muP, muS, np.array([-alpha_r]), Fzr)
+			Fyf = tm.fiala(C_alpha_f, muF, muF, np.array([-alpha_f]), Fzf)
+			Fyr = tm.fiala(C_alpha_r, muR, muR, np.array([-alpha_r]), Fzr)
 
 			# Propagate the vehicle dynamics deltaT seconds ahead.
 			# Max with 0 is to prevent moving backwards.
@@ -145,10 +145,11 @@ class VehicleSimulator():
 		df_des=self.df_des
 		#self.df_delay=self.df
 		if self.tcmd_d_prev is not None and self.enable_steering_rate_constr is True:
-			time_elapsed=self.tcmd_d-self.tcmd_d_prev
+			#time_elapsed=self.tcmd_d-self.tcmd_d_prev
+			time_elapsed=rospy.Time.now()-self.tcmd_d
 			max_steering_change=0.5*time_elapsed.to_sec()
-			if np.abs(self.df_des-self.df_ref) > max_steering_change:
-				df_des=self.df_ref+max_steering_change*(self.df_des-self.df_ref)/np.abs(self.df_des-self.df_ref)
+			if np.abs(self.df_des-self.df) > max_steering_change:
+				df_des=self.df+max_steering_change*(self.df_des-self.df)/np.abs(self.df_des-self.df)
 		self.acc = dt_control/(dt_control + self.acc_time_constant) * (self.acc_des - self.acc) + self.acc
 		self.df = dt_control/(dt_control + self.df_time_constant)  * (df_des  - self.df) + self.df
 		#swapping

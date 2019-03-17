@@ -6,10 +6,15 @@ import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 import matplotlib.patches as patches
 from lk_utils.LMPC import ControllerLMPC
+from lk_utils.controllers import *
+from lk_utils.path_lib import *
+from lk_utils.vehicle_lib import *
+from lk_utils.velocityprofiles import *
+from lk_utils.sim_lib import *
 import gps_utils.ref_gps_traj as r
 import pickle
 import pdb
-import os
+import glob, os
 import datetime
 import scipy.io as sio
 
@@ -18,52 +23,99 @@ from numpy import linalg as la
 
 def main():
 	homedir = os.path.expanduser("~")
+
+	# Output_Vector=np.array([])
+	# Data_mat=np.empty((0,4))
+	# for root, dirs, files in os.walk(homedir+'/genesis_data/id_files/'):
+	# 	for file in files:
+	# 		if file.endswith(".obj"):
+	# 			file_data = open(os.path.join(root, file), 'rb')
+	# 			ClosedLoopData = pickle.load(file_data)
+	# 			LMPController = pickle.load(file_data)
+	# 			LMPCOpenLoopData = pickle.load(file_data)
+	# 			LapCounter  = LMPController.LapCounter
+	# 			SS      = LMPController.SS
+	# 			uSS     = LMPController.uSS
+	# 			Laps= [1,2]
+	# 			O_V=np.concatenate((LMPController.measSteering[2:LapCounter[1]-1, 0, 1],LMPController.measSteering[2:LapCounter[2]-1, 0, 2]))
+	# 			Output_Vector=np.concatenate((Output_Vector, O_V))
+	# 			M1=np.repeat(LMPController.measSteering[0:LapCounter[1] - 2, 0, 1],2)[1:-1]
+	# 			M2=np.repeat(LMPController.measSteering[0:LapCounter[2] - 2, 0, 2],2)[1:-1]
+	# 			Meas_Data=np.concatenate((M1,M2))#.reshape((LapCounter[1]+LapCounter[2])/2,2)
+	# 			Meas_Data=Meas_Data.reshape((Meas_Data.shape[0]/2),2)
+	# 			C1=np.repeat(uSS[0:LapCounter[1] - 2, 0, 1],2)[1:-1]
+	# 			C2=np.repeat(uSS[0:LapCounter[2] - 2, 0, 2],2)[1:-1]
+	# 			Cmd_Data=np.concatenate((C1,C2))#.reshape((LapCounter[1]+LapCounter[2])/2,2)			
+	# 			Cmd_Data=Cmd_Data.reshape((Cmd_Data.shape[0]/2),2)
+	# 			Data_mat=np.append(Data_mat,np.hstack((Meas_Data,Cmd_Data)), axis=0)							
+
+	# 			file_data.close()			
+	# PInv=np.linalg.pinv(Data_mat)
+	# Delay_Dyn=np.dot(PInv, Output_Vector)
+	# print(Delay_Dyn)
+		
+
+
 	
-	file_data = open(homedir+'/genesis_data/ClosedLoopDataLMPC.obj', 'rb')
+	# file_data = open(homedir+'/genesis_data/ClosedLoopDataLMPC.obj', 'rb')
+	#file_data2 = open(homedir+'/genesis_data/ClosedLoopDataLMPC2.obj', 'rb')
+	#file_data3 = open(homedir+'/genesis_data/ClosedLoopDataLMPC3.obj', 'rb')
 
-	ClosedLoopData = pickle.load(file_data)
-	LMPController = pickle.load(file_data)
-	LMPCOpenLoopData = pickle.load(file_data)   
+	# ClosedLoopData = pickle.load(file_data)
+	# LMPController = pickle.load(file_data)
+	# LMPCOpenLoopData = pickle.load(file_data) 
 
-	file_data.close()
+	# ClosedLoopData2 = pickle.load(file_data2)
+	# LMPController2 = pickle.load(file_data2)
+	# LMPCOpenLoopData2 = pickle.load(file_data2)
+
+	# ClosedLoopData3 = pickle.load(file_data3)
+	# LMPController3 = pickle.load(file_data3)
+	# LMPCOpenLoopData3 = pickle.load(file_data3)
+  	
+
+	# file_data.close()
+	# file_data2.close()
+	# file_data3.close()
+
+	# LapToPlot = range(4,8)
+	# plotComputationalTime(LMPController, LapToPlot)
+
+	# print "Track length is: ", LMPController.trackLength
+
+	# currentDirectory = os.getcwd()
+	# mat_name = currentDirectory+'/../paths/lmpcMap.mat'
+	# lat0 = 35.04884687
+	# lon0 = -118.040313
+	# yaw0 = 0.0
 
 
-	LapToPlot = range(4,8)
-	plotComputationalTime(LMPController, LapToPlot)
+	# grt = r.GPSRefTrajectory(mat_filename=mat_name, LAT0=lat0, LON0=lon0, YAW0=yaw0) # only 1 should be valid.
 
-	print "Track length is: ", LMPController.trackLength
-
-	currentDirectory = os.getcwd()
-	mat_name = currentDirectory+'/../paths/lmpcMap.mat'
-	lat0 = 35.04884687
-	lon0 = -118.040313
-	yaw0 = 0.0
-
-
-	grt = r.GPSRefTrajectory(mat_filename=mat_name, LAT0=lat0, LON0=lon0, YAW0=yaw0) # only 1 should be valid.
-
-	# Plot Lap Time
-	plt.figure()
-	plt.plot([i*LMPController.dt for i in LMPController.LapCounter[1:LMPController.it]], '-o', label="Lap Time")
-	plt.legend()
-	plt.show()
-	pdb.set_trace()
-	# Plot First initial learning
-	LapToPlotLearningProcess = [2, 3,4, 5, 7]	
-	plotClosedLoopLMPC(LMPController, grt, LapToPlotLearningProcess)
-	plotMeasuredAndAppliedSteering(LMPController, LapToPlotLearningProcess)
-	plotOneStepPreditionError(LMPController, LMPCOpenLoopData, LapToPlotLearningProcess)
-	
-	plotClosedLoopColorLMPC(LMPController, grt, LapToPlotLearningProcess)
-	plt.show()
+	# # Plot Lap Time
+	# plt.figure()
+	# plt.plot([i*LMPController.dt for i in LMPController.LapCounter[1:LMPController.it]], '-o', label="Lap Time")
+	# plt.legend()
+	# plt.show()
+	# pdb.set_trace()
+	# # Plot First initial learning
+	# LapToPlotLearningProcess = [0,1,2]#[0, 2, 3, 4, 5, 7]
+	# LapCompare=[0]	
+	#plotClosedLoopLMPC(LMPController, grt, LapToPlotLearningProcess)
+	# plotMeasuredAndAppliedSteering(LMPController, LapToPlotLearningProcess)
+	#plotOneStepPreditionError(LMPController, LMPCOpenLoopData, LapToPlotLearningProcess)
+	#plotClosedLoopColorLMPC(LMPController, grt, LapToPlotLearningProcess)
+	#plt.show()
+	#plotCompareSteering(LMPController, LMPController2, LMPController3, LapCompare)
+	# plt.show()
 	
 	# Now convergence
-	LapToPlot = [15, 18, 20, 25]
-	plotClosedLoopLMPC(LMPController, grt, LapToPlot)
-	plotMeasuredAndAppliedSteering(LMPController, LapToPlot)
-	plotOneStepPreditionError(LMPController, LMPCOpenLoopData, LapToPlot)
-	plotClosedLoopColorLMPC(LMPController, grt, LapToPlot)
-	plt.show()
+	# LapToPlot = [15, 18, 20, 25]
+	# plotClosedLoopLMPC(LMPController, grt, LapToPlot)
+	# plotMeasuredAndAppliedSteering(LMPController, LapToPlot)
+	# plotOneStepPreditionError(LMPController, LMPCOpenLoopData, LapToPlot)
+	# plotClosedLoopColorLMPC(LMPController, grt, LapToPlot)
+	# plt.show()
 
 
 
@@ -94,16 +146,16 @@ def main():
 	# plotComputationalTime(LMPController, LapToPlot)
 	# plt.show()
 
-	print "Do you wanna create xy gif? [Lap #/n]"
-	inputKeyBoard = raw_input()
-	if inputKeyBoard != "n":
-		# animation_xy(grt, LMPCOpenLoopData, LMPController, int(inputKeyBoard))
-		saveGif_xyResults(grt, LMPCOpenLoopData, LMPController, int(inputKeyBoard))
+	# print "Do you wanna create xy gif? [Lap #/n]"
+	# inputKeyBoard = raw_input()
+	# if inputKeyBoard != "n":
+	# 	# animation_xy(grt, LMPCOpenLoopData, LMPController, int(inputKeyBoard))
+	# 	saveGif_xyResults(grt, LMPCOpenLoopData, LMPController, int(inputKeyBoard))
 
-	print "Do you wanna create state gif? [Lap #/n]"
-	inputKeyBoard = raw_input()
-	if inputKeyBoard != "n":
-		Save_statesAnimation(grt, LMPCOpenLoopData, LMPController, int(inputKeyBoard))
+	# print "Do you wanna create state gif? [Lap #/n]"
+	# inputKeyBoard = raw_input()
+	# if inputKeyBoard != "n":
+	# 	Save_statesAnimation(grt, LMPCOpenLoopData, LMPController, int(inputKeyBoard))
 	# pdb.set_trace()
 	# animation_states(map, LMPCOpenLoopData, LMPController, 10)
 
@@ -113,7 +165,37 @@ def main():
 	# 	saveGif_xyResultsSysID(map, LMPCOpenLoopData, LMPController, int(inputKeyBoard))
 
 	# plt.show()
-	
+def getSecondOrderDelayDynamics(Laps):
+	homedir = os.path.expanduser("~")
+
+	Output_Vector=np.array([])
+	Data_mat=np.empty((0,4))
+	for root, dirs, files in os.walk(homedir+'/genesis_data/id_files/'):
+		for file in files:
+			if file.endswith(".obj"):
+				file_data = open(os.path.join(root, file), 'rb')
+				ClosedLoopData = pickle.load(file_data)
+				LMPController = pickle.load(file_data)
+				LMPCOpenLoopData = pickle.load(file_data)
+				LapCounter  = LMPController.LapCounter
+				SS      = LMPController.SS
+				uSS     = LMPController.uSS
+				O=np.array([])
+				M=np.array([])
+				C=np.array([])
+				for i in Laps:
+					O=np.concatenate((O,LMPController.measSteering[2:LapCounter[i]-1, 0, i]))
+					M=np.concatenate((M,np.repeat(LMPController.measSteering[0:LapCounter[i] - 2, 0, i],2)[1:-1]))
+					C=np.concatenate((C,np.repeat(uSS[0:LapCounter[i] - 2, 0, i],2)[1:-1]))
+				Output_Vector=np.concatenate((Output_Vector, O_V))#.reshape((LapCounter[1]+LapCounter[2])/2,2)
+				Meas_Data=M.reshape((M.shape[0]/2),2)#.reshape((LapCounter[1]+LapCounter[2])/2,2)			
+				Cmd_Data=C.reshape((C.shape[0]/2),2)
+				Data_mat=np.append(Data_mat,np.hstack((Meas_Data,Cmd_Data)), axis=0)							
+				file_data.close()			
+	PInv=np.linalg.pinv(Data_mat)
+	Delay_Dyn=np.dot(PInv, Output_Vector)
+	print(Delay_Dyn)
+
 def plotAccelerations(LMPController, LapToPlot, map):
 	n = LMPController.n
 	x = np.zeros((10000, 1, LMPController.it+2))
@@ -537,8 +619,44 @@ def plotMeasuredAndAppliedSteering(LMPController, LapToPlot):
 	plt.figure()
 	counter = 0
 	for i in LapToPlot:
-		plt.plot(SS[0:LapCounter[i]-1, 4, i], uSS[0:LapCounter[i] - 1, 0, i], '-o', color=plotColors[counter], label="commanded Steering")
-		plt.plot(SS[0:LapCounter[i]-1, 4, i], LMPController.measSteering[0:LapCounter[i] - 1, 0, i], '--*', color=plotColors[counter], label="meausred Steering")
+		time=np.arange(0,SS[0:LapCounter[i]-1, 4, i].shape[0])
+		plt.plot(time, uSS[0:LapCounter[i] - 1, 0, i], '-o', color=plotColors[counter], label="commanded Steering")
+		plt.plot(time, LMPController.measSteering[0:LapCounter[i] - 1, 0, i], '--*', color=plotColors[counter], label="meausred Steering")
+		counter += 1
+	plt.legend()
+	plt.ylabel('Steering [rad]')
+
+
+def plotCompareSteering(LMPController, LMPController2, LMPController3, LapCompare):
+	plotColors = ['b','g','r','c','y','k','m','b','g','r','c','y','k','m']
+
+	SS_glob = LMPController.SS_glob
+	LapCounter  = LMPController.LapCounter
+	SS      = LMPController.SS
+	uSS     = LMPController.uSS
+
+	SS_glob2 = LMPController2.SS_glob
+	LapCounter2  = LMPController2.LapCounter
+	SS2      = LMPController2.SS
+	uSS2     = LMPController2.uSS
+
+	#SS_glob3 = LMPController3.SS_glob
+	LapCounter3  = LMPController3.LapCounter
+	SS3      = LMPController3.SS
+	uSS3     = LMPController3.uSS
+
+	plt.figure()
+	counter = 0
+	for i in LapCompare:
+		time=np.arange(0,SS[0:LapCounter[i]-1, 4, i].shape[0])
+		plt.plot(time, uSS[0:LapCounter[i] - 1, 0, i], '-o', color='b', label="commanded Steering_exp")
+		plt.plot(time, LMPController.measSteering[0:LapCounter[i] - 1, 0, i], '--*', color='b', label="meausred Steering_exp")
+		time2=np.arange(0,SS2[0:LapCounter2[i]-1, 4, i].shape[0])
+		plt.plot(time2, uSS2[0:LapCounter2[i] - 1, 0, i], '-o', color='g', label="commanded Steering_wSRC")
+		plt.plot(time2, LMPController2.measSteering[0:LapCounter2[i] - 1, 0, i], '--*', color='g', label="meausred Steering_wSRC")
+		time3=np.arange(0,SS3[0:LapCounter3[i]-1, 4, i].shape[0])
+		plt.plot(time3, uSS3[0:LapCounter3[i] - 1, 0, i], '-o', color='r', label="commanded Steering_woSRC")
+		plt.plot(time3, LMPController3.measSteering[0:LapCounter3[i] - 1, 0, i], '--*', color='r', label="meausred Steering_woSRC")
 		counter += 1
 	plt.legend()
 	plt.ylabel('Steering [rad]')
