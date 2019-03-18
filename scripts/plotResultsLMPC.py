@@ -24,46 +24,20 @@ from numpy import linalg as la
 def main():
 	homedir = os.path.expanduser("~")
 
-	# Output_Vector=np.array([])
-	# Data_mat=np.empty((0,4))
-	# for root, dirs, files in os.walk(homedir+'/genesis_data/id_files/'):
-	# 	for file in files:
-	# 		if file.endswith(".obj"):
-	# 			file_data = open(os.path.join(root, file), 'rb')
-	# 			ClosedLoopData = pickle.load(file_data)
-	# 			LMPController = pickle.load(file_data)
-	# 			LMPCOpenLoopData = pickle.load(file_data)
-	# 			LapCounter  = LMPController.LapCounter
-	# 			SS      = LMPController.SS
-	# 			uSS     = LMPController.uSS
-	# 			Laps= [1,2]
-	# 			O_V=np.concatenate((LMPController.measSteering[2:LapCounter[1]-1, 0, 1],LMPController.measSteering[2:LapCounter[2]-1, 0, 2]))
-	# 			Output_Vector=np.concatenate((Output_Vector, O_V))
-	# 			M1=np.repeat(LMPController.measSteering[0:LapCounter[1] - 2, 0, 1],2)[1:-1]
-	# 			M2=np.repeat(LMPController.measSteering[0:LapCounter[2] - 2, 0, 2],2)[1:-1]
-	# 			Meas_Data=np.concatenate((M1,M2))#.reshape((LapCounter[1]+LapCounter[2])/2,2)
-	# 			Meas_Data=Meas_Data.reshape((Meas_Data.shape[0]/2),2)
-	# 			C1=np.repeat(uSS[0:LapCounter[1] - 2, 0, 1],2)[1:-1]
-	# 			C2=np.repeat(uSS[0:LapCounter[2] - 2, 0, 2],2)[1:-1]
-	# 			Cmd_Data=np.concatenate((C1,C2))#.reshape((LapCounter[1]+LapCounter[2])/2,2)			
-	# 			Cmd_Data=Cmd_Data.reshape((Cmd_Data.shape[0]/2),2)
-	# 			Data_mat=np.append(Data_mat,np.hstack((Meas_Data,Cmd_Data)), axis=0)							
+	#getSecondOrderDelayDynamics([1,2,3,4])
 
-	# 			file_data.close()			
-	# PInv=np.linalg.pinv(Data_mat)
-	# Delay_Dyn=np.dot(PInv, Output_Vector)
-	# print(Delay_Dyn)
+
 		
 
 
 	
-	# file_data = open(homedir+'/genesis_data/ClosedLoopDataLMPC.obj', 'rb')
+	file_data = open(homedir+'/genesis_data/ClosedLoopDataLMPC.obj', 'rb')
 	#file_data2 = open(homedir+'/genesis_data/ClosedLoopDataLMPC2.obj', 'rb')
 	#file_data3 = open(homedir+'/genesis_data/ClosedLoopDataLMPC3.obj', 'rb')
 
-	# ClosedLoopData = pickle.load(file_data)
-	# LMPController = pickle.load(file_data)
-	# LMPCOpenLoopData = pickle.load(file_data) 
+	ClosedLoopData = pickle.load(file_data)
+	LMPController = pickle.load(file_data)
+	LMPCOpenLoopData = pickle.load(file_data) 
 
 	# ClosedLoopData2 = pickle.load(file_data2)
 	# LMPController2 = pickle.load(file_data2)
@@ -74,40 +48,40 @@ def main():
 	# LMPCOpenLoopData3 = pickle.load(file_data3)
   	
 
-	# file_data.close()
+	file_data.close()
 	# file_data2.close()
 	# file_data3.close()
 
-	# LapToPlot = range(4,8)
-	# plotComputationalTime(LMPController, LapToPlot)
+	LapToPlot = range(4,8)
+	plotComputationalTime(LMPController, LapToPlot)
 
-	# print "Track length is: ", LMPController.trackLength
+	print "Track length is: ", LMPController.trackLength
 
-	# currentDirectory = os.getcwd()
-	# mat_name = currentDirectory+'/../paths/lmpcMap.mat'
-	# lat0 = 35.04884687
-	# lon0 = -118.040313
-	# yaw0 = 0.0
+	currentDirectory = os.getcwd()
+	mat_name = currentDirectory+'/../paths/lmpcMap.mat'
+	lat0 = 35.04884687
+	lon0 = -118.040313
+	yaw0 = 0.0
 
 
-	# grt = r.GPSRefTrajectory(mat_filename=mat_name, LAT0=lat0, LON0=lon0, YAW0=yaw0) # only 1 should be valid.
+	grt = r.GPSRefTrajectory(mat_filename=mat_name, LAT0=lat0, LON0=lon0, YAW0=yaw0) # only 1 should be valid.
 
-	# # Plot Lap Time
-	# plt.figure()
-	# plt.plot([i*LMPController.dt for i in LMPController.LapCounter[1:LMPController.it]], '-o', label="Lap Time")
-	# plt.legend()
-	# plt.show()
-	# pdb.set_trace()
-	# # Plot First initial learning
-	# LapToPlotLearningProcess = [0,1,2]#[0, 2, 3, 4, 5, 7]
-	# LapCompare=[0]	
-	#plotClosedLoopLMPC(LMPController, grt, LapToPlotLearningProcess)
-	# plotMeasuredAndAppliedSteering(LMPController, LapToPlotLearningProcess)
-	#plotOneStepPreditionError(LMPController, LMPCOpenLoopData, LapToPlotLearningProcess)
-	#plotClosedLoopColorLMPC(LMPController, grt, LapToPlotLearningProcess)
-	#plt.show()
-	#plotCompareSteering(LMPController, LMPController2, LMPController3, LapCompare)
-	# plt.show()
+	# Plot Lap Time
+	plt.figure()
+	plt.plot([i*LMPController.dt for i in LMPController.LapCounter[1:LMPController.it]], '-o', label="Lap Time")
+	plt.legend()
+	plt.show()
+	pdb.set_trace()
+	# Plot First initial learning
+	LapToPlotLearningProcess = [0,1,2]#[0, 2, 3, 4, 5, 7]
+	LapCompare=[1]	
+	plotClosedLoopLMPC(LMPController, grt, LapToPlotLearningProcess)
+	plotMeasuredAndAppliedSteering(LMPController, LapToPlotLearningProcess)
+	plotOneStepPreditionError(LMPController, LMPCOpenLoopData, LapToPlotLearningProcess)
+	plotClosedLoopColorLMPC(LMPController, grt, LapToPlotLearningProcess)
+	plt.show()
+	plotCompareSteering(LMPController, LMPController2, LMPController3, LapCompare)
+	plt.show()
 	
 	# Now convergence
 	# LapToPlot = [15, 18, 20, 25]
@@ -187,7 +161,7 @@ def getSecondOrderDelayDynamics(Laps):
 					O=np.concatenate((O,LMPController.measSteering[2:LapCounter[i]-1, 0, i]))
 					M=np.concatenate((M,np.repeat(LMPController.measSteering[0:LapCounter[i] - 2, 0, i],2)[1:-1]))
 					C=np.concatenate((C,np.repeat(uSS[0:LapCounter[i] - 2, 0, i],2)[1:-1]))
-				Output_Vector=np.concatenate((Output_Vector, O_V))#.reshape((LapCounter[1]+LapCounter[2])/2,2)
+				Output_Vector=np.concatenate((Output_Vector, O))#.reshape((LapCounter[1]+LapCounter[2])/2,2)
 				Meas_Data=M.reshape((M.shape[0]/2),2)#.reshape((LapCounter[1]+LapCounter[2])/2,2)			
 				Cmd_Data=C.reshape((C.shape[0]/2),2)
 				Data_mat=np.append(Data_mat,np.hstack((Meas_Data,Cmd_Data)), axis=0)							

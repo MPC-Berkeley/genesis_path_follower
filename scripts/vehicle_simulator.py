@@ -23,13 +23,16 @@ class VehicleSimulator():
 		self.acc = 0.0		# actual acceleration (m/s^2)
 		self.df = 0.0		# actual steering angle (rad)
 		self.acc_des = 0.0	# desired acceleration	(m/s^2)
-		self.df_des = 0.0	# desired steering_angle (rad)
-		self.df_ref=self.df #reference for enforcing steering rate constraint
-		self.df_delay=self.df
+		self.df_des = 0.0	
+		self.df_des_prev=0.0# desired steering_angle (rad)
+		self.df_prev=self.df #reference for enforcing steering rate constraint
+		self.df_slow=self.df
 		self.dt_model = 0.01				# vehicle model update period (s) and frequency (Hz)
 		self.hz = int(1.0/self.dt_model)
 		self.r = rospy.Rate(self.hz)
 		self.enable_steering_rate_constr=True
+		self.enable_second_order_delay=False
+		self.cmd_slow=0
 		# Simulated Vehicle State.
 		self.X   = rospy.get_param('X0', -300.0) 	# X position (m)
 		self.Y   = rospy.get_param('Y0', -450.0) 	# Y position (m)
@@ -69,8 +72,12 @@ class VehicleSimulator():
 	def _df_cmd_callback(self, msg):
 		self.tcmd_d_prev=self.tcmd_d
 		self.tcmd_d = rospy.Time.now()
+		self.df_des_prev=self.df_des
 		self.df_des    = msg.data
-		self.df_ref=self.df 
+		self.df_prev=self.df_slow
+		self.df_slow=self.df
+		self.cmd_slow=1
+		
 
 
 	def _update_vehicle_model(self, disc_steps = 10):
@@ -111,12 +118,12 @@ class VehicleSimulator():
 
 			# Propagate the vehicle dynamics deltaT seconds ahead.
 			# Max with 0 is to prevent moving backwards.
-			vx_n  = max(0.0, self.vx  + deltaT * ( self.acc - 1/m*Fyf*np.sin(self.df_delay) + self.wz*self.vy ) )
+			vx_n  = max(0.0, self.vx  + deltaT * ( self.acc - 1/m*Fyf*np.sin(self.df) + self.wz*self.vy ) )
 			
 			# Ensure only forward driving.
 			if vx_n > 1e-6:
-				vy_n  = self.vy  + deltaT * ( 1.0/m*(Fyf*np.cos(self.df_delay) + Fyr) - self.wz*self.vx )
-				wz_n  = self.wz  + deltaT * ( 1.0/Iz*(lf*Fyf*np.cos(self.df_delay) - lr*Fyr) )
+				vy_n  = self.vy  + deltaT * ( 1.0/m*(Fyf*np.cos(self.df) + Fyr) - self.wz*self.vx )
+				wz_n  = self.wz  + deltaT * ( 1.0/Iz*(lf*Fyf*np.cos(self.df) - lr*Fyr) )
 			else:
 				vy_n = 0.0
 				wz_n = 0.0
@@ -142,20 +149,22 @@ class VehicleSimulator():
 		# or kp = alpha, low pass filter gain
 		# kp = alpha = discretization time/(time constant + discretization time)
 		# This is just to simulate some first order control delay in acceleration/steering.
-		df_des=self.df_des
+		self.acc = dt_control/(dt_control + self.acc_time_constant) * (self.acc_des - self.acc) + self.acc
+				
+
 		#self.df_delay=self.df
+		df_des=self.df_des
 		if self.tcmd_d_prev is not None and self.enable_steering_rate_constr is True:
-			#time_elapsed=self.tcmd_d-self.tcmd_d_prev
 			time_elapsed=rospy.Time.now()-self.tcmd_d
 			max_steering_change=0.5*time_elapsed.to_sec()
 			if np.abs(self.df_des-self.df) > max_steering_change:
 				df_des=self.df+max_steering_change*(self.df_des-self.df)/np.abs(self.df_des-self.df)
-		self.acc = dt_control/(dt_control + self.acc_time_constant) * (self.acc_des - self.acc) + self.acc
-		self.df = dt_control/(dt_control + self.df_time_constant)  * (df_des  - self.df) + self.df
-		#swapping
-		#print self.df, self.df_delay
-		#self.df, self.df_delay=self.df_delay, self.df
-		#print self.df, self.df_delay
+		if self.cmd_slow==0 or self.enable_second_order_delay==False:
+			self.df = dt_control/(dt_control + self.df_time_constant)  * (df_des  - self.df) + self.df
+		else:
+			self.df=-0.26751151*self.df_prev+0.95553551*self.df_slow+0.2362606*self.df_des_prev+0.07639453*self.df_des
+			self.cmd_slow=0
+		
 
 if __name__=='__main__':
 	print 'Starting Simulator.'
