@@ -31,8 +31,15 @@ class VehicleSimulator():
 		self.hz = int(1.0/self.dt_model)
 		self.r = rospy.Rate(self.hz)
 		self.enable_steering_rate_constr=True
-		self.enable_second_order_delay=False
+		self.enable_second_order_delay=True
+		self.enable_ZOH_delay=True
 		self.cmd_slow=0
+
+		#Delay Dynamics Coeff
+		self.alpha_d=-0.25961732
+		self.beta_d=0.95087874    
+		self.gamma_d=0.23484314
+		self.eta_d=0.07494852
 		# Simulated Vehicle State.
 		self.X   = rospy.get_param('X0', -300.0) 	# X position (m)
 		self.Y   = rospy.get_param('Y0', -450.0) 	# Y position (m)
@@ -98,6 +105,7 @@ class VehicleSimulator():
 		deltaT = self.dt_model/disc_steps
 		self.df_delay=self.df
 		self._update_low_level_control(self.dt_model)
+		df_used=self.df
 		#self. df, self.df_delay = self.df_delay, self.df
 
 		#print (self.df, self.df_delay)
@@ -118,12 +126,12 @@ class VehicleSimulator():
 
 			# Propagate the vehicle dynamics deltaT seconds ahead.
 			# Max with 0 is to prevent moving backwards.
-			vx_n  = max(0.0, self.vx  + deltaT * ( self.acc - 1/m*Fyf*np.sin(self.df) + self.wz*self.vy ) )
+			vx_n  = max(0.0, self.vx  + deltaT * ( self.acc - 1/m*Fyf*np.sin(df_used) + self.wz*self.vy ) )
 			
 			# Ensure only forward driving.
 			if vx_n > 1e-6:
-				vy_n  = self.vy  + deltaT * ( 1.0/m*(Fyf*np.cos(self.df) + Fyr) - self.wz*self.vx )
-				wz_n  = self.wz  + deltaT * ( 1.0/Iz*(lf*Fyf*np.cos(self.df) - lr*Fyr) )
+				vy_n  = self.vy  + deltaT * ( 1.0/m*(Fyf*np.cos(df_used) + Fyr) - self.wz*self.vx )
+				wz_n  = self.wz  + deltaT * ( 1.0/Iz*(lf*Fyf*np.cos(df_used) - lr*Fyr) )
 			else:
 				vy_n = 0.0
 				wz_n = 0.0
@@ -160,9 +168,12 @@ class VehicleSimulator():
 			if np.abs(self.df_des-self.df) > max_steering_change:
 				df_des=self.df+max_steering_change*(self.df_des-self.df)/np.abs(self.df_des-self.df)
 		if self.cmd_slow==0 or self.enable_second_order_delay==False:
-			self.df = dt_control/(dt_control + self.df_time_constant)  * (df_des  - self.df) + self.df
+			if self.enable_ZOH_delay==True:
+				self.df = self.df
+			else:
+				self.df = dt_control/(dt_control + self.df_time_constant)  * (df_des  - self.df) + self.df
 		else:
-			self.df=-0.26751151*self.df_prev+0.95553551*self.df_slow+0.2362606*self.df_des_prev+0.07639453*self.df_des
+			self.df=self.alpha_d*self.df_prev+self.beta_d*self.df_slow+self.gamma_d*self.df_des_prev+self.eta_d*self.df_des
 			self.cmd_slow=0
 		
 
