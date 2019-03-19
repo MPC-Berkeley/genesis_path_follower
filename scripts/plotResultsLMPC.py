@@ -31,11 +31,11 @@ def main():
 
 
 	
-	file_data = open(homedir+'/genesis_data/ClosedLoopDataLMPC_exp.obj', 'rb')
+	# file_data = open(homedir+'/genesis_data/ClosedLoopDataLMPC.obj', 'rb')
 
-	# file_data = open(homedir+'/genesis_data/ClosedLoopDataLMPC_exp.obj', 'rb')
-	file_data2 = open(homedir+'/genesis_data/ClosedLoopDataLMPC.obj', 'rb')
-	file_data3 = open(homedir+'/genesis_data/ClosedLoopDataLMPC3.obj', 'rb')
+	file_data = open(homedir+'/genesis_data/ClosedLoopDataLMPC_exp.obj', 'rb')
+	file_data2 = open(homedir+'/genesis_data/ClosedLoopDataLMPC2d.obj', 'rb')
+	file_data3 = open(homedir+'/genesis_data/ClosedLoopDataLMPCpd.obj', 'rb')
 
 	ClosedLoopData = pickle.load(file_data)
 	LMPController = pickle.load(file_data)
@@ -52,7 +52,7 @@ def main():
 
 	
 	file_data2.close()
-	# file_data3.close()
+	file_data3.close()
 	file_data.close()
 
 	# LapToPlot = range(4,8)
@@ -76,10 +76,10 @@ def main():
 	# plt.show()
 	# pdb.set_trace()
 	# Plot First initial learning
-	LapToPlotLearningProcess = [0,1,2,3,4]#[0, 2, 3, 4, 5, 7]
-	LapCompare=[2,3]	
+	# LapToPlotLearningProcess = [0,1,2,3,4]#[0, 2, 3, 4, 5, 7]
+	LapCompare=[6]	
 	# plotClosedLoopLMPC(LMPController, grt, LapToPlotLearningProcess)
-	#plotMeasuredAndAppliedSteering(LMPController, LapToPlotLearningProcess)
+	# plotMeasuredAndAppliedSteering(LMPController, LapToPlotLearningProcess)
 	# plotOneStepPreditionError(LMPController, LMPCOpenLoopData, LapToPlotLearningProcess)
 	# plotClosedLoopColorLMPC(LMPController, grt, LapToPlotLearningProcess)
 	# plt.show()
@@ -629,10 +629,10 @@ def plotCompareSteering(LMPController, LMPController2, LMPController3, LapCompar
 		plt.plot(time, uSS[0:LapCounter[i] - 1, 0, i], '-o', color='b', label="commanded Steering_exp")
 		plt.plot(time, LMPController.measSteering[0:LapCounter[i] - 1, 0, i], '--*', color='b', label="meausred Steering_exp")
 		time2=np.arange(0,SS2[0:LapCounter2[i]-1, 4, i].shape[0])
-		plt.plot(time2, uSS2[0:LapCounter2[i] - 1, 0, i], '-o', color='g', label="commanded Steering_woSRC")
+		plt.plot(time2, uSS2[0:LapCounter2[i] - 1, 0, i], '-o', color='g', label="commanded Steering_2d")
 		plt.plot(time2, LMPController2.measSteering[0:LapCounter2[i] - 1, 0, i], '--*', color='g', label="meausred Steering_wSRC")
 		time3=np.arange(0,SS3[0:LapCounter3[i]-1, 4, i].shape[0])
-		plt.plot(time3, uSS3[0:LapCounter3[i] - 1, 0, i], '-o', color='r', label="commanded Steering_wSRC")
+		plt.plot(time3, uSS3[0:LapCounter3[i] - 1, 0, i], '-o', color='r', label="commanded Steering_pd")
 		plt.plot(time3, LMPController3.measSteering[0:LapCounter3[i] - 1, 0, i], '--*', color='r', label="meausred Steering_woSRC")
 		counter += 1
 	plt.legend()

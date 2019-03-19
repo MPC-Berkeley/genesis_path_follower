@@ -30,9 +30,10 @@ class VehicleSimulator():
 		self.dt_model = 0.01				# vehicle model update period (s) and frequency (Hz)
 		self.hz = int(1.0/self.dt_model)
 		self.r = rospy.Rate(self.hz)
-		self.enable_steering_rate_constr=False
+		self.enable_steering_rate_constr=True
 		self.enable_second_order_delay=True
 		self.enable_ZOH_delay=True
+		self.pure_two_step_delay=False
 		self.cmd_slow=0
 
 		#Delay Dynamics Coeff
@@ -105,7 +106,7 @@ class VehicleSimulator():
 		deltaT = self.dt_model/disc_steps
 		self.df_delay=self.df
 		self._update_low_level_control(self.dt_model)
-		df_used=self.df_delay
+		df_used=self.df
 		#self. df, self.df_delay = self.df_delay, self.df
 
 		#print (self.df, self.df_delay)
@@ -173,8 +174,11 @@ class VehicleSimulator():
 			else:
 				self.df = dt_control/(dt_control + self.df_time_constant)  * (df_des  - self.df) + self.df
 		else:
-			self.df=self.alpha_d*self.df_prev+self.beta_d*self.df_slow+self.gamma_d*self.df_des_prev+self.eta_d*self.df_des
-			self.cmd_slow=0
+			if self.pure_two_step_delay==False:
+				self.df=self.alpha_d*self.df_prev+self.beta_d*self.df_slow+self.gamma_d*self.df_des_prev+self.eta_d*self.df_des
+				self.cmd_slow=0
+			else:
+				self.df=self.df_des_prev
 		
 
 if __name__=='__main__':
