@@ -98,8 +98,8 @@ class LanekeepingPublisher():
 		self.oldS = 0.
 		self.lapCounter = 0
 
-		self.closedLoopData = ClosedLoopData(dt = 1.0 / self.rateHz, Time = 800., v0 = 8.0)
 		
+		self.closedLoopData = ClosedLoopData(dt = 1.0 / self.rateHz, Time = 800., v0 = 8.0)
 		#Initialization Parameters for LMPC controller; 
 		numSS_Points = 40; numSS_it = 2; N = 10
 		Qslack  =  5 * np.diag([ 1.0, 0.1, 0.1, 0.1, 10, 1])          # Cost on the slack variable for the terminal constraint
@@ -153,7 +153,7 @@ class LanekeepingPublisher():
 		self.Y     = msg.y
 		self.psi   = msg.psi
 		self.Ax    = msg.a
-		self.delta = msg.df
+		self.delta = msg.df/1.1718
 		self.Uy    = msg.vy #msg.vy #switching from Borrelli's notation to Hedrick's
 		self.Ux    = msg.vx #switching from Borrelli's notation to Hedrick's
 		self.r     = msg.wz  #switching from Borrelli's notation to Hedrick's

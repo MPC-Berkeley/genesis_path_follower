@@ -37,10 +37,20 @@ class VehicleSimulator():
 		self.cmd_slow=0
 
 		#Delay Dynamics Coeff
-		self.alpha_d=-0.259
-		self.beta_d=0.95    
-		self.gamma_d=0.235
-		self.eta_d=0.07495
+		# self.alpha_d=-0.259*1.1
+		# self.beta_d=0.95-0.259+0.259*1.1    
+		# self.gamma_d=0.2315
+		# self.eta_d=0.07495*1.25
+
+		# self.alpha_d=-0.23369298
+		# self.beta_d=0.90756935    
+		# self.gamma_d=0.2581161
+		# self.eta_d=0.07014499
+
+		self.alpha_d=-0.22
+		self.beta_d=0.9   
+		self.gamma_d=0.3
+		self.eta_d=0.075
 		# Simulated Vehicle State.
 		self.X   = rospy.get_param('X0', -300.0) 	# X position (m)
 		self.Y   = rospy.get_param('Y0', -450.0) 	# Y position (m)
@@ -94,7 +104,7 @@ class VehicleSimulator():
 		lr = 1.4987  			# m  	(CoG to rear axle)
 		d  = 0.945	 			# m  	(half-width, currently unused)
 		m  = 2303.1   			# kg 	(vehicle mass)
-		Iz  = 5520.			# kg*m2 (vehicle inertia)
+		Iz  = 1.0*5520.			# kg*m2 (vehicle inertia)
 		C_alpha_f = 200000    # N/rad	(front tire cornering stiffness)
 		C_alpha_r = 250000	# N/rad	(rear tire cornering stiffness)
 		muF = 0.97     #front friction coeff

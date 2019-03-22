@@ -24,7 +24,7 @@ from numpy import linalg as la
 def main():
 	homedir = os.path.expanduser("~")
 
-	#getSecondOrderDelayDynamics([2,3,4,5])
+	# getSecondOrderDelayDynamics([1,2,7,5])
 
 
 		
@@ -34,8 +34,8 @@ def main():
 	# file_data = open(homedir+'/genesis_data/ClosedLoopDataLMPC.obj', 'rb')
 
 	file_data = open(homedir+'/genesis_data/ClosedLoopDataLMPC_exp.obj', 'rb')
-	file_data2 = open(homedir+'/genesis_data/ClosedLoopDataLMPC2d.obj', 'rb')
-	file_data3 = open(homedir+'/genesis_data/ClosedLoopDataLMPCpd.obj', 'rb')
+	file_data2 = open(homedir+'/genesis_data/ClosedLoopDataLMPC.obj', 'rb')
+	# # file_data3 = open(homedir+'/genesis_data/ClosedLoopDataLMPC3.obj', 'rb')
 
 	ClosedLoopData = pickle.load(file_data)
 	LMPController = pickle.load(file_data)
@@ -45,20 +45,20 @@ def main():
 	LMPController2 = pickle.load(file_data2)
 	LMPCOpenLoopData2 = pickle.load(file_data2)
 
-	ClosedLoopData3 = pickle.load(file_data3)
-	LMPController3 = pickle.load(file_data3)
-	LMPCOpenLoopData3 = pickle.load(file_data3)
+	# ClosedLoopData3 = pickle.load(file_data3)
+	# LMPController3 = pickle.load(file_data3)
+	# LMPCOpenLoopData3 = pickle.load(file_data3)
   	
 
 	
 	file_data2.close()
-	file_data3.close()
+	# file_data3.close()
 	file_data.close()
 
 	# LapToPlot = range(4,8)
 	# plotComputationalTime(LMPController, LapToPlot)
 
-	print "Track length is: ", LMPController.trackLength
+	# print "Track length is: ", LMPController.trackLength
 
 	currentDirectory = os.getcwd()
 	mat_name = currentDirectory+'/../paths/lmpcMap.mat'
@@ -75,15 +75,17 @@ def main():
 	# plt.legend()
 	# plt.show()
 	# pdb.set_trace()
-	# Plot First initial learning
-	# LapToPlotLearningProcess = [0,1,2,3,4]#[0, 2, 3, 4, 5, 7]
-	LapCompare=[6]	
+	## Plot First initial learning
+	LapToPlotLearningProcess = [0,1,2,3,4]#[0, 2, 3, 4, 5, 7]
+	LapCompare=[3]	
 	# plotClosedLoopLMPC(LMPController, grt, LapToPlotLearningProcess)
 	# plotMeasuredAndAppliedSteering(LMPController, LapToPlotLearningProcess)
 	# plotOneStepPreditionError(LMPController, LMPCOpenLoopData, LapToPlotLearningProcess)
+
 	# plotClosedLoopColorLMPC(LMPController, grt, LapToPlotLearningProcess)
 	# plt.show()
-	plotCompareSteering(LMPController, LMPController2, LMPController3, LapCompare)
+	plotCompareSteering(LMPController, LMPController2, LapCompare)#LMPController3, LapCompare)
+	CompareStates(LMPController,LMPController2,LapCompare)
 	plt.show()
 	
 	# Now convergence
@@ -493,6 +495,77 @@ def plotClosedLoopColorLMPC(LMPController, grt, LapToPlot):
 	plt.colorbar()
 	plt.show()
 
+def CompareStates(LMPController,LMPController2, LapToPlot):
+	SS_glob = LMPController.SS_glob
+	LapCounter  = LMPController.LapCounter
+	SS      = LMPController.SS
+	uSS     = LMPController.uSS
+
+	SS_glob2 = LMPController2.SS_glob
+	LapCounter2  = LMPController2.LapCounter
+	SS2      = LMPController2.SS
+	uSS2     = LMPController2.uSS
+
+	plotColors = ['b','g','r','c','y','k','m','b','g','r','c','y','k','m']
+
+	plt.figure()
+	plt.subplot(711)
+	counter=0
+	for i in LapToPlot:
+		plt.plot(SS[0:LapCounter[i], 4, i], SS[0:LapCounter[i], 0, i], '-o', label="exp", color=plotColors[counter])
+		plt.plot(SS2[0:LapCounter[i], 4, i], SS2[0:LapCounter[i], 0, i], '-o', label="sim", color=plotColors[counter+1])
+		counter += 1
+	plt.legend(bbox_to_anchor=(0,1.02,1,0.2), borderaxespad=0, ncol=len(LapToPlot))
+
+	plt.axvline(LMPController.trackLength, linewidth=4, color='g')
+	plt.ylabel('vx [m/s]')
+	plt.subplot(712)
+	counter = 0
+	for i in LapToPlot:
+		plt.plot(SS[0:LapCounter[i], 4, i], SS[0:LapCounter[i], 1, i], '-o', color=plotColors[counter], label="exp")
+		plt.plot(SS2[0:LapCounter[i], 4, i], SS2[0:LapCounter[i], 1, i], '-o', color=plotColors[counter+1], label="sim")
+		counter += 1
+	plt.axvline(LMPController.trackLength, linewidth=4, color='g')
+	plt.ylabel('vy [m/s]')
+	plt.subplot(713)
+	counter = 0
+	for i in LapToPlot:
+		plt.plot(SS[0:LapCounter[i], 4, i], SS[0:LapCounter[i], 2, i], '-o', color=plotColors[counter], label="exp")
+		plt.plot(SS2[0:LapCounter[i], 4, i], SS2[0:LapCounter[i], 2, i], '-o', color=plotColors[counter+1], label="sim")
+		counter += 1
+	plt.axvline(LMPController.trackLength, linewidth=4, color='g')
+	plt.ylabel('wz [rad/s]')
+	plt.subplot(714)
+	counter = 0
+	for i in LapToPlot:
+		plt.plot(SS[0:LapCounter[i], 4, i], SS[0:LapCounter[i], 3, i], '-o', color=plotColors[counter], label="exp")
+		plt.plot(SS2[0:LapCounter[i], 4, i], SS2[0:LapCounter[i], 3, i], '-o', color=plotColors[counter+1], label="sim")
+		counter += 1
+	plt.axvline(LMPController.trackLength, linewidth=4, color='g')
+	plt.ylabel('epsi [rad]')
+	plt.subplot(715)
+	counter = 0
+	for i in LapToPlot:
+		plt.plot(SS[0:LapCounter[i], 4, i], SS[0:LapCounter[i], 5, i], '-o', color=plotColors[counter], label="exp")
+		plt.plot(SS2[0:LapCounter[i], 4, i], SS2[0:LapCounter[i], 5, i], '-o', color=plotColors[counter+1], label="sim")
+		counter += 1
+	plt.axvline(LMPController.trackLength, linewidth=4, color='g')
+	plt.ylabel('ey [m]')
+	plt.subplot(716)
+	counter = 0
+	for i in LapToPlot:
+		plt.plot(SS[0:LapCounter[i]-1, 4, i], uSS[0:LapCounter[i] - 1, 0, i], '-o', color=plotColors[counter], label="exp")
+		plt.plot(SS2[0:LapCounter[i]-1, 4, i], uSS2[0:LapCounter[i]-1, 0, i], '-o', color=plotColors[counter+1], label="sim")
+		counter += 1
+	plt.ylabel('Steering [rad]')
+	plt.subplot(717)
+	counter = 0
+	for i in LapToPlot:
+		plt.plot(SS[0:LapCounter[i]-1, 4, i], uSS[0:LapCounter[i] - 1, 1, i], '-o', color=plotColors[counter], label="exp")
+		plt.plot(SS2[0:LapCounter[i]-1, 4, i], uSS2[0:LapCounter[i] - 1, 1, i], '-o', color=plotColors[counter+1], label="sim")
+		counter += 1
+	plt.ylabel('Acc [m/s^2]')
+	plt.xlabel('s [m]')
 
 def plotClosedLoopLMPC(LMPController, grt, LapToPlot):
 	SS_glob = LMPController.SS_glob
@@ -604,7 +677,7 @@ def plotMeasuredAndAppliedSteering(LMPController, LapToPlot):
 	plt.ylabel('Steering [rad]')
 
 
-def plotCompareSteering(LMPController, LMPController2, LMPController3, LapCompare):
+def plotCompareSteering(LMPController, LMPController2, LapCompare):#LMPController3, LapCompare):
 	plotColors = ['b','g','r','c','y','k','m','b','g','r','c','y','k','m']
 
 	SS_glob = LMPController.SS_glob
@@ -618,9 +691,9 @@ def plotCompareSteering(LMPController, LMPController2, LMPController3, LapCompar
 	uSS2     = LMPController2.uSS
 
 	#SS_glob3 = LMPController3.SS_glob
-	LapCounter3  = LMPController3.LapCounter
-	SS3      = LMPController3.SS
-	uSS3     = LMPController3.uSS
+	# LapCounter3  = LMPController3.LapCounter
+	# SS3      = LMPController3.SS
+	# uSS3     = LMPController3.uSS
 
 	plt.figure()
 	counter = 0
@@ -629,11 +702,11 @@ def plotCompareSteering(LMPController, LMPController2, LMPController3, LapCompar
 		plt.plot(time, uSS[0:LapCounter[i] - 1, 0, i], '-o', color='b', label="commanded Steering_exp")
 		plt.plot(time, LMPController.measSteering[0:LapCounter[i] - 1, 0, i], '--*', color='b', label="meausred Steering_exp")
 		time2=np.arange(0,SS2[0:LapCounter2[i]-1, 4, i].shape[0])
-		plt.plot(time2, uSS2[0:LapCounter2[i] - 1, 0, i], '-o', color='g', label="commanded Steering_2d")
-		plt.plot(time2, LMPController2.measSteering[0:LapCounter2[i] - 1, 0, i], '--*', color='g', label="meausred Steering_wSRC")
-		time3=np.arange(0,SS3[0:LapCounter3[i]-1, 4, i].shape[0])
-		plt.plot(time3, uSS3[0:LapCounter3[i] - 1, 0, i], '-o', color='r', label="commanded Steering_pd")
-		plt.plot(time3, LMPController3.measSteering[0:LapCounter3[i] - 1, 0, i], '--*', color='r', label="meausred Steering_woSRC")
+		plt.plot(time2, uSS2[0:LapCounter2[i] - 1, 0, i], '-o', color='g', label="commanded Steering_sim")
+		plt.plot(time2, LMPController2.measSteering[0:LapCounter2[i] - 1, 0, i], '--*', color='g', label="meausred Steering_sim")
+		# time3=np.arange(0,SS3[0:LapCounter3[i]-1, 4, i].shape[0])
+		# plt.plot(time3, uSS3[0:LapCounter3[i] - 1, 0, i], '-o', color='r', label="commanded Steering_wSRC")
+		# plt.plot(time3, LMPController3.measSteering[0:LapCounter3[i] - 1, 0, i], '--*', color='r', label="meausred Steering_woSRC")
 		counter += 1
 	plt.legend()
 	plt.ylabel('Steering [rad]')
