@@ -216,7 +216,7 @@ class LanekeepingPublisher():
 			#Calculate control inputs
 			if self.lapCounter <= Path_Keeping_Laps:
 				self.controller.updateInput(self.localState, self.controlInput)
-				delta = self.controlInput.delta
+				delta = self.controlInput.delta#+0.08*np.sin(1.0*np.pi*rospy.get_time())
 				Fx = self.controlInput.Fx
 
 				# use F = m*a to get desired acceleration. Limit acceleration command to 2 m/s

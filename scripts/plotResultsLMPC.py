@@ -33,10 +33,10 @@ def main():
 	
 	# file_data = open(homedir+'/genesis_data/ClosedLoopDataLMPC.obj', 'rb')
 
-	file_data = open(homedir+'/genesis_data/ClosedLoopDataLMPC_05.obj', 'rb')
-	file_data2 = open(homedir+'/genesis_data/ClosedLoopDataLMPC_03.obj', 'rb')
-	file_data3 = open(homedir+'/genesis_data/ClosedLoopDataLMPC_99.obj', 'rb')
-	file_data4 = open(homedir+'/genesis_data/ClosedLoopDataLMPC_12.obj', 'rb')
+	file_data = open(homedir+'/genesis_data/ClosedLoopDataLMPC_exp.obj', 'rb')
+	file_data2 = open(homedir+'/genesis_data/ClosedLoopDataLMPC_sin.obj', 'rb')
+	file_data3 = open(homedir+'/genesis_data/ClosedLoopDataLMPC.obj', 'rb')
+	# file_data4 = open(homedir+'/genesis_data/ClosedLoopDataLMPC_12.obj', 'rb')
 
 	ClosedLoopData = pickle.load(file_data)
 	LMPController = pickle.load(file_data)
@@ -50,9 +50,9 @@ def main():
 	LMPController3 = pickle.load(file_data3)
 	LMPCOpenLoopData3 = pickle.load(file_data3)
 
-	ClosedLoopData4 = pickle.load(file_data4)
-	LMPController4 = pickle.load(file_data4)
-	LMPCOpenLoopData4 = pickle.load(file_data4)
+	# ClosedLoopData4 = pickle.load(file_data4)
+	# LMPController4 = pickle.load(file_data4)
+	# LMPCOpenLoopData4 = pickle.load(file_data4)
   	
 
 	
@@ -79,7 +79,7 @@ def main():
 	# plt.plot([i*LMPController.dt for i in LMPController.LapCounter[1:LMPController.it]], '-o', label="Lap Time")
 	# plt.legend()
 	# plt.show()
-	# pdb.set_trace()
+	pdb.set_trace()
 	## Plot First initial learning
 	LapToPlotLearningProcess = [0,1,2,3,4]#[0, 2, 3, 4, 5, 7]
 	LapCompare=[3]	
@@ -89,8 +89,8 @@ def main():
 
 	# plotClosedLoopColorLMPC(LMPController, grt, LapToPlotLearningProcess)
 	# plt.show()
-	plotCompareSteering(LMPController, LMPController3, LapCompare)#LMPController3, LapCompare)
-	CompareStates(LMPController,LMPController2,LMPController3, LMPController4, LapCompare)
+	# plotCompareSteering(LMPController, LMPController3, LapCompare)#LMPController3, LapCompare)
+	CompareStates(LMPController,LMPController2,LMPController3, LapCompare)
 	plt.show()
 	
 	# Now convergence
@@ -500,7 +500,7 @@ def plotClosedLoopColorLMPC(LMPController, grt, LapToPlot):
 	plt.colorbar()
 	plt.show()
 
-def CompareStates(LMPController,LMPController2, LMPController3, LMPController4, LapToPlot):
+def CompareStates(LMPController,LMPController2, LMPController3, LapToPlot):
 	SS_glob = LMPController.SS_glob
 	LapCounter  = LMPController.LapCounter
 	SS      = LMPController.SS
@@ -516,10 +516,10 @@ def CompareStates(LMPController,LMPController2, LMPController3, LMPController4, 
 	SS3      = LMPController3.SS
 	uSS3     = LMPController3.uSS
 
-	SS_glob4 = LMPController4.SS_glob
-	LapCounter4  = LMPController4.LapCounter
-	SS4      = LMPController4.SS
-	uSS4     = LMPController4.uSS
+	# SS_glob4 = LMPController4.SS_glob
+	# LapCounter4  = LMPController4.LapCounter
+	# SS4      = LMPController4.SS
+	# uSS4     = LMPController4.uSS
 
 	plotColors = ['b','g','r','c','y','k','m','b','g','r','c','y','k','m']
 
@@ -530,7 +530,7 @@ def CompareStates(LMPController,LMPController2, LMPController3, LMPController4, 
 		plt.plot(SS[0:LapCounter[i], 4, i], SS[0:LapCounter[i], 0, i], '-o', label="exp", color=plotColors[counter])
 		plt.plot(SS2[0:LapCounter[i], 4, i], SS2[0:LapCounter[i], 0, i], '-o', label="sim_playback", color=plotColors[counter+1])
 		plt.plot(SS3[0:LapCounter[i], 4, i], SS3[0:LapCounter[i], 0, i], '-o', label="sim", color=plotColors[counter+2])
-		plt.plot(SS4[0:LapCounter[i], 4, i], SS4[0:LapCounter[i], 0, i], '-o', label="sim", color=plotColors[counter+3])
+		# plt.plot(SS4[0:LapCounter[i], 4, i], SS4[0:LapCounter[i], 0, i], '-o', label="sim", color=plotColors[counter+3])
 		counter += 1
 	plt.legend(bbox_to_anchor=(0,1.02,1,0.2), borderaxespad=0, ncol=len(LapToPlot))
 
@@ -542,7 +542,7 @@ def CompareStates(LMPController,LMPController2, LMPController3, LMPController4, 
 		plt.plot(SS[0:LapCounter[i], 4, i], SS[0:LapCounter[i], 1, i], '-o', color=plotColors[counter], label="exp")
 		plt.plot(SS2[0:LapCounter[i], 4, i], SS2[0:LapCounter[i], 1, i], '-o', color=plotColors[counter+1], label="sim_playback")
 		plt.plot(SS3[0:LapCounter[i], 4, i], SS3[0:LapCounter[i], 1, i], '-o', color=plotColors[counter+2], label="sim")
-		plt.plot(SS4[0:LapCounter[i], 4, i], SS4[0:LapCounter[i], 1, i], '-o', color=plotColors[counter+3], label="sim")
+		# plt.plot(SS4[0:LapCounter[i], 4, i], SS4[0:LapCounter[i], 1, i], '-o', color=plotColors[counter+3], label="sim")
 		counter += 1
 	plt.axvline(LMPController.trackLength, linewidth=4, color='g')
 	plt.ylabel('vy [m/s]')
@@ -552,7 +552,7 @@ def CompareStates(LMPController,LMPController2, LMPController3, LMPController4, 
 		plt.plot(SS[0:LapCounter[i], 4, i], SS[0:LapCounter[i], 2, i], '-o', color=plotColors[counter], label="exp")
 		plt.plot(SS2[0:LapCounter[i], 4, i], SS2[0:LapCounter[i], 2, i], '-o', color=plotColors[counter+1], label="sim_playback")
 		plt.plot(SS3[0:LapCounter[i], 4, i], SS3[0:LapCounter[i], 2, i], '-o', color=plotColors[counter+2], label="sim")
-		plt.plot(SS4[0:LapCounter[i], 4, i], SS4[0:LapCounter[i], 2, i], '-o', color=plotColors[counter+3], label="sim")
+		# plt.plot(SS4[0:LapCounter[i], 4, i], SS4[0:LapCounter[i], 2, i], '-o', color=plotColors[counter+3], label="sim")
 		counter += 1
 	plt.axvline(LMPController.trackLength, linewidth=4, color='g')
 	plt.ylabel('wz [rad/s]')
@@ -562,7 +562,7 @@ def CompareStates(LMPController,LMPController2, LMPController3, LMPController4, 
 		plt.plot(SS[0:LapCounter[i], 4, i], SS[0:LapCounter[i], 3, i], '-o', color=plotColors[counter], label="exp")
 		plt.plot(SS2[0:LapCounter[i], 4, i], SS2[0:LapCounter[i], 3, i], '-o', color=plotColors[counter+1], label="sim_playback")
 		plt.plot(SS3[0:LapCounter[i], 4, i], SS3[0:LapCounter[i], 3, i], '-o', color=plotColors[counter+2], label="sim")
-		plt.plot(SS4[0:LapCounter[i], 4, i], SS4[0:LapCounter[i], 3, i], '-o', color=plotColors[counter+3], label="sim")
+		# plt.plot(SS4[0:LapCounter[i], 4, i], SS4[0:LapCounter[i], 3, i], '-o', color=plotColors[counter+3], label="sim")
 		counter += 1
 	plt.axvline(LMPController.trackLength, linewidth=4, color='g')
 	plt.ylabel('epsi [rad]')
@@ -572,7 +572,7 @@ def CompareStates(LMPController,LMPController2, LMPController3, LMPController4, 
 		plt.plot(SS[0:LapCounter[i], 4, i], SS[0:LapCounter[i], 5, i], '-o', color=plotColors[counter], label="exp")
 		plt.plot(SS2[0:LapCounter[i], 4, i], SS2[0:LapCounter[i], 5, i], '-o', color=plotColors[counter+1], label="sim_playback")
 		plt.plot(SS3[0:LapCounter[i], 4, i], SS3[0:LapCounter[i], 5, i], '-o', color=plotColors[counter+2], label="sim")
-		plt.plot(SS4[0:LapCounter[i], 4, i], SS4[0:LapCounter[i], 5, i], '-o', color=plotColors[counter+3], label="sim")
+		# plt.plot(SS4[0:LapCounter[i], 4, i], SS4[0:LapCounter[i], 5, i], '-o', color=plotColors[counter+3], label="sim")
 		counter += 1
 	plt.axvline(LMPController.trackLength, linewidth=4, color='g')
 	plt.ylabel('ey [m]')
@@ -582,7 +582,7 @@ def CompareStates(LMPController,LMPController2, LMPController3, LMPController4, 
 		plt.plot(SS[0:LapCounter[i]-1, 4, i], uSS[0:LapCounter[i] - 1, 0, i], '-o', color=plotColors[counter], label="exp")
 		plt.plot(SS2[0:LapCounter[i]-1, 4, i], uSS2[0:LapCounter[i]-1, 0, i], '-o', color=plotColors[counter+1], label="sim_playback")
 		plt.plot(SS3[0:LapCounter[i]-1, 4, i], uSS3[0:LapCounter[i]-1, 0, i], '-o', color=plotColors[counter+2], label="sim")
-		plt.plot(SS4[0:LapCounter[i]-1, 4, i], uSS4[0:LapCounter[i]-1, 0, i], '-o', color=plotColors[counter+3], label="sim")
+		# plt.plot(SS4[0:LapCounter[i]-1, 4, i], uSS4[0:LapCounter[i]-1, 0, i], '-o', color=plotColors[counter+3], label="sim")
 		counter += 1
 	plt.ylabel('Steering [rad]')
 	plt.subplot(717)
@@ -591,7 +591,7 @@ def CompareStates(LMPController,LMPController2, LMPController3, LMPController4, 
 		plt.plot(SS[0:LapCounter[i]-1, 4, i], uSS[0:LapCounter[i] - 1, 1, i], '-o', color=plotColors[counter], label="exp")
 		plt.plot(SS2[0:LapCounter[i]-1, 4, i], uSS2[0:LapCounter[i] - 1, 1, i], '-o', color=plotColors[counter+1], label="sim_playback")
 		plt.plot(SS3[0:LapCounter[i]-1, 4, i], uSS3[0:LapCounter[i] - 1, 1, i], '-o', color=plotColors[counter+2], label="sim")
-		plt.plot(SS4[0:LapCounter[i]-1, 4, i], uSS4[0:LapCounter[i] - 1, 1, i], '-o', color=plotColors[counter+3], label="sim")
+		# plt.plot(SS4[0:LapCounter[i]-1, 4, i], uSS4[0:LapCounter[i] - 1, 1, i], '-o', color=plotColors[counter+3], label="sim")
 		counter += 1
 	plt.ylabel('Acc [m/s^2]')
 	plt.xlabel('s [m]')
