@@ -215,9 +215,13 @@ class LanekeepingPublisher():
 
 			#Calculate control inputs
 			if self.lapCounter <= Path_Keeping_Laps:
-				self.controller.updateInput(self.localState, self.controlInput)
-				delta = self.controlInput.delta#+0.08*np.sin(1.0*np.pi*rospy.get_time())
-				Fx = self.controlInput.Fx
+
+
+				desiredErrorArray = np.array([0.0, 1.0, -1.0])
+				desiredError = desiredErrorArray[self.lapCounter]
+				self.controller.updateInput(self.localState, self.controlInput, desiredError)
+				delta = self.controlInput.delta+0.08*np.sin(1.0*np.pi*rospy.get_time())
+				Fx = self.controlInput.Fx+1.0*np.sin(1.0*np.pi*rospy.get_time())
 
 				# use F = m*a to get desired acceleration. Limit acceleration command to 2 m/s
 				accel = min( Fx / self.genesis.m , self.accelMax)
@@ -230,10 +234,11 @@ class LanekeepingPublisher():
 			else: 
 				self.steer_pub.publish(delta)
 				self.accel_pub.publish(accel)
-				measSteering=self.delta
+				measSteering=self.delta/1.1715
 				uApplied = np.array([delta, accel])
 
-				self.LMPC.OldSteering.append(delta)
+				# self.LMPC.OldSteering.append(delta)
+				self.LMPC.OldSteering.append(measSteering)
 				self.LMPC.OldAccelera.append(accel)
 
 				self.LMPC.OldSteering.pop(0)
