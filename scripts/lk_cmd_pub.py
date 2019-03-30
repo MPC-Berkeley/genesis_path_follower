@@ -215,7 +215,9 @@ class LanekeepingPublisher():
 
 			#Calculate control inputs
 			if self.lapCounter <= Path_Keeping_Laps:
-				self.controller.updateInput(self.localState, self.controlInput)
+				desiredErrorArray = np.array([0.0, 1.0, -1.0])
+				desiredError = desiredErrorArray[self.lapCounter]
+				self.controller.updateInput(self.localState, self.controlInput, desiredError)
 				delta = self.controlInput.delta
 				Fx = self.controlInput.Fx
 

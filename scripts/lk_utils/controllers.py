@@ -40,8 +40,8 @@ class LaneKeepingController():
         
 
 
-    def updateInput(self, localState, controlInput):
-        delta, deltaFFW, deltaFB, K = _lanekeeping(self, localState)
+    def updateInput(self, localState, controlInput, desiredError):
+        delta, deltaFFW, deltaFB, K = _lanekeeping(self, localState, desiredError)
         Fx, UxDes, FxFFW, FxFB = _speedTracking(self, localState)
         controlInput.update(delta, Fx)
         auxVars = {'K': K , 'UxDes': UxDes}
@@ -94,7 +94,7 @@ def _force2alpha(forceTable, alphaTable, Fdes):
         return alpha
 
 
-def _lanekeeping(sim,localState):
+def _lanekeeping(sim,localState, desiredError):
     
     #note - interp requires rank 0 arrays
     sTable = sim.path.s
@@ -102,7 +102,7 @@ def _lanekeeping(sim,localState):
 
     K = np.interp(localState.s, sTable, kTable) #run interp every time - this is slow, but we may be able to get away with    
     deltaFFW, betaFFW, FyFdes, FyRdes, alphaFdes, alphaRdes = _getDeltaFFW(sim, localState, K)
-    deltaFB = _getDeltaFB(sim, localState, betaFFW)
+    deltaFB = _getDeltaFB(sim, localState, betaFFW, desiredError)
     delta = deltaFFW + deltaFB
     return delta, deltaFFW, deltaFB, K
 
@@ -130,13 +130,13 @@ def _speedTracking(sim, localState):
     return FxCommand, UxDes, FxFFW, FxFB
 
 
-def _getDeltaFB(sim, localState, betaFFW):
+def _getDeltaFB(sim, localState, betaFFW, desiredError):
     kLK = sim.kLK
     xLA = sim.xLA
     e = localState.e
     deltaPsi = localState.deltaPsi
 
-    deltaFB = -kLK * (e + xLA * np.sin(deltaPsi + betaFFW))
+    deltaFB = -kLK * ( (e - desiredError) + xLA * np.sin(deltaPsi + betaFFW))
     return deltaFB
 
 def _getDeltaFFW(sim, localState, K):
