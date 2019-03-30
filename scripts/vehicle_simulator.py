@@ -35,6 +35,7 @@ class VehicleSimulator():
 		self.enable_ZOH_delay=True
 		self.pure_two_step_delay=False
 		self.cmd_slow=0
+		self.max_steering_rate=0.5
 
 		#Delay Dynamics Coeff
 		# self.alpha_d=-0.259*1.1
@@ -116,7 +117,7 @@ class VehicleSimulator():
 		deltaT = self.dt_model/disc_steps
 		self.df_delay=self.df
 		self._update_low_level_control(self.dt_model)
-		df_used=self.df
+		df_used=self.df#/1.171
 		#self. df, self.df_delay = self.df_delay, self.df
 
 		#print (self.df, self.df_delay)
@@ -175,9 +176,12 @@ class VehicleSimulator():
 		df_des=self.df_des
 		if self.tcmd_d_prev is not None and self.enable_steering_rate_constr is True:
 			time_elapsed=rospy.Time.now()-self.tcmd_d
-			max_steering_change=0.5*time_elapsed.to_sec()
+			# time_elapsed=self.tcmd_d-self.tcmd_d_prev
+			max_steering_change=self.max_steering_rate*time_elapsed.to_sec()
 			if np.abs(self.df_des-self.df) > max_steering_change:
 				df_des=self.df+max_steering_change*(self.df_des-self.df)/np.abs(self.df_des-self.df)
+			# if np.abs(self.df_des-self.df_des_prev) > max_steering_change:
+			# 	df_des=self.df_des_prev+max_steering_change*(self.df_des-self.df_des_prev)/np.abs(self.df_des-self.df_des_prev)
 		if self.cmd_slow==0 or self.enable_second_order_delay==False:
 			if self.enable_ZOH_delay==True:
 				self.df = self.df

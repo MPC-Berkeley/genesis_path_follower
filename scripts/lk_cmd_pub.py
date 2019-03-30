@@ -98,8 +98,13 @@ class LanekeepingPublisher():
 		self.oldS = 0.
 		self.lapCounter = 0
 
-		
 		self.closedLoopData = ClosedLoopData(dt = 1.0 / self.rateHz, Time = 800., v0 = 8.0)
+		# homedir = os.path.expanduser("~")
+		# file_data = open(homedir+'/genesis_data/ClosedLoopDataLMPCexp.obj', 'rb')
+		# self.ClosedLoopexp = pickle.load(file_data)
+		# self.LMPCexp = pickle.load(file_data)
+		# self.LMPCOpenLoopDataexp = pickle.load(file_data)
+		# file_data.close()
 		#Initialization Parameters for LMPC controller; 
 		numSS_Points = 40; numSS_it = 2; N = 10
 		Qslack  =  5 * np.diag([ 1.0, 0.1, 0.1, 0.1, 10, 1])          # Cost on the slack variable for the terminal constraint
@@ -153,7 +158,7 @@ class LanekeepingPublisher():
 		self.Y     = msg.y
 		self.psi   = msg.psi
 		self.Ax    = msg.a
-		self.delta = msg.df/1.1718
+		self.delta = msg.df/1.171
 		self.Uy    = msg.vy #msg.vy #switching from Borrelli's notation to Hedrick's
 		self.Ux    = msg.vx #switching from Borrelli's notation to Hedrick's
 		self.r     = msg.wz  #switching from Borrelli's notation to Hedrick's
@@ -168,6 +173,8 @@ class LanekeepingPublisher():
 		Path_Keeping_Data_Flag=0
 		Path_Keeping_Laps=2
 		oneStepPrediction = np.array([0, 0, 0, 0, 0, 0])
+		
+
 
 
 		while not rospy.is_shutdown():
@@ -199,6 +206,8 @@ class LanekeepingPublisher():
 				self.closedLoopData.updateInitialConditions(xMeasuredLoc, xMeasuredGlob)
 				self.lapCounter += 1
 				self.timeCounter = 0
+				# if self.lapCounter==4:
+				# 	self.LMPC.update(self.LMPCexp.SS, self.LMPCexp.uSS, self.LMPCexp.Qfun, self.LMPCexp.TimeSS, self.lapCounter, self.LMPCexp.LinPoints, self.LMPCexp.LinInput)
 
 			self.oldS = sNow
 
