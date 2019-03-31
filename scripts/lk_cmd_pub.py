@@ -158,7 +158,7 @@ class LanekeepingPublisher():
 		self.Y     = msg.y
 		self.psi   = msg.psi
 		self.Ax    = msg.a
-		self.delta = msg.df/1.171
+		self.delta = msg.df/1.1715
 		self.Uy    = msg.vy #msg.vy #switching from Borrelli's notation to Hedrick's
 		self.Ux    = msg.vx #switching from Borrelli's notation to Hedrick's
 		self.r     = msg.wz  #switching from Borrelli's notation to Hedrick's
@@ -221,7 +221,7 @@ class LanekeepingPublisher():
 				desiredError = desiredErrorArray[self.lapCounter]
 				self.controller.updateInput(self.localState, self.controlInput, desiredError)
 				delta = self.controlInput.delta+0.08*np.sin(1.0*np.pi*rospy.get_time())
-				Fx = self.controlInput.Fx+1.0*np.sin(1.0*np.pi*rospy.get_time())
+				Fx = self.controlInput.Fx+0.8*np.sin(1.0*np.pi*rospy.get_time())
 
 				# use F = m*a to get desired acceleration. Limit acceleration command to 2 m/s
 				accel = min( Fx / self.genesis.m , self.accelMax)
@@ -234,11 +234,11 @@ class LanekeepingPublisher():
 			else: 
 				self.steer_pub.publish(delta)
 				self.accel_pub.publish(accel)
-				measSteering=self.delta/1.1715
+				measSteering=self.delta
 				uApplied = np.array([delta, accel])
 
-				# self.LMPC.OldSteering.append(delta)
-				self.LMPC.OldSteering.append(measSteering)
+				self.LMPC.OldSteering.append(delta)
+				# self.LMPC.OldSteering.append(measSteering)
 				self.LMPC.OldAccelera.append(accel)
 
 				self.LMPC.OldSteering.pop(0)
@@ -254,7 +254,7 @@ class LanekeepingPublisher():
 				oneStepPrediction, oneStepPredictionTime = self.LMPC.oneStepPrediction(xMeasuredLoc, uRealApplied, 0)
 			
 				self.LMPC.solve(oneStepPrediction)
-				self.LMPC.A0[:,:,self.timeCounter,self.lapCounter-Path_Keeping_Laps]=self.LMPC.A[0]
+				# self.LMPC.A0[:,:,self.timeCounter,self.lapCounter-Path_Keeping_Laps]=self.LMPC.A[0]
 				delta = self.LMPC.uPred[0 + self.LMPC.steeringDelay, 0]
 				accel = self.LMPC.uPred[0, 1]
 

@@ -51,7 +51,7 @@ class VehicleSimulator():
 		self.alpha_d=-0.22
 		self.beta_d=0.9   
 		self.gamma_d=0.3
-		self.eta_d=0.075
+		self.eta_d=0.0751
 		# Simulated Vehicle State.
 		self.X   = rospy.get_param('X0', -300.0) 	# X position (m)
 		self.Y   = rospy.get_param('Y0', -450.0) 	# Y position (m)
@@ -117,7 +117,7 @@ class VehicleSimulator():
 		deltaT = self.dt_model/disc_steps
 		self.df_delay=self.df
 		self._update_low_level_control(self.dt_model)
-		df_used=self.df#/1.171
+		df_used=self.df/1.1715
 		#self. df, self.df_delay = self.df_delay, self.df
 
 		#print (self.df, self.df_delay)

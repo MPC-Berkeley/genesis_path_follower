@@ -87,7 +87,7 @@ class ControllerLMPC():
         self.measSteering= -10000 * np.ones((NumPoints, 1, Laps))    # Input associated with the points in SS
         # Initialize the controller iteration
         self.it      = 0
-        self.A0=np.empty((6,6,NumPoints,4))
+        # self.A0=np.empty((6,6,NumPoints,4))
 
         # Initialize pool for parallel computing used in the internal function _LMPC_EstimateABC
         # self.p = Pool(4)

@@ -33,10 +33,10 @@ def main():
 	
 	# file_data = open(homedir+'/genesis_data/ClosedLoopDataLMPC.obj', 'rb')
 
-	file_data = open(homedir+'/genesis_data/ClosedLoopDataLMPC_exp.obj', 'rb')
-	file_data2 = open(homedir+'/genesis_data/ClosedLoopDataLMPC_sin.obj', 'rb')
-	file_data3 = open(homedir+'/genesis_data/ClosedLoopDataLMPC_siney.obj', 'rb')
-	file_data4 = open(homedir+'/genesis_data/ClosedLoopDataLMPC.obj', 'rb')
+	file_data = open(homedir+'/genesis_data/ClosedLoopDataLMPC_wo.obj', 'rb')
+	file_data2 = open(homedir+'/genesis_data/ClosedLoopDataLMPC_sinda.obj', 'rb')
+	file_data3 = open(homedir+'/genesis_data/ClosedLoopDataLMPC_sinmeas.obj', 'rb')
+	file_data4 = open(homedir+'/genesis_data/ClosedLoopDataLMPC_sincom.obj', 'rb')
 
 	ClosedLoopData = pickle.load(file_data)
 	LMPController = pickle.load(file_data)
@@ -79,9 +79,9 @@ def main():
 	# plt.plot([i*LMPController.dt for i in LMPController.LapCounter[1:LMPController.it]], '-o', label="Lap Time")
 	# plt.legend()
 	# plt.show()
-	pdb.set_trace()
-	## Plot First initial learning
-	LapToPlotLearningProcess = [0,1,2,3,4]#[0, 2, 3, 4, 5, 7]
+	# pdb.set_trace()
+	# ## Plot First initial learning
+	# LapToPlotLearningProcess = [0,1,2,3,4]#[0, 2, 3, 4, 5, 7]
 	LapCompare=[3]	
 	# plotClosedLoopLMPC(LMPController, grt, LapToPlotLearningProcess)
 	# plotMeasuredAndAppliedSteering(LMPController, LapToPlotLearningProcess)
@@ -527,10 +527,10 @@ def CompareStates(LMPController,LMPController2, LMPController3, LMPController4, 
 	plt.subplot(711)
 	counter=0
 	for i in LapToPlot:
-		plt.plot(SS[0:LapCounter[i], 4, i], SS[0:LapCounter[i], 0, i], '-o', label="exp", color=plotColors[counter])
-		plt.plot(SS2[0:LapCounter[i], 4, i], SS2[0:LapCounter[i], 0, i], '-o', label="sim_playback", color=plotColors[counter+1])
-		plt.plot(SS3[0:LapCounter[i], 4, i], SS3[0:LapCounter[i], 0, i], '-o', label="sim", color=plotColors[counter+2])
-		plt.plot(SS4[0:LapCounter[i], 4, i], SS4[0:LapCounter[i], 0, i], '-o', label="sim", color=plotColors[counter+3])
+		plt.plot(SS[0:LapCounter[i], 4, i], SS[0:LapCounter[i], 0, i], '-o', label="w/o", color=plotColors[counter])#"exp", color=plotColors[counter])
+		plt.plot(SS2[0:LapCounter[i], 4, i], SS2[0:LapCounter[i], 0, i], '-o', label="sin", color=plotColors[counter+1])
+		plt.plot(SS3[0:LapCounter[i], 4, i], SS3[0:LapCounter[i], 0, i], '-o', label="sin w meas", color=plotColors[counter+2])
+		plt.plot(SS4[0:LapCounter[i], 4, i], SS4[0:LapCounter[i], 0, i], '-o', label="sin w com", color=plotColors[counter+3])
 		counter += 1
 	plt.legend(bbox_to_anchor=(0,1.02,1,0.2), borderaxespad=0, ncol=len(LapToPlot))
 
@@ -539,59 +539,59 @@ def CompareStates(LMPController,LMPController2, LMPController3, LMPController4, 
 	plt.subplot(712)
 	counter = 0
 	for i in LapToPlot:
-		plt.plot(SS[0:LapCounter[i], 4, i], SS[0:LapCounter[i], 1, i], '-o', color=plotColors[counter], label="exp")
-		plt.plot(SS2[0:LapCounter[i], 4, i], SS2[0:LapCounter[i], 1, i], '-o', color=plotColors[counter+1], label="sim_playback")
-		plt.plot(SS3[0:LapCounter[i], 4, i], SS3[0:LapCounter[i], 1, i], '-o', color=plotColors[counter+2], label="sim")
-		plt.plot(SS4[0:LapCounter[i], 4, i], SS4[0:LapCounter[i], 1, i], '-o', color=plotColors[counter+3], label="sim")
+		plt.plot(SS[0:LapCounter[i], 4, i], SS[0:LapCounter[i], 1, i], '-o', color=plotColors[counter], label="w/o")
+		plt.plot(SS2[0:LapCounter[i], 4, i], SS2[0:LapCounter[i], 1, i], '-o', color=plotColors[counter+1], label="sin")
+		plt.plot(SS3[0:LapCounter[i], 4, i], SS3[0:LapCounter[i], 1, i], '-o', color=plotColors[counter+2], label="sin w meas")
+		plt.plot(SS4[0:LapCounter[i], 4, i], SS4[0:LapCounter[i], 1, i], '-o', color=plotColors[counter+3], label="sin w com")
 		counter += 1
 	plt.axvline(LMPController.trackLength, linewidth=4, color='g')
 	plt.ylabel('vy [m/s]')
 	plt.subplot(713)
 	counter = 0
 	for i in LapToPlot:
-		plt.plot(SS[0:LapCounter[i], 4, i], SS[0:LapCounter[i], 2, i], '-o', color=plotColors[counter], label="exp")
-		plt.plot(SS2[0:LapCounter[i], 4, i], SS2[0:LapCounter[i], 2, i], '-o', color=plotColors[counter+1], label="sim_playback")
-		plt.plot(SS3[0:LapCounter[i], 4, i], SS3[0:LapCounter[i], 2, i], '-o', color=plotColors[counter+2], label="sim")
-		plt.plot(SS4[0:LapCounter[i], 4, i], SS4[0:LapCounter[i], 2, i], '-o', color=plotColors[counter+3], label="sim")
+		plt.plot(SS[0:LapCounter[i], 4, i], SS[0:LapCounter[i], 2, i], '-o', color=plotColors[counter], label="w/o")
+		plt.plot(SS2[0:LapCounter[i], 4, i], SS2[0:LapCounter[i], 2, i], '-o', color=plotColors[counter+1], label="sin")
+		plt.plot(SS3[0:LapCounter[i], 4, i], SS3[0:LapCounter[i], 2, i], '-o', color=plotColors[counter+2], label="sin w meas")
+		plt.plot(SS4[0:LapCounter[i], 4, i], SS4[0:LapCounter[i], 2, i], '-o', color=plotColors[counter+3], label="sin w com")
 		counter += 1
 	plt.axvline(LMPController.trackLength, linewidth=4, color='g')
 	plt.ylabel('wz [rad/s]')
 	plt.subplot(714)
 	counter = 0
 	for i in LapToPlot:
-		plt.plot(SS[0:LapCounter[i], 4, i], SS[0:LapCounter[i], 3, i], '-o', color=plotColors[counter], label="exp")
-		plt.plot(SS2[0:LapCounter[i], 4, i], SS2[0:LapCounter[i], 3, i], '-o', color=plotColors[counter+1], label="sim_playback")
-		plt.plot(SS3[0:LapCounter[i], 4, i], SS3[0:LapCounter[i], 3, i], '-o', color=plotColors[counter+2], label="sim")
-		plt.plot(SS4[0:LapCounter[i], 4, i], SS4[0:LapCounter[i], 3, i], '-o', color=plotColors[counter+3], label="sim")
+		plt.plot(SS[0:LapCounter[i], 4, i], SS[0:LapCounter[i], 3, i], '-o', color=plotColors[counter], label="w/o")
+		plt.plot(SS2[0:LapCounter[i], 4, i], SS2[0:LapCounter[i], 3, i], '-o', color=plotColors[counter+1], label="sin")
+		plt.plot(SS3[0:LapCounter[i], 4, i], SS3[0:LapCounter[i], 3, i], '-o', color=plotColors[counter+2], label="sin w meas")
+		plt.plot(SS4[0:LapCounter[i], 4, i], SS4[0:LapCounter[i], 3, i], '-o', color=plotColors[counter+3], label="sin w com")
 		counter += 1
 	plt.axvline(LMPController.trackLength, linewidth=4, color='g')
 	plt.ylabel('epsi [rad]')
 	plt.subplot(715)
 	counter = 0
 	for i in LapToPlot:
-		plt.plot(SS[0:LapCounter[i], 4, i], SS[0:LapCounter[i], 5, i], '-o', color=plotColors[counter], label="exp")
-		plt.plot(SS2[0:LapCounter[i], 4, i], SS2[0:LapCounter[i], 5, i], '-o', color=plotColors[counter+1], label="sim_playback")
-		plt.plot(SS3[0:LapCounter[i], 4, i], SS3[0:LapCounter[i], 5, i], '-o', color=plotColors[counter+2], label="sim")
-		plt.plot(SS4[0:LapCounter[i], 4, i], SS4[0:LapCounter[i], 5, i], '-o', color=plotColors[counter+3], label="sim")
+		plt.plot(SS[0:LapCounter[i], 4, i], SS[0:LapCounter[i], 5, i], '-o', color=plotColors[counter], label="w/o")
+		plt.plot(SS2[0:LapCounter[i], 4, i], SS2[0:LapCounter[i], 5, i], '-o', color=plotColors[counter+1], label="sin")
+		plt.plot(SS3[0:LapCounter[i], 4, i], SS3[0:LapCounter[i], 5, i], '-o', color=plotColors[counter+2], label="sin w meas")
+		plt.plot(SS4[0:LapCounter[i], 4, i], SS4[0:LapCounter[i], 5, i], '-o', color=plotColors[counter+3], label="sin w com")
 		counter += 1
 	plt.axvline(LMPController.trackLength, linewidth=4, color='g')
 	plt.ylabel('ey [m]')
 	plt.subplot(716)
 	counter = 0
 	for i in LapToPlot:
-		plt.plot(SS[0:LapCounter[i]-1, 4, i], uSS[0:LapCounter[i] - 1, 0, i], '-o', color=plotColors[counter], label="exp")
-		plt.plot(SS2[0:LapCounter[i]-1, 4, i], uSS2[0:LapCounter[i]-1, 0, i], '-o', color=plotColors[counter+1], label="sim_playback")
-		plt.plot(SS3[0:LapCounter[i]-1, 4, i], uSS3[0:LapCounter[i]-1, 0, i], '-o', color=plotColors[counter+2], label="sim")
-		plt.plot(SS4[0:LapCounter[i]-1, 4, i], uSS4[0:LapCounter[i]-1, 0, i], '-o', color=plotColors[counter+3], label="sim")
+		plt.plot(SS[0:LapCounter[i]-1, 4, i], uSS[0:LapCounter[i] - 1, 0, i], '-o', color=plotColors[counter], label="w/o")
+		plt.plot(SS2[0:LapCounter[i]-1, 4, i], uSS2[0:LapCounter[i]-1, 0, i], '-o', color=plotColors[counter+1], label="sin")
+		plt.plot(SS3[0:LapCounter[i]-1, 4, i], uSS3[0:LapCounter[i]-1, 0, i], '-o', color=plotColors[counter+2], label="sin w meas")
+		plt.plot(SS4[0:LapCounter[i]-1, 4, i], uSS4[0:LapCounter[i]-1, 0, i], '-o', color=plotColors[counter+3], label="sin w com")
 		counter += 1
 	plt.ylabel('Steering [rad]')
 	plt.subplot(717)
 	counter = 0
 	for i in LapToPlot:
-		plt.plot(SS[0:LapCounter[i]-1, 4, i], uSS[0:LapCounter[i] - 1, 1, i], '-o', color=plotColors[counter], label="exp")
-		plt.plot(SS2[0:LapCounter[i]-1, 4, i], uSS2[0:LapCounter[i] - 1, 1, i], '-o', color=plotColors[counter+1], label="sim_playback")
-		plt.plot(SS3[0:LapCounter[i]-1, 4, i], uSS3[0:LapCounter[i] - 1, 1, i], '-o', color=plotColors[counter+2], label="sim")
-		plt.plot(SS4[0:LapCounter[i]-1, 4, i], uSS4[0:LapCounter[i] - 1, 1, i], '-o', color=plotColors[counter+3], label="sim")
+		plt.plot(SS[0:LapCounter[i]-1, 4, i], uSS[0:LapCounter[i] - 1, 1, i], '-o', color=plotColors[counter], label="w/o")
+		plt.plot(SS2[0:LapCounter[i]-1, 4, i], uSS2[0:LapCounter[i] - 1, 1, i], '-o', color=plotColors[counter+1], label="sin")
+		plt.plot(SS3[0:LapCounter[i]-1, 4, i], uSS3[0:LapCounter[i] - 1, 1, i], '-o', color=plotColors[counter+2], label="sin w meas")
+		plt.plot(SS4[0:LapCounter[i]-1, 4, i], uSS4[0:LapCounter[i] - 1, 1, i], '-o', color=plotColors[counter+3], label="sin w com")
 		counter += 1
 	plt.ylabel('Acc [m/s^2]')
 	plt.xlabel('s [m]')
