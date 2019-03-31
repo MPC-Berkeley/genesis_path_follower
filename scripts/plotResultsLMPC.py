@@ -31,33 +31,33 @@ def main():
 
 
 	
-	# file_data = open(homedir+'/genesis_data/ClosedLoopDataLMPC.obj', 'rb')
+	file_data = open(homedir+'/genesis_data/ClosedLoopDataLMPC.obj', 'rb')
 
-	file_data = open(homedir+'/genesis_data/ClosedLoopDataLMPC_wo.obj', 'rb')
-	file_data2 = open(homedir+'/genesis_data/ClosedLoopDataLMPC_sinda.obj', 'rb')
-	file_data3 = open(homedir+'/genesis_data/ClosedLoopDataLMPC_sinmeas.obj', 'rb')
-	file_data4 = open(homedir+'/genesis_data/ClosedLoopDataLMPC_sincom.obj', 'rb')
+	# file_data = open(homedir+'/genesis_data/ClosedLoopDataLMPC_exp.obj', 'rb')
+	# file_data2 = open(homedir+'/genesis_data/ClosedLoopDataLMPC_wo.obj', 'rb')
+	# file_data3 = open(homedir+'/genesis_data/ClosedLoopDataLMPC_sinmeas.obj', 'rb')
+	# file_data4 = open(homedir+'/genesis_data/ClosedLoopDataLMPC_sincom.obj', 'rb')
 
 	ClosedLoopData = pickle.load(file_data)
 	LMPController = pickle.load(file_data)
 	LMPCOpenLoopData = pickle.load(file_data) 
 
-	ClosedLoopData2 = pickle.load(file_data2)
-	LMPController2 = pickle.load(file_data2)
-	LMPCOpenLoopData2 = pickle.load(file_data2)
+	# ClosedLoopData2 = pickle.load(file_data2)
+	# LMPController2 = pickle.load(file_data2)
+	# LMPCOpenLoopData2 = pickle.load(file_data2)
 
-	ClosedLoopData3 = pickle.load(file_data3)
-	LMPController3 = pickle.load(file_data3)
-	LMPCOpenLoopData3 = pickle.load(file_data3)
+	# ClosedLoopData3 = pickle.load(file_data3)
+	# LMPController3 = pickle.load(file_data3)
+	# LMPCOpenLoopData3 = pickle.load(file_data3)
 
-	ClosedLoopData4 = pickle.load(file_data4)
-	LMPController4 = pickle.load(file_data4)
-	LMPCOpenLoopData4 = pickle.load(file_data4)
+	# ClosedLoopData4 = pickle.load(file_data4)
+	# LMPController4 = pickle.load(file_data4)
+	# LMPCOpenLoopData4 = pickle.load(file_data4)
   	
 
 	
-	file_data2.close()
-	file_data3.close()
+	# file_data2.close()
+	# file_data3.close()
 	file_data.close()
 
 	# LapToPlot = range(4,8)
@@ -81,16 +81,16 @@ def main():
 	# plt.show()
 	# pdb.set_trace()
 	# ## Plot First initial learning
-	# LapToPlotLearningProcess = [0,1,2,3,4]#[0, 2, 3, 4, 5, 7]
+	LapToPlotLearningProcess = [0,1,2,3,4]#[0, 2, 3, 4, 5, 7]
 	LapCompare=[3]	
-	# plotClosedLoopLMPC(LMPController, grt, LapToPlotLearningProcess)
+	plotClosedLoopLMPC(LMPController, grt, LapToPlotLearningProcess)
 	# plotMeasuredAndAppliedSteering(LMPController, LapToPlotLearningProcess)
 	# plotOneStepPreditionError(LMPController, LMPCOpenLoopData, LapToPlotLearningProcess)
 
 	# plotClosedLoopColorLMPC(LMPController, grt, LapToPlotLearningProcess)
 	# plt.show()
 	# plotCompareSteering(LMPController, LMPController3, LapCompare)#LMPController3, LapCompare)
-	CompareStates(LMPController,LMPController2,LMPController3, LMPController4, LapCompare)
+	# CompareStates(LMPController,LMPController2,LMPController3, LMPController4, LapCompare)
 	plt.show()
 	
 	# Now convergence
@@ -527,8 +527,8 @@ def CompareStates(LMPController,LMPController2, LMPController3, LMPController4, 
 	plt.subplot(711)
 	counter=0
 	for i in LapToPlot:
-		plt.plot(SS[0:LapCounter[i], 4, i], SS[0:LapCounter[i], 0, i], '-o', label="w/o", color=plotColors[counter])#"exp", color=plotColors[counter])
-		plt.plot(SS2[0:LapCounter[i], 4, i], SS2[0:LapCounter[i], 0, i], '-o', label="sin", color=plotColors[counter+1])
+		plt.plot(SS[0:LapCounter[i], 4, i], SS[0:LapCounter[i], 0, i], '-o', label="exp", color=plotColors[counter])#"exp", color=plotColors[counter])
+		plt.plot(SS2[0:LapCounter[i], 4, i], SS2[0:LapCounter[i], 0, i], '-o', label="w/o", color=plotColors[counter+1])
 		plt.plot(SS3[0:LapCounter[i], 4, i], SS3[0:LapCounter[i], 0, i], '-o', label="sin w meas", color=plotColors[counter+2])
 		plt.plot(SS4[0:LapCounter[i], 4, i], SS4[0:LapCounter[i], 0, i], '-o', label="sin w com", color=plotColors[counter+3])
 		counter += 1
@@ -539,8 +539,8 @@ def CompareStates(LMPController,LMPController2, LMPController3, LMPController4, 
 	plt.subplot(712)
 	counter = 0
 	for i in LapToPlot:
-		plt.plot(SS[0:LapCounter[i], 4, i], SS[0:LapCounter[i], 1, i], '-o', color=plotColors[counter], label="w/o")
-		plt.plot(SS2[0:LapCounter[i], 4, i], SS2[0:LapCounter[i], 1, i], '-o', color=plotColors[counter+1], label="sin")
+		plt.plot(SS[0:LapCounter[i], 4, i], SS[0:LapCounter[i], 1, i], '-o', color=plotColors[counter], label="exp")
+		plt.plot(SS2[0:LapCounter[i], 4, i], SS2[0:LapCounter[i], 1, i], '-o', color=plotColors[counter+1], label="w/o")
 		plt.plot(SS3[0:LapCounter[i], 4, i], SS3[0:LapCounter[i], 1, i], '-o', color=plotColors[counter+2], label="sin w meas")
 		plt.plot(SS4[0:LapCounter[i], 4, i], SS4[0:LapCounter[i], 1, i], '-o', color=plotColors[counter+3], label="sin w com")
 		counter += 1
@@ -549,8 +549,8 @@ def CompareStates(LMPController,LMPController2, LMPController3, LMPController4, 
 	plt.subplot(713)
 	counter = 0
 	for i in LapToPlot:
-		plt.plot(SS[0:LapCounter[i], 4, i], SS[0:LapCounter[i], 2, i], '-o', color=plotColors[counter], label="w/o")
-		plt.plot(SS2[0:LapCounter[i], 4, i], SS2[0:LapCounter[i], 2, i], '-o', color=plotColors[counter+1], label="sin")
+		plt.plot(SS[0:LapCounter[i], 4, i], SS[0:LapCounter[i], 2, i], '-o', color=plotColors[counter], label="exp")
+		plt.plot(SS2[0:LapCounter[i], 4, i], SS2[0:LapCounter[i], 2, i], '-o', color=plotColors[counter+1], label="w/o")
 		plt.plot(SS3[0:LapCounter[i], 4, i], SS3[0:LapCounter[i], 2, i], '-o', color=plotColors[counter+2], label="sin w meas")
 		plt.plot(SS4[0:LapCounter[i], 4, i], SS4[0:LapCounter[i], 2, i], '-o', color=plotColors[counter+3], label="sin w com")
 		counter += 1
@@ -559,8 +559,8 @@ def CompareStates(LMPController,LMPController2, LMPController3, LMPController4, 
 	plt.subplot(714)
 	counter = 0
 	for i in LapToPlot:
-		plt.plot(SS[0:LapCounter[i], 4, i], SS[0:LapCounter[i], 3, i], '-o', color=plotColors[counter], label="w/o")
-		plt.plot(SS2[0:LapCounter[i], 4, i], SS2[0:LapCounter[i], 3, i], '-o', color=plotColors[counter+1], label="sin")
+		plt.plot(SS[0:LapCounter[i], 4, i], SS[0:LapCounter[i], 3, i], '-o', color=plotColors[counter], label="exp")
+		plt.plot(SS2[0:LapCounter[i], 4, i], SS2[0:LapCounter[i], 3, i], '-o', color=plotColors[counter+1], label="w/o")
 		plt.plot(SS3[0:LapCounter[i], 4, i], SS3[0:LapCounter[i], 3, i], '-o', color=plotColors[counter+2], label="sin w meas")
 		plt.plot(SS4[0:LapCounter[i], 4, i], SS4[0:LapCounter[i], 3, i], '-o', color=plotColors[counter+3], label="sin w com")
 		counter += 1
@@ -569,8 +569,8 @@ def CompareStates(LMPController,LMPController2, LMPController3, LMPController4, 
 	plt.subplot(715)
 	counter = 0
 	for i in LapToPlot:
-		plt.plot(SS[0:LapCounter[i], 4, i], SS[0:LapCounter[i], 5, i], '-o', color=plotColors[counter], label="w/o")
-		plt.plot(SS2[0:LapCounter[i], 4, i], SS2[0:LapCounter[i], 5, i], '-o', color=plotColors[counter+1], label="sin")
+		plt.plot(SS[0:LapCounter[i], 4, i], SS[0:LapCounter[i], 5, i], '-o', color=plotColors[counter], label="exp")
+		plt.plot(SS2[0:LapCounter[i], 4, i], SS2[0:LapCounter[i], 5, i], '-o', color=plotColors[counter+1], label="w/o")
 		plt.plot(SS3[0:LapCounter[i], 4, i], SS3[0:LapCounter[i], 5, i], '-o', color=plotColors[counter+2], label="sin w meas")
 		plt.plot(SS4[0:LapCounter[i], 4, i], SS4[0:LapCounter[i], 5, i], '-o', color=plotColors[counter+3], label="sin w com")
 		counter += 1
@@ -579,8 +579,8 @@ def CompareStates(LMPController,LMPController2, LMPController3, LMPController4, 
 	plt.subplot(716)
 	counter = 0
 	for i in LapToPlot:
-		plt.plot(SS[0:LapCounter[i]-1, 4, i], uSS[0:LapCounter[i] - 1, 0, i], '-o', color=plotColors[counter], label="w/o")
-		plt.plot(SS2[0:LapCounter[i]-1, 4, i], uSS2[0:LapCounter[i]-1, 0, i], '-o', color=plotColors[counter+1], label="sin")
+		plt.plot(SS[0:LapCounter[i]-1, 4, i], uSS[0:LapCounter[i] - 1, 0, i], '-o', color=plotColors[counter], label="exp")
+		plt.plot(SS2[0:LapCounter[i]-1, 4, i], uSS2[0:LapCounter[i]-1, 0, i], '-o', color=plotColors[counter+1], label="w/o")
 		plt.plot(SS3[0:LapCounter[i]-1, 4, i], uSS3[0:LapCounter[i]-1, 0, i], '-o', color=plotColors[counter+2], label="sin w meas")
 		plt.plot(SS4[0:LapCounter[i]-1, 4, i], uSS4[0:LapCounter[i]-1, 0, i], '-o', color=plotColors[counter+3], label="sin w com")
 		counter += 1
@@ -588,8 +588,8 @@ def CompareStates(LMPController,LMPController2, LMPController3, LMPController4, 
 	plt.subplot(717)
 	counter = 0
 	for i in LapToPlot:
-		plt.plot(SS[0:LapCounter[i]-1, 4, i], uSS[0:LapCounter[i] - 1, 1, i], '-o', color=plotColors[counter], label="w/o")
-		plt.plot(SS2[0:LapCounter[i]-1, 4, i], uSS2[0:LapCounter[i] - 1, 1, i], '-o', color=plotColors[counter+1], label="sin")
+		plt.plot(SS[0:LapCounter[i]-1, 4, i], uSS[0:LapCounter[i] - 1, 1, i], '-o', color=plotColors[counter], label="exp")
+		plt.plot(SS2[0:LapCounter[i]-1, 4, i], uSS2[0:LapCounter[i] - 1, 1, i], '-o', color=plotColors[counter+1], label="w/o")
 		plt.plot(SS3[0:LapCounter[i]-1, 4, i], uSS3[0:LapCounter[i] - 1, 1, i], '-o', color=plotColors[counter+2], label="sin w meas")
 		plt.plot(SS4[0:LapCounter[i]-1, 4, i], uSS4[0:LapCounter[i] - 1, 1, i], '-o', color=plotColors[counter+3], label="sin w com")
 		counter += 1
