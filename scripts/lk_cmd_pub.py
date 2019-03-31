@@ -254,6 +254,7 @@ class LanekeepingPublisher():
 				oneStepPrediction, oneStepPredictionTime = self.LMPC.oneStepPrediction(xMeasuredLoc, uRealApplied, 0)
 			
 				self.LMPC.solve(oneStepPrediction)
+				self.LMPC.A0[:,:,self.timeCounter,self.lapCounter-Path_Keeping_Laps]=self.LMPC.A[0]
 				delta = self.LMPC.uPred[0 + self.LMPC.steeringDelay, 0]
 				accel = self.LMPC.uPred[0, 1]
 

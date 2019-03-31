@@ -51,6 +51,7 @@ class ControllerLMPC():
         self.Solver = Solver            
         self.SysID_Solver = SysID_Solver
         self.A = []
+        
         self.B = []
         self.C = []
         self.halfWidth = halfWidth
@@ -86,6 +87,7 @@ class ControllerLMPC():
         self.measSteering= -10000 * np.ones((NumPoints, 1, Laps))    # Input associated with the points in SS
         # Initialize the controller iteration
         self.it      = 0
+        self.A0=np.empty((6,6,NumPoints,4))
 
         # Initialize pool for parallel computing used in the internal function _LMPC_EstimateABC
         # self.p = Pool(4)
@@ -223,6 +225,7 @@ class ControllerLMPC():
             self.LinInput = np.vstack((uPred.T[1:, :], self.uVector))
 
         self.LinPoints = np.vstack((xPred.T[1:,:], self.zVector))
+        print self.xPred[0,4], self.A[0]
         # self.OldInput = uPred.T[0,:]
         
         # self.OldSteering.pop(0)
@@ -260,6 +263,7 @@ class ControllerLMPC():
         self.contrTime[0:(self.TimeSS[it] + 1), it]  = np.squeeze(ClosedLoopData.contrTime[0:(self.TimeSS[it] + 1), :])
         self.measSteering[0:(self.TimeSS[it] + 1),:, it] = ClosedLoopData.measSteering[0:(self.TimeSS[it] + 1), :]
         self.it = self.it + 1
+ 
 
     def addPoint(self, x, x_glob, u, i):
         """at iteration j add the current point to SS, uSS and Qfun of the previous iteration
