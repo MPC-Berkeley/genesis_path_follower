@@ -93,7 +93,8 @@ def main():
 	# plotCompareSteering(LMPController, LMPController3, LapCompare)#LMPController3, LapCompare)
 	# CompareStates(LMPController,LMPController2,LMPController3, LMPController4, LapCompare)
 	plotA(LMPController, LapCompare)
-	plt.show()
+
+	plotA(LMPController, [4])
 	
 	# Now convergence
 	# LapToPlot = [15, 18, 20, 25]
@@ -101,7 +102,7 @@ def main():
 	# plotMeasuredAndAppliedSteering(LMPController, LapToPlot)
 	# plotOneStepPreditionError(LMPController, LMPCOpenLoopData, LapToPlot)
 	# plotClosedLoopColorLMPC(LMPController, grt, LapToPlot)
-	# plt.show()
+	plt.show()
 
 
 
@@ -324,7 +325,7 @@ def plotA(LMPController, Laps):
 	plotColors = ['b','g','r','c','y','k','m']
 	A0=LMPController.A0
 	
-	plt.figure(10)
+	plt.figure()
 	plt.subplot(311)
 	plt.title("A Matrix")
 	counter = 0
