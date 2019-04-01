@@ -237,8 +237,8 @@ class LanekeepingPublisher():
 				measSteering=self.delta
 				uApplied = np.array([delta, accel])
 
-				self.LMPC.OldSteering.append(delta)
-				# self.LMPC.OldSteering.append(measSteering)
+				# self.LMPC.OldSteering.append(delta)
+				self.LMPC.OldSteering.append(measSteering)
 				self.LMPC.OldAccelera.append(accel)
 
 				self.LMPC.OldSteering.pop(0)
@@ -254,7 +254,7 @@ class LanekeepingPublisher():
 				oneStepPrediction, oneStepPredictionTime = self.LMPC.oneStepPrediction(xMeasuredLoc, uRealApplied, 0)
 			
 				self.LMPC.solve(oneStepPrediction)
-				self.LMPC.A0[:,:,self.timeCounter,self.lapCounter-Path_Keeping_Laps]=self.LMPC.A[0]
+				self.LMPC.A0[:,:,self.timeCounter,self.lapCounter-Path_Keeping_Laps-1]=self.LMPC.A[0][0:3,0:3]
 				delta = self.LMPC.uPred[0 + self.LMPC.steeringDelay, 0]
 				accel = self.LMPC.uPred[0, 1]
 

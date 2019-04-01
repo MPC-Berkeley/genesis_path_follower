@@ -83,6 +83,7 @@ def main():
 	# ## Plot First initial learning
 	LapToPlotLearningProcess = [0,1,2,3,4]#[0, 2, 3, 4, 5, 7]
 	LapCompare=[3]	
+
 	plotClosedLoopLMPC(LMPController, grt, LapToPlotLearningProcess)
 	# plotMeasuredAndAppliedSteering(LMPController, LapToPlotLearningProcess)
 	# plotOneStepPreditionError(LMPController, LMPCOpenLoopData, LapToPlotLearningProcess)
@@ -91,6 +92,7 @@ def main():
 	# plt.show()
 	# plotCompareSteering(LMPController, LMPController3, LapCompare)#LMPController3, LapCompare)
 	# CompareStates(LMPController,LMPController2,LMPController3, LMPController4, LapCompare)
+	plotA(LMPController, LapCompare)
 	plt.show()
 	
 	# Now convergence
@@ -316,6 +318,42 @@ def plotAccelerations(LMPController, LapToPlot, map):
 	plt.ylabel('roll [rad]')    
 	plt.xlabel('s [m]')    
 	
+def plotA(LMPController, Laps):
+	LapCounter  = LMPController.LapCounter
+	SS      = LMPController.SS
+	plotColors = ['b','g','r','c','y','k','m']
+	A0=LMPController.A0
+	
+	plt.figure(10)
+	plt.subplot(311)
+	plt.title("A Matrix")
+	counter = 0
+	for i in Laps:
+		plt.plot(SS[1:LapCounter[i], 4, i], A0[0, 0, 1:LapCounter[i], i-3], '-o', color=plotColors[counter], label=0)
+		plt.plot(SS[1:LapCounter[i], 4, i], A0[0, 1, 1:LapCounter[i], i-3], '-*', color=plotColors[counter+1], label=1)
+		plt.plot(SS[1:LapCounter[i], 4, i], A0[0, 2, 1:LapCounter[i], i-3], '-s', color=plotColors[counter+2], label=2)
+		counter += 1
+		plt.legend()
+	plt.ylabel('vx [m/s]')
+	plt.subplot(312)
+	counter = 0
+	for i in Laps:
+		plt.plot(SS[1:LapCounter[i], 4, i], A0[1, 0, 1:LapCounter[i], i-3], '-o', color=plotColors[counter], label=0)
+		plt.plot(SS[1:LapCounter[i], 4, i], A0[1, 1, 1:LapCounter[i], i-3], '-*', color=plotColors[counter+1], label=1)
+		plt.plot(SS[1:LapCounter[i], 4, i], A0[1, 2, 1:LapCounter[i], i-3], '-s', color=plotColors[counter+2], label=2)
+		counter += 1
+	plt.ylabel('vy [m/s]')
+	plt.subplot(313)
+	counter = 0
+	for i in Laps:
+		plt.plot(SS[1:LapCounter[i], 4, i], A0[2, 0, 1:LapCounter[i], i-3], '-o', color=plotColors[counter], label=0)
+		plt.plot(SS[1:LapCounter[i], 4, i], A0[2, 1, 1:LapCounter[i], i-3], '-*', color=plotColors[counter+1], label=1)
+		plt.plot(SS[1:LapCounter[i], 4, i], A0[2, 2, 1:LapCounter[i], i-3], '-s', color=plotColors[counter+2], label=2)
+		counter += 1
+	plt.ylabel('wz [rad/s]')
+
+	
+
 
 def plotComputationalTime(LMPController, LapToPlot):
 	SS_glob = LMPController.SS_glob
