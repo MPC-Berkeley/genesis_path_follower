@@ -155,6 +155,7 @@ class ControllerLMPC():
         if (self.zVector[4]-x0[4] > self.trackLength/2):
             self.zVector[4] = self.zVector[4] - self.trackLength
 
+        print self.lapSelected[0:self.numSS_it]
         for jj in self.lapSelected[0:self.numSS_it]:
             SS_PointSelected, uSS_PointSelected, SS_glob_PointSelected, Qfun_Selected = _SelectPoints(self, jj, self.zVector, numSS_Points / self.numSS_it + 1)
             SS_PointSelectedTot      =  np.append(SS_PointSelectedTot, SS_PointSelected[:,0:-1], axis=1)
@@ -196,10 +197,10 @@ class ControllerLMPC():
             # np.savetxt('Eu.csv', Eu, delimiter=',', fmt='%f')
             # np.savetxt('Mmmu.csv', np.dot(Eu,uOld), delimiter=',', fmt='%f')
 
-            np.savetxt('M.csv', M, delimiter=',', fmt='%f')
-            np.savetxt('M.csv', q, delimiter=',', fmt='%f')
-            np.savetxt('M.csv', M, delimiter=',', fmt='%f')
-            np.savetxt('M.csv', M, delimiter=',', fmt='%f')
+            # np.savetxt('M.csv', M, delimiter=',', fmt='%f')
+            # np.savetxt('M.csv', q, delimiter=',', fmt='%f')
+            # np.savetxt('M.csv', M, delimiter=',', fmt='%f')
+            # np.savetxt('M.csv', M, delimiter=',', fmt='%f')
 
             res_cons, feasible = osqp_solve_qp(sparse.csr_matrix(M), q, sparse.csr_matrix(F), b, sparse.csr_matrix(G), np.add(np.dot(E,x0),L[:,0], np.dot(Eu,uOld)) )
             Solution = res_cons.x
@@ -225,7 +226,7 @@ class ControllerLMPC():
             self.LinInput = np.vstack((uPred.T[1:, :], self.uVector))
 
         self.LinPoints = np.vstack((xPred.T[1:,:], self.zVector))
-        print self.xPred[0,4], self.A[0][0:3,0:3]
+        # print self.xPred[0,4], self.A[0][0:3,0:3]
         # self.OldInput = uPred.T[0,:]
         
         # self.OldSteering.pop(0)
@@ -280,7 +281,7 @@ class ControllerLMPC():
             self.Qfun[Counter, self.it - 1] = self.Qfun[Counter + i - 1, self.it - 1] - 1        
         self.TimeSS[self.it - 1] = self.TimeSS[self.it - 1] + 1
 
-    def update(self, SS, uSS, Qfun, TimeSS, it, LinPoints, LinInput):
+    def update(self, SS, SS_glob, uSS, Qfun, TimeSS, it, LinPoints, LinInput):
         """update controller parameters. This function is useful to transfer information among LMPC controller
            with different tuning
         Arguments:
@@ -293,6 +294,7 @@ class ControllerLMPC():
             LinInput: inputs associated with the points used in the linearization and system identification procedure
         """
         self.SS  = SS
+        self.SS_glob= SS_glob
         self.uSS = uSS
         self.Qfun  = Qfun
         self.TimeSS  = TimeSS
@@ -787,6 +789,7 @@ def _LMPC_EstimateABC(ControllerLMPC):
     SysID_Solver    = ControllerLMPC.SysID_Solver
     MaxNumPoint     = ControllerLMPC.MaxNumPoint  # Need to reason on how these points are selected
     sortedLapTime   = ControllerLMPC.lapSelected
+    sysID_Alternate = 1
 
     ParallelComputation = 0
     Atv = []; Btv = []; Ctv = []; indexUsed_list = []
@@ -794,8 +797,14 @@ def _LMPC_EstimateABC(ControllerLMPC):
     # Index of the laps used in the System ID
 
     for i in range(0, N):
-        Ai, Bi, Ci, indexSelected = RegressionAndLinearization(ControllerLMPC, i)
-            
+        if sysID_Alternate == 0:
+                Ai, Bi, Ci, indexSelected = RegressionAndLinearization(ControllerLMPC, i)
+        else:
+            if np.fmod(i,2) == 0:
+                Ai, Bi, Ci, indexSelected = RegressionAndLinearization(ControllerLMPC, i)
+            else:    
+                Ai, Bi, Ci, indexSelected = Linearization(ControllerLMPC, i, Atv[-1], Btv[-1], Ctv[-1])
+
         Atv.append(Ai)
         Btv.append(Bi)
         Ctv.append(Ci)
@@ -969,6 +978,96 @@ def RegressionAndLinearization(ControllerLMPC, i):
     endTimer = datetime.datetime.now(); deltaTimer_tv = endTimer - startTimer
     # print time_localreg, time_lnzn
 
+    return Ai, Bi, Ci, indexSelected
+
+def Linearization(ControllerLMPC, i, A, B, C):
+    LinPoints       = ControllerLMPC.LinPoints
+    LinInput        = ControllerLMPC.LinInput
+    N               = ControllerLMPC.N
+    n               = ControllerLMPC.n
+    d               = ControllerLMPC.d
+    SS              = ControllerLMPC.SS
+    uSS             = ControllerLMPC.uSS
+    LapCounter      = ControllerLMPC.LapCounter
+    dt              = ControllerLMPC.dt
+    it              = ControllerLMPC.it
+    SysID_Solver    = ControllerLMPC.SysID_Solver
+    MaxNumPoint     = ControllerLMPC.MaxNumPoint  # Need to reason on how these points are selected
+    sortedLapTime   = ControllerLMPC.lapSelected
+    steeringDelay   = ControllerLMPC.steeringDelay
+    acceleraDelay   = ControllerLMPC.acceleraDelay
+    idDelay         = ControllerLMPC.idDelay
+    path             = ControllerLMPC.path
+
+
+    x0 = LinPoints[i, :]
+
+    Ai = A
+    Bi = B
+    Ci = C
+
+    # ===========================
+    # ===== Linearization =======
+    time_lnzn=datetime.datetime.now()
+    vx = x0[0]; vy   = x0[1]
+    wz = x0[2]; epsi = x0[3]
+    s  = x0[4]; ey   = x0[5]
+
+    if s < 0:
+        print "s is negative, here the state: \n", LinPoints
+
+    startTimer = datetime.datetime.now()  # Start timer for LMPC iteration
+
+    if s > ControllerLMPC.trackLength:
+        s_wrap = s - ControllerLMPC.trackLength
+    else:
+        s_wrap = s
+
+    cur = Curvature(s_wrap, path)
+    den = 1 - cur * ey
+    # ===========================
+    # ===== Linearize epsi ======
+    # epsi_{k+1} = epsi + dt * ( wz - (vx * np.cos(epsi) - vy * np.sin(epsi)) / (1 - cur * ey) * cur )
+    depsi_vx = -dt * np.cos(epsi) / den * cur
+    depsi_vy = dt * np.sin(epsi) / den * cur
+    depsi_wz = dt
+    depsi_epsi = 1 - dt * (-vx * np.sin(epsi) - vy * np.cos(epsi)) / den * cur
+    depsi_s = 0  # Because cur = constant
+    depsi_ey = dt * (vx * np.cos(epsi) - vy * np.sin(epsi)) / (den ** 2) * cur * (-cur)
+
+    Ai[3, :] = [depsi_vx, depsi_vy, depsi_wz, depsi_epsi, depsi_s, depsi_ey]
+    Ci[3]    = epsi + dt * ( wz - (vx * np.cos(epsi) - vy * np.sin(epsi)) / (1 - cur * ey) * cur ) - np.dot(Ai[3, :], x0)
+    # ===========================
+    # ===== Linearize s =========
+    # s_{k+1} = s    + dt * ( (vx * np.cos(epsi) - vy * np.sin(epsi)) / (1 - cur * ey) )
+    ds_vx = dt * (np.cos(epsi) / den)
+    ds_vy = -dt * (np.sin(epsi) / den)
+    ds_wz = 0
+    ds_epsi = dt * (-vx * np.sin(epsi) - vy * np.cos(epsi)) / den
+    ds_s = 1  # + Ts * (Vx * cos(epsi) - Vy * sin(epsi)) / (1 - ey * rho) ^ 2 * (-ey * drho);
+    ds_ey = -dt * (vx * np.cos(epsi) - vy * np.sin(epsi)) / (den * 2) * (-cur)
+
+    Ai[4, :] = [ds_vx, ds_vy, ds_wz, ds_epsi, ds_s, ds_ey]
+    Ci[4]    = s    + dt * ( (vx * np.cos(epsi) - vy * np.sin(epsi)) / (1 - cur * ey) ) - np.dot(Ai[4, :], x0)
+
+    # ===========================
+    # ===== Linearize ey ========
+    # ey_{k+1} = ey + dt * (vx * np.sin(epsi) + vy * np.cos(epsi))
+    dey_vx = dt * np.sin(epsi)
+    dey_vy = dt * np.cos(epsi)
+    dey_wz = 0
+    dey_epsi = dt * (vx * np.cos(epsi) - vy * np.sin(epsi))
+    dey_s = 0
+    dey_ey = 1
+
+    Ai[5, :] = [dey_vx, dey_vy, dey_wz, dey_epsi, dey_s, dey_ey]
+    Ci[5]    = ey + dt * (vx * np.sin(epsi) + vy * np.cos(epsi)) - np.dot(Ai[5, :], x0)
+    time_lnzn=datetime.datetime.now()-time_lnzn
+    endTimer = datetime.datetime.now(); deltaTimer_tv = endTimer - startTimer
+    # print time_localreg, time_lnzn
+
+    indexSelected = []
+    
     return Ai, Bi, Ci, indexSelected
 
 def Compute_Q_M(SS, uSS, indexSelected, stateFeatures, inputFeatures, usedIt, lamb, K, SysID_Solver, inputDelay, idDelay):

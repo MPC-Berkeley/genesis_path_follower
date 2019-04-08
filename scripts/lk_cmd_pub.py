@@ -94,19 +94,19 @@ class LanekeepingPublisher():
 		self.controlInput = ControlInput()
 		self.OL_predictions = prediction()
 
-
 		self.oldS = 0.
 		self.lapCounter = 0
 
 		self.closedLoopData = ClosedLoopData(dt = 1.0 / self.rateHz, Time = 800., v0 = 8.0)
-		# homedir = os.path.expanduser("~")
-		# file_data = open(homedir+'/genesis_data/ClosedLoopDataLMPCexp.obj', 'rb')
-		# self.ClosedLoopexp = pickle.load(file_data)
-		# self.LMPCexp = pickle.load(file_data)
-		# self.LMPCOpenLoopDataexp = pickle.load(file_data)
-		# file_data.close()
+		homedir = os.path.expanduser("~")
+		file_data = open(homedir+'/genesis_data/ClosedLoopDataLMPC_load2.obj', 'rb')
+		self.ClosedLoopwo = pickle.load(file_data)
+		self.LMPCwo = pickle.load(file_data)
+		self.LMPCOpenLoopDatawo = pickle.load(file_data)
+		file_data.close()
+
 		#Initialization Parameters for LMPC controller; 
-		numSS_Points = 40; numSS_it = 2; N = 10
+		numSS_Points = 40; numSS_it = 2; N = 14
 		Qslack  =  5 * np.diag([ 1.0, 0.1, 0.1, 0.1, 10, 1])          # Cost on the slack variable for the terminal constraint
 		Qlane   =  np.array([50, 10]) # Quadratic slack lane cost
 
@@ -114,12 +114,15 @@ class LanekeepingPublisher():
 		R = 0*np.zeros((2,2)); dR =  1 * np.array([ 25.0, 1.0]) # Input rate cost u 
 		#R = np.array([[1.0, 0.0],[0.0, 0.0]]); dR =  1 * np.array([ 1.0, 1.0]) # Input rate cost u 
 		dt = 1.0 / self.rateHz; Laps = 50; TimeLMPC = 500
-		Solver = "OSQP"; steeringDelay = 0; idDelay= 0; aConstr = np.array([self.accelMin, self.accelMax]) #min and max acceleration
+		Solver = "OSQP"; steeringDelay = 2; idDelay= 0; aConstr = np.array([self.accelMin, self.accelMax]) #min and max acceleration
 		
 		SysID_Solver = "CVX" 
 		self.halfWidth = rospy.get_param('half_width') #meters - hardcoded for now, can be property of map
 		self.LMPC  = ControllerLMPC(numSS_Points, numSS_it, N, Qslack, Qlane, Q,      R,      dR,      dt, self.path, Laps, TimeLMPC, Solver,      SysID_Solver,           steeringDelay, idDelay, aConstr, self.trackLength, self.halfWidth) 
 		self.openLoopData = LMPCprediction(N, 6, 2, TimeLMPC, numSS_Points, Laps)
+		# initialize safe set with lk laps without sinusoidal injection in input
+		self.LMPC.update(self.LMPCwo.SS, self.LMPCwo.SS_glob, self.LMPCwo.uSS, self.LMPCwo.Qfun, self.LMPCwo.TimeSS, 5, self.LMPCwo.LinPoints, self.LMPCwo.LinInput)
+		
 
 		self.timeCounter = 0
 		self.OneStepPredicted=self.LMPC.xPred
@@ -176,7 +179,7 @@ class LanekeepingPublisher():
 		
 
 
-
+		
 		while not rospy.is_shutdown():
 			t_now = rospy.Time.now()
 			dt = t_now - t_start
@@ -214,14 +217,14 @@ class LanekeepingPublisher():
 
 
 			#Calculate control inputs
-			if self.lapCounter <= Path_Keeping_Laps:
+			if self.lapCounter <= Path_Keeping_Laps and Path_Keeping_Data_Flag==0:
 
 
 				desiredErrorArray = np.array([0.0, 1.0, -1.0])
 				desiredError = desiredErrorArray[self.lapCounter]
 				self.controller.updateInput(self.localState, self.controlInput, desiredError)
-				delta = self.controlInput.delta+0.08*np.sin(1.0*np.pi*rospy.get_time())
-				Fx = self.controlInput.Fx+0.8*np.sin(1.0*np.pi*rospy.get_time())
+				delta = self.controlInput.delta#+0.05*np.sin(2*np.pi*rospy.get_time())
+				Fx = self.controlInput.Fx#+0.8*np.sin(1.0*np.pi*rospy.get_time())
 
 				# use F = m*a to get desired acceleration. Limit acceleration command to 2 m/s
 				accel = min( Fx / self.genesis.m , self.accelMax)

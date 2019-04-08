@@ -31,12 +31,15 @@ def main():
 
 
 	
-	file_data = open(homedir+'/genesis_data/ClosedLoopDataLMPC.obj', 'rb')
+	# file_data = open(homedir+'/genesis_data/ClosedLoopDataLMPC_n14a.obj', 'rb')
 
-	# file_data = open(homedir+'/genesis_data/ClosedLoopDataLMPC_exp.obj', 'rb')
+	file_data = open(homedir+'/genesis_data/ClosedLoopDataLMPC.obj', 'rb')
 	# file_data2 = open(homedir+'/genesis_data/ClosedLoopDataLMPC_wo.obj', 'rb')
 	# file_data3 = open(homedir+'/genesis_data/ClosedLoopDataLMPC_sinmeas.obj', 'rb')
-	# file_data4 = open(homedir+'/genesis_data/ClosedLoopDataLMPC_sincom.obj', 'rb')
+	# file_data4 = open(homedir+'/genesis_data/ClosedLoopDataLMPC_n14a.obj', 'rb')
+
+	# file_data2 = open(homedir+'/genesis_data/ClosedLoopDataLMPC_n14.obj', 'rb')
+	# file_data3 = open(homedir+'/genesis_data/ClosedLoopDataLMPC_n14a.obj', 'rb')
 
 	ClosedLoopData = pickle.load(file_data)
 	LMPController = pickle.load(file_data)
@@ -60,7 +63,7 @@ def main():
 	# file_data3.close()
 	file_data.close()
 
-	# LapToPlot = range(4,8)
+	LapToPlot = range(4,8)
 	# plotComputationalTime(LMPController, LapToPlot)
 
 	# print "Track length is: ", LMPController.trackLength
@@ -81,27 +84,31 @@ def main():
 	# plt.show()
 	# pdb.set_trace()
 	# ## Plot First initial learning
-	LapToPlotLearningProcess = [0,1,2,3,4]#[0, 2, 3, 4, 5, 7]
+	LapToPlotLearningProcess = [2,4, 6, 8, 11, 13]
+	# LapToPlotLearningProcess = [15,16]#[0, 2, 3, 4, 5, 7]
 	LapCompare=[3]	
 
 	plotClosedLoopLMPC(LMPController, grt, LapToPlotLearningProcess)
+	# plotClosedLoopLMPC(LMPController2, grt, LapToPlotLearningProcess)
+	# plotClosedLoopLMPC(LMPController3, grt, LapToPlotLearningProcess)
 	# plotMeasuredAndAppliedSteering(LMPController, LapToPlotLearningProcess)
 	# plotOneStepPreditionError(LMPController, LMPCOpenLoopData, LapToPlotLearningProcess)
 
 	# plotClosedLoopColorLMPC(LMPController, grt, LapToPlotLearningProcess)
-	# plt.show()
+	plt.show()
 	# plotCompareSteering(LMPController, LMPController3, LapCompare)#LMPController3, LapCompare)
 	# CompareStates(LMPController,LMPController2,LMPController3, LMPController4, LapCompare)
-	plotA(LMPController, LapCompare)
+	# CompareStates(LMPController,LMPController2,LMPController3, LapCompare)
+	# plotA(LMPController, LapCompare)
 
-	plotA(LMPController, [4])
+	# plotA(LMPController, [4])
 	
 	# Now convergence
-	# LapToPlot = [15, 18, 20, 25]
-	# plotClosedLoopLMPC(LMPController, grt, LapToPlot)
+	LapToPlot = [16, 18, 20, 25, 30, 35]
+	plotClosedLoopLMPC(LMPController, grt, LapToPlot)
 	# plotMeasuredAndAppliedSteering(LMPController, LapToPlot)
 	# plotOneStepPreditionError(LMPController, LMPCOpenLoopData, LapToPlot)
-	# plotClosedLoopColorLMPC(LMPController, grt, LapToPlot)
+	plotClosedLoopColorLMPC(LMPController, grt, LapToPlot)
 	plt.show()
 
 
@@ -540,6 +547,7 @@ def plotClosedLoopColorLMPC(LMPController, grt, LapToPlot):
 	plt.show()
 
 def CompareStates(LMPController,LMPController2, LMPController3, LMPController4, LapToPlot):
+# def CompareStates(LMPController,LMPController2, LMPController3, LapToPlot):
 	SS_glob = LMPController.SS_glob
 	LapCounter  = LMPController.LapCounter
 	SS      = LMPController.SS
@@ -1367,7 +1375,8 @@ def Save_statesAnimation(grt, LMPCOpenLoopData, LMPController, it):
 	rospack = rospkg.RosPack()
 	pkg_path=rospack.get_path('genesis_path_follower')
 	# anim.save(pkg_path+'/scripts/gif/closedLoop/ClosedLoop.gif', dpi=80, writer='imagemagick')
-	anim.save('/home/mpc/GenesisAutoware/ros/src/genesis_path_follower/scripts/gif/closedLoopState/closedLoop.gif', dpi=80, writer='imagemagick')   
+	# anim.save('/home/mpc/GenesisAutoware/ros/src/genesis_path_follower/scripts/gif/closedLoopState/closedLoop.gif', dpi=80, writer='imagemagick')   
+	anim.save('/home/mpc-ubuntu/catkin/src/genesis_path_follower/scripts/gif/closedLoopState/closedLoop.gif', dpi=80, writer='imagemagick')   
 
 
 main()
