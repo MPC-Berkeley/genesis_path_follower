@@ -34,6 +34,8 @@ class ClosedLoopData():
         self.dt = dt
         self.Points = int(Time / dt)  # Number of points in the simulation
         self.measSteering = np.zeros((self.Points, 1))  # Initialize the input vector
+        # self.acc_lat = np.zeros((self.Points, 1))
+        # self.acc_lon = np.zeros((self.Points, 1))
         self.u = np.zeros((self.Points, 2))  # Initialize the input vector
         self.x = np.zeros((self.Points + 1, 6))  # Initialize state vector (In curvilinear abscissas)
         self.x_glob = np.zeros((self.Points + 1, 6))  # Initialize the state vector in absolute reference frame

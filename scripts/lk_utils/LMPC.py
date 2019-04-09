@@ -85,6 +85,8 @@ class ControllerLMPC():
         self.sysIDTime   = -10000 * np.ones((NumPoints, Laps))    # Input associated with the points in SS
         self.contrTime   = -10000 * np.ones((NumPoints, Laps))    # Input associated with the points in SS
         self.measSteering= -10000 * np.ones((NumPoints, 1, Laps))    # Input associated with the points in SS
+        # self.accel_lat= 0*np.ones((NumPoints, 1, Laps))
+        # self.accel_lon= 0*np.ones((NumPoints, 1, Laps))
         # Initialize the controller iteration
         self.it      = 0
         self.A0=np.empty((3,3,NumPoints,Laps))
@@ -155,7 +157,7 @@ class ControllerLMPC():
         if (self.zVector[4]-x0[4] > self.trackLength/2):
             self.zVector[4] = self.zVector[4] - self.trackLength
 
-        print self.lapSelected[0:self.numSS_it]
+        #print self.lapSelected[0:self.numSS_it]
         for jj in self.lapSelected[0:self.numSS_it]:
             SS_PointSelected, uSS_PointSelected, SS_glob_PointSelected, Qfun_Selected = _SelectPoints(self, jj, self.zVector, numSS_Points / self.numSS_it + 1)
             SS_PointSelectedTot      =  np.append(SS_PointSelectedTot, SS_PointSelected[:,0:-1], axis=1)
@@ -789,7 +791,7 @@ def _LMPC_EstimateABC(ControllerLMPC):
     SysID_Solver    = ControllerLMPC.SysID_Solver
     MaxNumPoint     = ControllerLMPC.MaxNumPoint  # Need to reason on how these points are selected
     sortedLapTime   = ControllerLMPC.lapSelected
-    sysID_Alternate = 1
+    sysID_Alternate = 0
 
     ParallelComputation = 0
     Atv = []; Btv = []; Ctv = []; indexUsed_list = []

@@ -84,7 +84,7 @@ def main():
 	# plt.show()
 	# pdb.set_trace()
 	# ## Plot First initial learning
-	LapToPlotLearningProcess = [2,4, 6, 8, 11, 13]
+	LapToPlotLearningProcess = [0,1,2,4, 6, 8, 11, 13]
 	# LapToPlotLearningProcess = [15,16]#[0, 2, 3, 4, 5, 7]
 	LapCompare=[3]	
 
