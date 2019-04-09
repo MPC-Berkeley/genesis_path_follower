@@ -99,11 +99,11 @@ class LanekeepingPublisher():
 
 		self.closedLoopData = ClosedLoopData(dt = 1.0 / self.rateHz, Time = 800., v0 = 8.0)
 		homedir = os.path.expanduser("~")
-		file_data = open(homedir+'/genesis_data/ClosedLoopDataLMPC_load2.obj', 'rb')
-		self.ClosedLoopwo = pickle.load(file_data)
-		self.LMPCwo = pickle.load(file_data)
-		self.LMPCOpenLoopDatawo = pickle.load(file_data)
-		file_data.close()
+		# file_data = open(homedir+'/genesis_data/ClosedLoopDataLMPC_load2.obj', 'rb')
+		# self.ClosedLoopwo = pickle.load(file_data)
+		# self.LMPCwo = pickle.load(file_data)
+		# self.LMPCOpenLoopDatawo = pickle.load(file_data)
+		# file_data.close()
 
 		#Initialization Parameters for LMPC controller; 
 		numSS_Points = 40; numSS_it = 2; N = 14
@@ -121,7 +121,7 @@ class LanekeepingPublisher():
 		self.LMPC  = ControllerLMPC(numSS_Points, numSS_it, N, Qslack, Qlane, Q,      R,      dR,      dt, self.path, Laps, TimeLMPC, Solver,      SysID_Solver,           steeringDelay, idDelay, aConstr, self.trackLength, self.halfWidth) 
 		self.openLoopData = LMPCprediction(N, 6, 2, TimeLMPC, numSS_Points, Laps)
 		# initialize safe set with lk laps without sinusoidal injection in input
-		self.LMPC.update(self.LMPCwo.SS, self.LMPCwo.SS_glob, self.LMPCwo.uSS, self.LMPCwo.Qfun, self.LMPCwo.TimeSS, 5, self.LMPCwo.LinPoints, self.LMPCwo.LinInput)
+		# self.LMPC.update(self.LMPCwo.SS, self.LMPCwo.SS_glob, self.LMPCwo.uSS, self.LMPCwo.Qfun, self.LMPCwo.TimeSS, 5, self.LMPCwo.LinPoints, self.LMPCwo.LinInput)
 		
 
 		self.timeCounter = 0
@@ -161,7 +161,7 @@ class LanekeepingPublisher():
 		self.Y     = msg.y
 		self.psi   = msg.psi
 		self.Ax    = msg.a
-		self.delta = msg.df/1.1715
+		self.delta = msg.df#/1.1715
 		self.Uy    = msg.vy #msg.vy #switching from Borrelli's notation to Hedrick's
 		self.Ux    = msg.vx #switching from Borrelli's notation to Hedrick's
 		self.r     = msg.wz  #switching from Borrelli's notation to Hedrick's
