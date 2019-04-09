@@ -34,9 +34,9 @@ class PlotGPSTrajectory():
 		grt = r.GPSRefTrajectory(mat_filename=mat_name, LAT0=lat0, LON0=lon0, YAW0=yaw0) # only 1 should be valid.
 
 		#Load road edge data
-		boundFile = rospy.get_param('road_edges')
-		bounds = sio.loadmat(boundFile)
-		self.halfWidth = rospy.get_param('half_width')
+		#boundFile = rospy.get_param('road_edges')
+		#bounds = sio.loadmat(boundFile)
+		#self.halfWidth = rospy.get_param('half_width')
 
 
 
@@ -51,11 +51,11 @@ class PlotGPSTrajectory():
 		self.y_track_ib=np.zeros_like(self.y_global_traj)
 		self.x_track_ob=np.zeros_like(self.x_global_traj)
 		self.y_track_ob=np.zeros_like(self.y_global_traj)
-		for i in range(len(self.x_global_traj)):
-			self.x_track_ib[i]=self.x_global_traj[i]-self.halfWidth*np.cos(self.yaws[i])
-			self.y_track_ib[i]=self.y_global_traj[i]-self.halfWidth*np.sin(self.yaws[i])
-			self.x_track_ob[i]=self.x_global_traj[i]+self.halfWidth*np.cos(self.yaws[i])
-			self.y_track_ob[i]=self.y_global_traj[i]+self.halfWidth*np.sin(self.yaws[i])
+		# for i in range(len(self.x_global_traj)):
+		# 	self.x_track_ib[i]=self.x_global_traj[i]-self.halfWidth*np.cos(self.yaws[i])
+		# 	self.y_track_ib[i]=self.y_global_traj[i]-self.halfWidth*np.sin(self.yaws[i])
+		# 	self.x_track_ob[i]=self.x_global_traj[i]+self.halfWidth*np.cos(self.yaws[i])
+		# 	self.y_track_ob[i]=self.y_global_traj[i]+self.halfWidth*np.sin(self.yaws[i])
 
 
 		self.cdists = grt.get_cdists()

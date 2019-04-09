@@ -5,7 +5,7 @@
 
 	<!-- Pick between CPG + RFS coordinate systems here. -->
 	<!--rosparam command="load" file="$(find genesis_path_follower)/launch/rfs.yaml" ns="vehicle"/-->
-	<rosparam command="load" file="$(find genesis_path_follower)/launch/cpg.yaml" ns="vehicle"/>
+	<rosparam command="load" file="$(find genesis_path_follower)/launch/rfs.yaml" ns="vehicle"/>
 
   <param name="vehicle/scripts_dir" type="str" value="$(find genesis_path_follower)/scripts/" />
 
@@ -17,9 +17,10 @@
 
   <!-- Waypoints CSV to specify path. -->
   <!-- Set is_heading_info to true if Heading (N = 0) is used instead of Yaw (E = 0). -->
-  <param name="vehicle/mat_waypoints" type="str" value="$(find genesis_path_follower)/paths/cpgSmoothModifiedFriction.mat" />
+  <param name="vehicle/mat_waypoints" type="str" value="$(find genesis_path_follower)/paths/rfscrosswalk.mat" />
   <param name="vehicle/is_heading_info" type="bool" value="False"/>
   <param name="vehicle/time_check_on" type="bool" value="False"/>
+   <param name="vehicle/rate" type="double" value="10.0" />
 
   <!--...................................................................-->
 
@@ -27,9 +28,25 @@
   <node ns="vehicle" pkg="genesis_path_follower" type="lk_cmd_pub.py" name="mpc_node" output="screen"/>
   <node ns="vehicle" pkg="genesis_path_follower" type="state_publisher.py" name="state_pub_node" output="log"/>
   <node ns="vehicle" pkg="genesis_path_follower" type="gps_vehicle_plotter.py" name="plot_node" output="log"/>
+  <node ns = "vehicle" pkg="genesis_path_follower" type="simVisualizer.py" name ="crosswalk_plot_node" output="screen"/> 
+  <node ns = "vehicle" pkg="genesis_path_follower" type="crosswalkSimulator.py" name ="crosswalk_simulator_node" output="screen"/> 
+
+
+  <param name="vehicle/roadFraction" type="double" value="0.7" />
+  <param name="vehicle/roadLength" type="double" value="100.0" />
+  <param name="vehicle/v0" type="double" value="7.0" />
+  <param name="vehicle/gapMu" type="double" value="0.5" />
+  <param name="vehicle/rate" type="double" value="10.0" />
+  <param name="vehicle/gapVariance" type="double" value="0.0" />
+  <param name="vehicle/pedStart"    type="string" value="right" />
+  <param name="vehicle/dt" type="double" value="0.1" />
+  <param name="vehicle/actuatorDelay" type="int" value="0" />
+  <param name="vehicle/carLane" type="int" value="3" />
+
+
 
   <!-- Recording Node -->
-  <arg name="exclude_topics" default="/image_raw"/>
+  <arg name="exclude_topics" default="/cv_camera/image_raw/compressed(.*)"/>
 
   <node pkg="rosbag" type="record" name="rosbag_path_recorder" respawn="true" output="screen" 
         args="-a -o $(find genesis_path_follower)/bags/path_follow" />
