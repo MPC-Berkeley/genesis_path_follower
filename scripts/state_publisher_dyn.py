@@ -174,8 +174,8 @@ def pub_loop():
 		curr_state.wz  = yaw_rate
 		
 		curr_state.a   = acc_filt
-		# curr_state.a_lat = a_lat
-		# curr_state.a_lon = a_lon
+		curr_state.a_lat = a_lat
+		curr_state.a_lon = a_lon
 		curr_state.df  = df
 
 		state_pub.publish(curr_state)

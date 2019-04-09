@@ -10,3 +10,5 @@ float64 df
 float64 vy
 float64 wz
 float64 vx
+float64 a_lat
+float64 a_lon

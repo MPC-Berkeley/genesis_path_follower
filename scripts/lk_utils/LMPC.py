@@ -85,8 +85,8 @@ class ControllerLMPC():
         self.sysIDTime   = -10000 * np.ones((NumPoints, Laps))    # Input associated with the points in SS
         self.contrTime   = -10000 * np.ones((NumPoints, Laps))    # Input associated with the points in SS
         self.measSteering= -10000 * np.ones((NumPoints, 1, Laps))    # Input associated with the points in SS
-        # self.accel_lat= 0*np.ones((NumPoints, 1, Laps))
-        # self.accel_lon= 0*np.ones((NumPoints, 1, Laps))
+        self.accel_lat= 0*np.ones((NumPoints, 1, Laps))
+        self.accel_lon= 0*np.ones((NumPoints, 1, Laps))
         # Initialize the controller iteration
         self.it      = 0
         self.A0=np.empty((3,3,NumPoints,Laps))
@@ -265,6 +265,8 @@ class ControllerLMPC():
         self.sysIDTime[0:(self.TimeSS[it] + 1), it]  = np.squeeze(ClosedLoopData.sysIDTime[0:(self.TimeSS[it] + 1), :])
         self.contrTime[0:(self.TimeSS[it] + 1), it]  = np.squeeze(ClosedLoopData.contrTime[0:(self.TimeSS[it] + 1), :])
         self.measSteering[0:(self.TimeSS[it] + 1),:, it] = ClosedLoopData.measSteering[0:(self.TimeSS[it] + 1), :]
+        self.accel_lon[0:(self.TimeSS[it] + 1),:, it] = ClosedLoopData.acc_lon[0:(self.TimeSS[it] + 1), :]
+        self.accel_lat[0:(self.TimeSS[it] + 1),:, it] = ClosedLoopData.acc_lat[0:(self.TimeSS[it] + 1), :]
         self.it = self.it + 1
  
 

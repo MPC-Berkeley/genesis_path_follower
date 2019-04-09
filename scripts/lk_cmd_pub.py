@@ -70,8 +70,8 @@ class LanekeepingPublisher():
 		self.Uy = 0
 		self.r = 0
 		self.Ax = 0.
-		# self.a_lat=0.
-		# self.a_lon=0.
+		self.acc_lat=0.
+		self.acc_lon=0.
 		self.delta = 0.
 		# self.accelMax = 9.8
 		# self.accelMin = 9.8 #negative value implied by LMPC controller
@@ -108,7 +108,7 @@ class LanekeepingPublisher():
 		file_data.close()
 
 		#Initialization Parameters for LMPC controller; 
-		numSS_Points = 40; numSS_it = 2; N = 14
+		numSS_Points = 40; numSS_it = 2; N = 12
 		Qslack  =  5 * np.diag([ 1.0, 0.1, 0.1, 0.1, 10, 1])          # Cost on the slack variable for the terminal constraint
 		Qlane   =  np.array([50, 10]) # Quadratic slack lane cost
 
@@ -163,8 +163,8 @@ class LanekeepingPublisher():
 		self.Y     = msg.y
 		self.psi   = msg.psi
 		self.Ax    = msg.a
-		# self.a_lon = msg.a_lon
-		# self.a_lat = msg.a_lat
+		self.acc_lon = msg.a_lon
+		self.acc_lat = msg.a_lat
 		self.delta = msg.df#/1.1715
 		self.Uy    = msg.vy #msg.vy #switching from Borrelli's notation to Hedrick's
 		self.Ux    = msg.vx #switching from Borrelli's notation to Hedrick's
@@ -224,7 +224,7 @@ class LanekeepingPublisher():
 			if self.lapCounter <= Path_Keeping_Laps and Path_Keeping_Data_Flag==0:
 
 				desiredErrorArray = np.array([0.0, 1.0, -1.0])
-				# desiredErrorArray = np.array([self.halfWidth, self.halfWidth, -self.halfWidth, -self.halfWidth])
+				# desiredErrorArray = np.array([self.halfWidth, self.halfWidth, -self.halfWidth, -self.halfWidth, 0.])
 				desiredError = desiredErrorArray[self.lapCounter]
 				self.controller.updateInput(self.localState, self.controlInput, desiredError)
 				delta = self.controlInput.delta#+0.05*np.sin(1*np.pi*rospy.get_time())
@@ -236,12 +236,16 @@ class LanekeepingPublisher():
 				self.steer_pub.publish(delta)
 				self.accel_pub.publish(accel)
 				measSteering=self.delta
+				acc_lon=self.acc_lon
+				acc_lat=self.acc_lat
 				uApplied = np.array([delta, accel])
 
 			else: 
 				self.steer_pub.publish(delta)
 				self.accel_pub.publish(accel)
 				measSteering=self.delta
+				acc_lon=self.acc_lon
+				acc_lat=self.acc_lat
 				uApplied = np.array([delta, accel])
 
 				# self.LMPC.OldSteering.append(delta)
@@ -303,7 +307,7 @@ class LanekeepingPublisher():
 			contrTime = self.LMPC.solverTime.total_seconds() + self.LMPC.linearizationTime.total_seconds()
 			
 
-			self.closedLoopData.addMeasurement(xMeasuredGlob, xMeasuredLoc, uApplied, solverTime, sysIDTime, contrTime, measSteering)
+			self.closedLoopData.addMeasurement(xMeasuredGlob, xMeasuredLoc, uApplied, solverTime, sysIDTime, contrTime, measSteering, acc_lon, acc_lat)
 
 			if self.lapCounter >= 1:
 				self.LMPC.addPoint(xMeasuredLoc, xMeasuredGlob, uApplied, self.timeCounter)
