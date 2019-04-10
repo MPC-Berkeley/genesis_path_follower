@@ -793,7 +793,7 @@ def _LMPC_EstimateABC(ControllerLMPC):
     SysID_Solver    = ControllerLMPC.SysID_Solver
     MaxNumPoint     = ControllerLMPC.MaxNumPoint  # Need to reason on how these points are selected
     sortedLapTime   = ControllerLMPC.lapSelected
-    sysID_Alternate = 0
+    sysID_Alternate = 1
 
     ParallelComputation = 0
     Atv = []; Btv = []; Ctv = []; indexUsed_list = []

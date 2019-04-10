@@ -20,7 +20,9 @@ class VehicleSimulator():
 		self.tcmd_a = None	# rostime (s) of received acc command
 		self.tcmd_d = None	# rostime (s) of received df command
 		self.tcmd_d_prev = None
-		self.acc = 0.0		# actual acceleration (m/s^2)
+		self.acc = 0.0
+		self.acc_lon=0.0		# actual acceleration (m/s^2)
+		self.acc_lat=0.0
 		self.df = 0.0		# actual steering angle (rad)
 		self.acc_des = 0.0	# desired acceleration	(m/s^2)
 		self.df_des = 0.0	
@@ -80,6 +82,8 @@ class VehicleSimulator():
 			curr_state.wz  = self.wz
 			curr_state.a   = self.acc
 			curr_state.df  = self.df
+			curr_state.a_lat=self.acc_lat
+			curr_state.a_lon=self.acc_lon
 
 			self.state_pub.publish(curr_state)
 			self.r.sleep()
