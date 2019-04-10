@@ -102,10 +102,11 @@ class LanekeepingPublisher():
 		self.lapCounter = 0
 		self.n=7
 		self.closedLoopData = ClosedLoopData(dt = 1.0 / self.rateHz, Time = 800., v0 = 8.0, n=self.n)
-		self.sinusoidal_input=1
+		self.sinusoidal_input = 0
 		
 
-		#Initialization Parameters for LMPC controller; 
+		#Initialization Parameters for LMPC controller;
+		sysID_Alternate = 1 
 		numSS_Points = 40; numSS_it = 2; N = 14
 		Qslack  =  5 * np.diag([ 1.0, 0.1, 0.1, 0.1, 10, 1, 1.])          # Cost on the slack variable for the terminal constraint
 		Qlane   =  np.array([50, 10]) # Quadratic slack lane cost
@@ -113,17 +114,17 @@ class LanekeepingPublisher():
 		Q = np.zeros((self.n,self.n))
 		R = 0*np.zeros((2,2)); dR =  1 * np.array([ 25.0, 1.0]) # Input rate cost u 
 		#R = np.array([[1.0, 0.0],[0.0, 0.0]]); dR =  1 * np.array([ 1.0, 1.0]) # Input rate cost u 
-		dt = 1.0 / self.rateHz; Laps = 50; TimeLMPC = 600
-		Solver = "OSQP"; steeringDelay = 1; idDelay= 0; aConstr = np.array([self.accelMin, self.accelMax]) #min and max acceleration
+		dt = 1.0 / self.rateHz; Laps = 30; TimeLMPC = 600
+		Solver = "OSQP"; steeringDelay = 0; idDelay= 0; aConstr = np.array([self.accelMin, self.accelMax]) #min and max acceleration
 		
 		SysID_Solver = "CVX" 
 		self.halfWidth = rospy.get_param('half_width') #meters - hardcoded for now, can be property of map
-		self.LMPC  = ControllerLMPC(numSS_Points, numSS_it, N, Qslack, Qlane, Q,      R,      dR,      dt, self.path, Laps, TimeLMPC, Solver,      SysID_Solver,           steeringDelay, idDelay, aConstr, self.trackLength, self.halfWidth) 
+		self.LMPC  = ControllerLMPC(numSS_Points, numSS_it, N, Qslack, Qlane, Q, R, dR, dt, self.path, Laps, TimeLMPC, Solver, SysID_Solver, steeringDelay, idDelay, aConstr, self.trackLength, self.halfWidth, sysID_Alternate) 
 		self.openLoopData = LMPCprediction(N, self.n, 2, TimeLMPC, numSS_Points, Laps)
 		# initialize safe set with lk laps without sinusoidal injection in input
 		if self.sinusoidal_input==0:
 			homedir = os.path.expanduser("~")
-			file_data = open(homedir+'/genesis_data/ClosedLoopDataLMPC_load2.obj', 'rb')
+			file_data = open(homedir+'/genesis_data/ClosedLoopDataLMPC_Sinusoidal.obj', 'rb')
 			self.ClosedLoopDist = pickle.load(file_data)
 			self.LMPCDist = pickle.load(file_data)
 			self.LMPCOpenLoopDataDist = pickle.load(file_data)
@@ -149,9 +150,14 @@ class LanekeepingPublisher():
 		print("Start Saving Data")
 		print(homedir)  
 		# == Start: Save Data
-		file_data = open(homedir+'/genesis_data'+'/ClosedLoopDataLMPC.obj', 'wb')
-		pickle.dump(self.closedLoopData, file_data)
-		print("Data Saved closedLoopData")    
+		if self.sinusoidal_input == 1:
+			file_data = open(homedir+'/genesis_data'+'/ClosedLoopDataLMPC_Sinusoidal.obj', 'wb')
+			pickle.dump(self.closedLoopData, file_data)
+			print("Data Saved closedLoopData")    
+		else:
+			file_data = open(homedir+'/genesis_data'+'/ClosedLoopDataLMPC.obj', 'wb')
+			pickle.dump(self.closedLoopData, file_data)
+			print("Data Saved closedLoopData")    
 
 		pickle.dump(self.LMPC, file_data)
 		print("Data Saved LMPC")    
