@@ -16,7 +16,7 @@
   <param name="vehicle/track_using_time" type="bool" value="True" />
   <param name="vehicle/target_vel" type="double" value="1.0" />
   <param name="vehicle/half_width" type="double" value="3.0" />
-  <param name="delay_hack" type="int" value="0" />
+  <param name="vehicle/delay_hack" type="int" value="0" />
 
   <!-- Waypoints CSV to specify path. -->
   <!-- Set is_heading_info to true if Heading (N = 0) is used instead of Yaw (E = 0). -->
@@ -38,7 +38,7 @@
   <!-- Recording Node -->
   <arg name="exclude_topics" default="/image_raw"/>
 
-  <node pkg="rosbag" type="record" name="rosbag_path_recorder" respawn="true" output="screen" 
+  <node pkg="rosbag" type="record" name="rosbag_path_recorder" respawn="true" output="screen"
         args="-a -o $(find genesis_path_follower)/bags/path_follow" />
 
 </launch>

@@ -106,16 +106,16 @@ class LanekeepingPublisher():
 		
 
 		#Initialization Parameters for LMPC controller;
-		sysID_Alternate = 1 
+		sysID_Alternate = 0 
 		numSS_Points = 40; numSS_it = 2; N = 14
 		Qslack  =  5 * np.diag([ 1.0, 0.1, 0.1, 0.1, 10, 1, 1.])          # Cost on the slack variable for the terminal constraint
-		Qlane   =  np.array([50, 10]) # Quadratic slack lane cost
+		Qlane   =  0.1*np.array([50, 10]) # Quadratic slack lane cost
 
 		Q = np.zeros((self.n,self.n))
-		R = 0*np.zeros((2,2)); dR =  1 * np.array([ 25.0, 1.0]) # Input rate cost u 
+		R = 0*np.zeros((2,2)); dR =  1 * np.array([ 2*25.0, 1.0]) # Input rate cost u 
 		#R = np.array([[1.0, 0.0],[0.0, 0.0]]); dR =  1 * np.array([ 1.0, 1.0]) # Input rate cost u 
 		dt = 1.0 / self.rateHz; Laps = 30; TimeLMPC = 600
-		Solver = "OSQP"; steeringDelay = 0; idDelay= 0; aConstr = np.array([self.accelMin, self.accelMax]) #min and max acceleration
+		Solver = "OSQP"; steeringDelay = 1; idDelay= 0; aConstr = np.array([self.accelMin, self.accelMax]) #min and max acceleration
 		
 		SysID_Solver = "CVX" 
 		self.halfWidth = rospy.get_param('half_width') #meters - hardcoded for now, can be property of map
@@ -124,7 +124,7 @@ class LanekeepingPublisher():
 		# initialize safe set with lk laps without sinusoidal injection in input
 		if self.sinusoidal_input==0:
 			homedir = os.path.expanduser("~")
-			file_data = open(homedir+'/genesis_data/ClosedLoopDataLMPC_Sinusoidal.obj', 'rb')
+			file_data = open(homedir+'/genesis_data/ClosedLoopDataLMPC_Sinusoidal2.obj', 'rb')
 			self.ClosedLoopDist = pickle.load(file_data)
 			self.LMPCDist = pickle.load(file_data)
 			self.LMPCOpenLoopDataDist = pickle.load(file_data)
@@ -151,7 +151,7 @@ class LanekeepingPublisher():
 		print(homedir)  
 		# == Start: Save Data
 		if self.sinusoidal_input == 1:
-			file_data = open(homedir+'/genesis_data'+'/ClosedLoopDataLMPC_Sinusoidal.obj', 'wb')
+			file_data = open(homedir+'/genesis_data'+'/ClosedLoopDataLMPC_Sinusoidal2.obj', 'wb')
 			pickle.dump(self.closedLoopData, file_data)
 			print("Data Saved closedLoopData")    
 		else:
