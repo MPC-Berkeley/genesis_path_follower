@@ -22,7 +22,7 @@ class ControllerLMPC():
         update: this function can be used to set SS, Qfun, uSS and the iteration index.
     """
 
-    def __init__(self, numSS_Points, numSS_it, N, Qslack, Qlane, Q, R, dR, dt,  path, Laps, TimeLMPC, Solver, SysID_Solver, steeringDelay, idDelay, aConstr, trackLength, halfWidth):
+    def __init__(self, numSS_Points, numSS_it, N, Qslack, Qlane, Q, R, dR, dt,  path, Laps, TimeLMPC, Solver, SysID_Solver, steeringDelay, idDelay, aConstr, trackLength, halfWidth, sysID_Alternate):
         """Initialization
         Arguments:
             numSS_Points: number of points selected from the previous trajectories to build SS
@@ -90,6 +90,7 @@ class ControllerLMPC():
         # Initialize the controller iteration
         self.it      = 0
         self.A0=np.empty((3,3,NumPoints,Laps))
+        self.sysID_Alternate = sysID_Alternate
 
         # Initialize pool for parallel computing used in the internal function _LMPC_EstimateABC
         # self.p = Pool(4)
@@ -793,7 +794,7 @@ def _LMPC_EstimateABC(ControllerLMPC):
     SysID_Solver    = ControllerLMPC.SysID_Solver
     MaxNumPoint     = ControllerLMPC.MaxNumPoint  # Need to reason on how these points are selected
     sortedLapTime   = ControllerLMPC.lapSelected
-    sysID_Alternate = 1
+    sysID_Alternate = ControllerLMPC.sysID_Alternate
 
     ParallelComputation = 0
     Atv = []; Btv = []; Ctv = []; indexUsed_list = []
