@@ -63,7 +63,9 @@ class ControllerLMPC():
         self.steeringDelay = steeringDelay
         self.acceleraDelay = 0
 
-        self.zVector = np.array([0.0, 0.0, 0.0, 0.0, 10.0, 0.0])
+        offSet = np.zeros((self.n))
+        offSet[4] = 10.0
+        self.zVector = offSet
 
         self.OldSteering = [0.0]*int(1 + steeringDelay)
         self.OldAccelera = [0.0]*int(1)
@@ -77,10 +79,10 @@ class ControllerLMPC():
         NumPoints = int(TimeLMPC / dt) + 1
         self.TimeSS      = -10000 * np.ones(Laps).astype(int)        # Number of points in j-th iterations (counts also points after finisch line)
         self.LapCounter  = -10000 * np.ones(Laps).astype(int)        # Time at which each j-th iteration is completed
-        self.SS          = -10000 * np.ones((NumPoints, 6, Laps))    # Sampled Safe SS
+        self.SS          = -10000 * np.ones((NumPoints, self.n, Laps))    # Sampled Safe SS
         self.uSS         = -10000 * np.ones((NumPoints, 2, Laps))    # Input associated with the points in SS
         self.Qfun        =      0 * np.ones((NumPoints, Laps))       # Qfun: cost-to-go from each point in SS
-        self.SS_glob     = -10000 * np.ones((NumPoints, 6, Laps))    # SS in global (X-Y) used for plotting
+        self.SS_glob     = -10000 * np.ones((NumPoints, self.n, Laps))    # SS in global (X-Y) used for plotting
         self.qpTime      = -10000 * np.ones((NumPoints, Laps))    # Input associated with the points in SS
         self.sysIDTime   = -10000 * np.ones((NumPoints, Laps))    # Input associated with the points in SS
         self.contrTime   = -10000 * np.ones((NumPoints, Laps))    # Input associated with the points in SS
@@ -226,6 +228,7 @@ class ControllerLMPC():
         else:
             self.uPred = uPred.T
             self.LinInput = np.vstack((uPred.T[1:, :], self.uVector))
+            self.LinInput[:,0] = self.LinPoints[0:N,n-1]
 
         self.LinPoints = np.vstack((xPred.T[1:,:], self.zVector))
         # print self.xPred[0,4], self.A[0][0:3,0:3]
@@ -278,7 +281,9 @@ class ControllerLMPC():
             i: at the j-th iteration i is the time at which (x,u) are recorded
         """
         Counter = self.TimeSS[self.it - 1]
-        self.SS[Counter, :, self.it - 1] = x + np.array([0, 0, 0, 0, self.trackLength, 0])
+        offset = np.zeros((self.n))
+        offset[4] = self.trackLength
+        self.SS[Counter, :, self.it - 1] = x + offset
         self.SS_glob[Counter, :, self.it - 1] = x_glob
         self.uSS[Counter, :, self.it - 1] = u
         if self.Qfun[Counter, self.it - 1] == 0:
@@ -436,7 +441,9 @@ def _LMPC_BuildMatCost(LMPC):
     M0 = linalg.block_diag(M00, np.zeros((numSS_Points, numSS_Points)), Qslack, quadLaneSlack)
     # np.savetxt('M0.csv', M0, delimiter=',', fmt='%f')
 
-    xtrack = np.array([vt, 0, 0, 0, 0, 0])
+    offSet = np.zeros((Q.shape[0]))
+    offSet[0] = vt
+    xtrack = offSet
     q0 = - 2 * np.dot(np.append(np.tile(xtrack, N + 1), np.zeros(R.shape[0] * N)), M00)
 
     # Derivative Input
@@ -464,8 +471,8 @@ def _LMPC_BuildMatIneqConst(LMPC):
     n = LMPC.n
     numSS_Points = LMPC.numSS_Points
     # Buil the matrices for the state constraint in each region. In the region i we want Fx[i]x <= bx[b]
-    Fx = np.array([[0., 0., 0., 0., 0.,  1.],
-                   [0., 0., 0., 0., 0., -1.]])
+    Fx = np.array([[0., 0., 0., 0., 0.,  1., 0.],
+                   [0., 0., 0., 0., 0., -1., 0.]])
 
     bx = np.array([[LMPC.halfWidth],   # max ey
                    [LMPC.halfWidth]])  # min ey
@@ -567,10 +574,10 @@ def _SelectPoints(LMPC, it, x0, numSS_Points):
     currIt      = LMPC.it
     TimeSS  = LMPC.TimeSS
 
-    x = SS[0:TimeSS[it], :, it]
-    u = uSS[0:TimeSS[it], :, it]
+    x = SS[0:TimeSS[it], 0:6, it]
+    u = uSS[0:TimeSS[it], 0:6, it]
     oneVec = np.ones((x.shape[0], 1))
-    x0Vec = (np.dot(np.array([x0]).T, oneVec.T)).T
+    x0Vec = (np.dot(np.array([x0[0:6]]).T, oneVec.T)).T
     diff = x - x0Vec
     norm = la.norm(diff, 1, axis=1)
     MinNorm = np.argmin(norm)
@@ -836,9 +843,9 @@ def RegressionAndLinearization(ControllerLMPC, i):
     path             = ControllerLMPC.path
 
     usedIt = sortedLapTime[0:ControllerLMPC.itUsedSysID] # range(ControllerLMPC.it-ControllerLMPC.itUsedSysID, ControllerLMPC.it)
-
-
-    x0 = LinPoints[i, :]
+    #No. of vehicle states
+    n=6
+    x0 = LinPoints[i, 0:n]
 
     Ai = np.zeros((n, n))
     Bi = np.zeros((n, d + d*idDelay))
@@ -982,7 +989,23 @@ def RegressionAndLinearization(ControllerLMPC, i):
     endTimer = datetime.datetime.now(); deltaTimer_tv = endTimer - startTimer
     # print time_localreg, time_lnzn
 
-    return Ai, Bi, Ci, indexSelected
+    taoConst = 0.1
+    dtDisc   = 0.1
+
+    Ai_delay = np.zeros((n+1, n+1))
+    Bi_delay = np.zeros((n+1, d))
+    Ci_delay = np.zeros((n+1, 1))
+
+    Ai_delay[0:n, 0:n] = Ai
+    Ai_delay[0:n, n]   = Bi[:,0]
+    Ai_delay[n,n]      = 1 - dtDisc/(dtDisc + taoConst)#Here tao constant
+
+    Bi_delay[n,0]      = dtDisc/(dtDisc + taoConst) # Here tao
+    Bi_delay[0:n,1]    = Bi[:,1]
+
+    Ci_delay[0:n]      = Ci
+
+    return Ai_delay, Bi_delay, Ci_delay, indexSelected
 
 def Linearization(ControllerLMPC, i, A, B, C):
     LinPoints       = ControllerLMPC.LinPoints
@@ -1004,7 +1027,7 @@ def Linearization(ControllerLMPC, i, A, B, C):
     path             = ControllerLMPC.path
 
 
-    x0 = LinPoints[i, :]
+    x0 = LinPoints[i, 0:n]
 
     Ai = A
     Bi = B
@@ -1071,13 +1094,43 @@ def Linearization(ControllerLMPC, i, A, B, C):
     # print time_localreg, time_lnzn
 
     indexSelected = []
+
+    taoConst = 0.1
+    dtDisc   = 0.1
+
+    Ai_delay = np.zeros((n+1, n+1))
+    Bi_delay = np.zeros((n+1, d))
+    Ci_delay = np.zeros((n+1, 1))
+
+    Ai_delay[0:n, 0:n] = Ai
+    Ai_delay[0:n, n]   = Bi[:,0]
+    Ai_delay[n,n]      = 1 - dtDisc/(dtDisc + taoConst)#Here tao constant
+
+    Bi_delay[n,0]      = dtDisc/(dtDisc + taoConst) # Here tao
+    Bi_delay[0:n,1]    = Bi[:,1]
+
+    Ci_delay[0:n]      = Ci
     
-    return Ai, Bi, Ci, indexSelected
+    return Ai_delay, Bi_delay, Ci_delay, indexSelected
 
 def Compute_Q_M(SS, uSS, indexSelected, stateFeatures, inputFeatures, usedIt, lamb, K, SysID_Solver, inputDelay, idDelay):
     Counter = 0
 
-    # Compute Matrices For Local Linear Regression
+    # Compute Matrices For Local Linear  taoConst = 0.1
+    dtDisc   = 0.1
+
+    Ai_delay = np.zeros((n+1, n+1))
+    Bi_delay = np.zeros((n+1, d))
+    Ci_delay = np.zeros((n+1, 1))
+
+    Ai_delay[0:n, 0:n] = Ai
+    Ai_delay[0:n, n]   = Bi[:,0]
+    Ai_delay[n,n]      = 1 - dtDisc/(dtDisc + taoConst)#Here tao constant
+
+    Bi_delay[n,0]      = dtDisc/(dtDisc + taoConst) # Here tao
+    Bi_delay[0:n,1]    = Bi[:,1]
+
+    Ci_delay[0:n]      = Ci
     X0   = np.empty((0,len(stateFeatures)+len(inputFeatures)+idDelay))
     Ktot = np.empty((0))
 

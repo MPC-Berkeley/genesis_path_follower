@@ -98,8 +98,8 @@ class LanekeepingPublisher():
 
 		self.oldS = 0.
 		self.lapCounter = 0
-
-		self.closedLoopData = ClosedLoopData(dt = 1.0 / self.rateHz, Time = 800., v0 = 8.0)
+		self.n=7
+		self.closedLoopData = ClosedLoopData(dt = 1.0 / self.rateHz, Time = 800., v0 = 8.0, self.n)
 		homedir = os.path.expanduser("~")
 		file_data = open(homedir+'/genesis_data/ClosedLoopDataLMPC_load2.obj', 'rb')
 		self.ClosedLoopDist = pickle.load(file_data)
@@ -112,7 +112,7 @@ class LanekeepingPublisher():
 		Qslack  =  5 * np.diag([ 1.0, 0.1, 0.1, 0.1, 10, 1])          # Cost on the slack variable for the terminal constraint
 		Qlane   =  np.array([50, 10]) # Quadratic slack lane cost
 
-		Q = np.zeros((6,6))
+		Q = np.zeros((self.n,self.n))
 		R = 0*np.zeros((2,2)); dR =  1 * np.array([ 25.0, 1.0]) # Input rate cost u 
 		#R = np.array([[1.0, 0.0],[0.0, 0.0]]); dR =  1 * np.array([ 1.0, 1.0]) # Input rate cost u 
 		dt = 1.0 / self.rateHz; Laps = 50; TimeLMPC = 600
@@ -121,7 +121,7 @@ class LanekeepingPublisher():
 		SysID_Solver = "CVX" 
 		self.halfWidth = rospy.get_param('half_width') #meters - hardcoded for now, can be property of map
 		self.LMPC  = ControllerLMPC(numSS_Points, numSS_it, N, Qslack, Qlane, Q,      R,      dR,      dt, self.path, Laps, TimeLMPC, Solver,      SysID_Solver,           steeringDelay, idDelay, aConstr, self.trackLength, self.halfWidth) 
-		self.openLoopData = LMPCprediction(N, 6, 2, TimeLMPC, numSS_Points, Laps)
+		self.openLoopData = LMPCprediction(N, self.n, 2, TimeLMPC, numSS_Points, Laps)
 		# initialize safe set with lk laps without sinusoidal injection in input
 		self.LMPC.update(self.LMPCDist.SS, self.LMPCDist.SS_glob, self.LMPCDist.uSS, self.LMPCDist.Qfun, self.LMPCDist.TimeSS, self.LMPCDist.it, self.LMPCDist.LinPoints, self.LMPCDist.LinInput)
 		
@@ -179,8 +179,8 @@ class LanekeepingPublisher():
 		print('Path Tracking Test: Started at %f' % (t_start.secs + t_start.nsecs*1e-9))
 		Path_Keeping_Data_Flag=0
 		Path_Keeping_Laps=2
-		oneStepPrediction = np.array([0, 0, 0, 0, 0, 0])
-		
+		oneStepPrediction = np.zeros((self.n))
+		first_order_delay_flag=0
 
 
 		
@@ -193,8 +193,8 @@ class LanekeepingPublisher():
 			self.localState.update(Ux = self.Ux, Uy = self.Uy, r = self.r)
 			self.globalState.update(posE = self.X, posN = self.Y, psi = self.psi)
 			self.mapMatch.localize(self.localState, self.globalState)
-			xMeasuredLoc = np.array([self.localState.Ux, self.localState.Uy, self.localState.r, self.localState.deltaPsi, self.localState.s, self.localState.e])
-			xMeasuredGlob  = np.array([self.localState.Ux, self.localState.Uy, self.localState.r, self.globalState.psi, self.globalState.posE, self.globalState.posN])
+			xMeasuredLoc = np.array([self.localState.Ux, self.localState.Uy, self.localState.r, self.localState.deltaPsi, self.localState.s, self.localState.e, self.delta])
+			xMeasuredGlob  = np.array([self.localState.Ux, self.localState.Uy, self.localState.r, self.globalState.psi, self.globalState.posE, self.globalState.posN, self.delta])
 			
 			if (self.OneStepPredicted!=[]):
 				self.OneStepPredictionError=xMeasuredLoc-self.OneStepPredicted
@@ -246,7 +246,10 @@ class LanekeepingPublisher():
 				measSteering=self.delta
 				acc_lon=self.acc_lon
 				acc_lat=self.acc_lat
-				uApplied = np.array([delta, accel])
+				if first_order_delay_flag==0:
+					uApplied = np.array([delta, accel])
+				else:
+					uApplied = np.array([self.delta, accel])
 
 				# self.LMPC.OldSteering.append(delta)
 				self.LMPC.OldSteering.append(measSteering)
@@ -257,8 +260,11 @@ class LanekeepingPublisher():
 				# print Controller.OldAccelera, Controller.OldSteering
 
 				oneStepPredictionError = xMeasuredLoc - oneStepPrediction # Subtract the local measurement to the previously predicted one step
-
-				uRealApplied = [self.LMPC.OldSteering[-1 - self.LMPC.steeringDelay], self.LMPC.OldAccelera[-1]]
+				if first_order_delay_flag == 0:
+					uRealApplied = [self.LMPC.OldSteering[-1 - self.LMPC.steeringDelay], self.LMPC.OldAccelera[-1]]
+				else:
+					uRealApplied = [self.delta, self.LMPC.OldAccelera[-1]]
+				# uRealApplied = [self.LMPC.OldSteering[-1 - self.LMPC.steeringDelay], self.LMPC.OldAccelera[-1]]
 				
 
 				# print uAppliedDelay, Controller.OldSteering
