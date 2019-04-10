@@ -50,6 +50,8 @@ class ControllerLMPC():
         self.path = path
         self.Solver = Solver            
         self.SysID_Solver = SysID_Solver
+        self.taoConst = 0.1
+        self.dtDisc   = 0.1
         self.A = []
         
         self.B = []
@@ -182,6 +184,7 @@ class ControllerLMPC():
         # Build Terminal cost and Constraint
         G, E, L, Eu = _LMPC_TermConstr(self, npG, npE, npL, npEu)
         M, q = _LMPC_BuildMatCost(self)
+        # print M.shape, q.shape
 
         # Solve QP
         startTimer = datetime.datetime.now()
@@ -205,6 +208,8 @@ class ControllerLMPC():
             # np.savetxt('M.csv', q, delimiter=',', fmt='%f')
             # np.savetxt('M.csv', M, delimiter=',', fmt='%f')
             # np.savetxt('M.csv', M, delimiter=',', fmt='%f')
+
+        #print size(q)
 
             res_cons, feasible = osqp_solve_qp(sparse.csr_matrix(M), q, sparse.csr_matrix(F), b, sparse.csr_matrix(G), np.add(np.dot(E,x0),L[:,0], np.dot(Eu,uOld)) )
             Solution = res_cons.x
@@ -463,6 +468,7 @@ def _LMPC_BuildMatCost(LMPC):
         M_return = M_sparse
     else:
         M_return = M
+
 
     return M_return, q
 
@@ -841,6 +847,8 @@ def RegressionAndLinearization(ControllerLMPC, i):
     acceleraDelay   = ControllerLMPC.acceleraDelay
     idDelay         = ControllerLMPC.idDelay
     path             = ControllerLMPC.path
+    taoConst = ControllerLMPC.taoConst
+    dtDisc   = ControllerLMPC.dtDisc
 
     usedIt = sortedLapTime[0:ControllerLMPC.itUsedSysID] # range(ControllerLMPC.it-ControllerLMPC.itUsedSysID, ControllerLMPC.it)
     #No. of vehicle states
@@ -989,8 +997,7 @@ def RegressionAndLinearization(ControllerLMPC, i):
     endTimer = datetime.datetime.now(); deltaTimer_tv = endTimer - startTimer
     # print time_localreg, time_lnzn
 
-    taoConst = 0.1
-    dtDisc   = 0.1
+    
 
     Ai_delay = np.zeros((n+1, n+1))
     Bi_delay = np.zeros((n+1, d))
@@ -1025,13 +1032,15 @@ def Linearization(ControllerLMPC, i, A, B, C):
     acceleraDelay   = ControllerLMPC.acceleraDelay
     idDelay         = ControllerLMPC.idDelay
     path             = ControllerLMPC.path
-
-
+    taoConst = ControllerLMPC.taoConst
+    dtDisc   = ControllerLMPC.dtDisc
+    #No. of vehicle states
+    n=6
     x0 = LinPoints[i, 0:n]
 
-    Ai = A
-    Bi = B
-    Ci = C
+    Ai_delay = A
+    Bi_delay = B
+    Ci_delay = C
 
     # ===========================
     # ===== Linearization =======
@@ -1062,8 +1071,8 @@ def Linearization(ControllerLMPC, i, A, B, C):
     depsi_s = 0  # Because cur = constant
     depsi_ey = dt * (vx * np.cos(epsi) - vy * np.sin(epsi)) / (den ** 2) * cur * (-cur)
 
-    Ai[3, :] = [depsi_vx, depsi_vy, depsi_wz, depsi_epsi, depsi_s, depsi_ey]
-    Ci[3]    = epsi + dt * ( wz - (vx * np.cos(epsi) - vy * np.sin(epsi)) / (1 - cur * ey) * cur ) - np.dot(Ai[3, :], x0)
+    Ai_delay[3, 0:n] = [depsi_vx, depsi_vy, depsi_wz, depsi_epsi, depsi_s, depsi_ey]
+    Ci_delay[3]    = epsi + dt * ( wz - (vx * np.cos(epsi) - vy * np.sin(epsi)) / (1 - cur * ey) * cur ) - np.dot(Ai_delay[3, 0:n], x0)
     # ===========================
     # ===== Linearize s =========
     # s_{k+1} = s    + dt * ( (vx * np.cos(epsi) - vy * np.sin(epsi)) / (1 - cur * ey) )
@@ -1074,8 +1083,8 @@ def Linearization(ControllerLMPC, i, A, B, C):
     ds_s = 1  # + Ts * (Vx * cos(epsi) - Vy * sin(epsi)) / (1 - ey * rho) ^ 2 * (-ey * drho);
     ds_ey = -dt * (vx * np.cos(epsi) - vy * np.sin(epsi)) / (den * 2) * (-cur)
 
-    Ai[4, :] = [ds_vx, ds_vy, ds_wz, ds_epsi, ds_s, ds_ey]
-    Ci[4]    = s    + dt * ( (vx * np.cos(epsi) - vy * np.sin(epsi)) / (1 - cur * ey) ) - np.dot(Ai[4, :], x0)
+    Ai_delay[4, 0:n] = [ds_vx, ds_vy, ds_wz, ds_epsi, ds_s, ds_ey]
+    Ci_delay[4]    = s    + dt * ( (vx * np.cos(epsi) - vy * np.sin(epsi)) / (1 - cur * ey) ) - np.dot(Ai_delay[4, 0:n], x0)
 
     # ===========================
     # ===== Linearize ey ========
@@ -1087,29 +1096,15 @@ def Linearization(ControllerLMPC, i, A, B, C):
     dey_s = 0
     dey_ey = 1
 
-    Ai[5, :] = [dey_vx, dey_vy, dey_wz, dey_epsi, dey_s, dey_ey]
-    Ci[5]    = ey + dt * (vx * np.sin(epsi) + vy * np.cos(epsi)) - np.dot(Ai[5, :], x0)
+    Ai_delay[5, 0:n] = [dey_vx, dey_vy, dey_wz, dey_epsi, dey_s, dey_ey]
+    Ci_delay[5]    = ey + dt * (vx * np.sin(epsi) + vy * np.cos(epsi)) - np.dot(Ai_delay[5, 0:n], x0)
     time_lnzn=datetime.datetime.now()-time_lnzn
     endTimer = datetime.datetime.now(); deltaTimer_tv = endTimer - startTimer
     # print time_localreg, time_lnzn
 
     indexSelected = []
 
-    taoConst = 0.1
-    dtDisc   = 0.1
 
-    Ai_delay = np.zeros((n+1, n+1))
-    Bi_delay = np.zeros((n+1, d))
-    Ci_delay = np.zeros((n+1, 1))
-
-    Ai_delay[0:n, 0:n] = Ai
-    Ai_delay[0:n, n]   = Bi[:,0]
-    Ai_delay[n,n]      = 1 - dtDisc/(dtDisc + taoConst)#Here tao constant
-
-    Bi_delay[n,0]      = dtDisc/(dtDisc + taoConst) # Here tao
-    Bi_delay[0:n,1]    = Bi[:,1]
-
-    Ci_delay[0:n]      = Ci
     
     return Ai_delay, Bi_delay, Ci_delay, indexSelected
 
@@ -1117,20 +1112,7 @@ def Compute_Q_M(SS, uSS, indexSelected, stateFeatures, inputFeatures, usedIt, la
     Counter = 0
 
     # Compute Matrices For Local Linear  taoConst = 0.1
-    dtDisc   = 0.1
-
-    Ai_delay = np.zeros((n+1, n+1))
-    Bi_delay = np.zeros((n+1, d))
-    Ci_delay = np.zeros((n+1, 1))
-
-    Ai_delay[0:n, 0:n] = Ai
-    Ai_delay[0:n, n]   = Bi[:,0]
-    Ai_delay[n,n]      = 1 - dtDisc/(dtDisc + taoConst)#Here tao constant
-
-    Bi_delay[n,0]      = dtDisc/(dtDisc + taoConst) # Here tao
-    Bi_delay[0:n,1]    = Bi[:,1]
-
-    Ci_delay[0:n]      = Ci
+    
     X0   = np.empty((0,len(stateFeatures)+len(inputFeatures)+idDelay))
     Ktot = np.empty((0))
 

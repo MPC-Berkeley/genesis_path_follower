@@ -52,7 +52,9 @@ class LanekeepingPublisher():
 
 		self.rateHz = 10.0
 		self.rate = rospy.Rate(self.rateHz)  ##TODO: Can we run this fast?
-
+		if not rospy.has_param('delay_hack'):
+			raise ValueError('delay_hack error')
+		self.delay_hack=rospy.get_param('delay_hack')
 		#Initialize Path object
 		self.path = Path()
 		if not rospy.has_param('mat_waypoints'):
@@ -95,21 +97,17 @@ class LanekeepingPublisher():
 		self.globalState  = GlobalState(self.path)
 		self.controlInput = ControlInput()
 		self.OL_predictions = prediction()
-
+		self
 		self.oldS = 0.
 		self.lapCounter = 0
 		self.n=7
-		self.closedLoopData = ClosedLoopData(dt = 1.0 / self.rateHz, Time = 800., v0 = 8.0, self.n)
-		homedir = os.path.expanduser("~")
-		file_data = open(homedir+'/genesis_data/ClosedLoopDataLMPC_load2.obj', 'rb')
-		self.ClosedLoopDist = pickle.load(file_data)
-		self.LMPCDist = pickle.load(file_data)
-		self.LMPCOpenLoopDataDist = pickle.load(file_data)
-		file_data.close()
+		self.closedLoopData = ClosedLoopData(dt = 1.0 / self.rateHz, Time = 800., v0 = 8.0, n=self.n)
+		self.sinusoidal_input=1
+		
 
 		#Initialization Parameters for LMPC controller; 
 		numSS_Points = 40; numSS_it = 2; N = 14
-		Qslack  =  5 * np.diag([ 1.0, 0.1, 0.1, 0.1, 10, 1])          # Cost on the slack variable for the terminal constraint
+		Qslack  =  5 * np.diag([ 1.0, 0.1, 0.1, 0.1, 10, 1, 1.])          # Cost on the slack variable for the terminal constraint
 		Qlane   =  np.array([50, 10]) # Quadratic slack lane cost
 
 		Q = np.zeros((self.n,self.n))
@@ -123,7 +121,14 @@ class LanekeepingPublisher():
 		self.LMPC  = ControllerLMPC(numSS_Points, numSS_it, N, Qslack, Qlane, Q,      R,      dR,      dt, self.path, Laps, TimeLMPC, Solver,      SysID_Solver,           steeringDelay, idDelay, aConstr, self.trackLength, self.halfWidth) 
 		self.openLoopData = LMPCprediction(N, self.n, 2, TimeLMPC, numSS_Points, Laps)
 		# initialize safe set with lk laps without sinusoidal injection in input
-		self.LMPC.update(self.LMPCDist.SS, self.LMPCDist.SS_glob, self.LMPCDist.uSS, self.LMPCDist.Qfun, self.LMPCDist.TimeSS, self.LMPCDist.it, self.LMPCDist.LinPoints, self.LMPCDist.LinInput)
+		if self.sinusoidal_input==0:
+			homedir = os.path.expanduser("~")
+			file_data = open(homedir+'/genesis_data/ClosedLoopDataLMPC_load2.obj', 'rb')
+			self.ClosedLoopDist = pickle.load(file_data)
+			self.LMPCDist = pickle.load(file_data)
+			self.LMPCOpenLoopDataDist = pickle.load(file_data)
+			file_data.close()
+			self.LMPC.update(self.LMPCDist.SS, self.LMPCDist.SS_glob, self.LMPCDist.uSS, self.LMPCDist.Qfun, self.LMPCDist.TimeSS, self.LMPCDist.it, self.LMPCDist.LinPoints, self.LMPCDist.LinInput)
 		
 
 		self.timeCounter = 0
@@ -165,7 +170,8 @@ class LanekeepingPublisher():
 		self.Ax    = msg.a
 		self.acc_lon = msg.a_lon
 		self.acc_lat = msg.a_lat
-		self.delta = msg.df/1.1715
+
+		self.delta = msg.df/(1+self.delay_hack*0.1715)
 		self.Uy    = msg.vy #msg.vy #switching from Borrelli's notation to Hedrick's
 		self.Ux    = msg.vx #switching from Borrelli's notation to Hedrick's
 		self.r     = msg.wz  #switching from Borrelli's notation to Hedrick's
@@ -224,11 +230,17 @@ class LanekeepingPublisher():
 			if self.lapCounter <= Path_Keeping_Laps and Path_Keeping_Data_Flag==0:
 
 				desiredErrorArray = np.array([0.0, 1.0, -1.0])
+				#desiredErrorArray = np.array([0.0])
 				# desiredErrorArray = np.array([self.halfWidth, self.halfWidth, -self.halfWidth, -self.halfWidth, 0.])
 				desiredError = desiredErrorArray[self.lapCounter]
 				self.controller.updateInput(self.localState, self.controlInput, desiredError)
-				delta = self.controlInput.delta#+0.05*np.sin(1*np.pi*rospy.get_time())
-				Fx = self.controlInput.Fx#+0.8*np.sin(1.0*np.pi*rospy.get_time())
+				if self.sinusoidal_input==1:
+					delta = self.controlInput.delta+0.05*np.sin(1*np.pi*rospy.get_time())
+					Fx = self.controlInput.Fx+0.8*np.sin(1.0*np.pi*rospy.get_time())
+				else:
+					delta = self.controlInput.delta
+					Fx = self.controlInput.Fx
+
 
 				# use F = m*a to get desired acceleration. Limit acceleration command to 2 m/s
 				accel = min( Fx / self.genesis.m , self.accelMax)
