@@ -48,7 +48,7 @@ class LanekeepingPublisher():
 		self.enable_steer_pub = rospy.Publisher("/control/enable_spas",  UInt8, queue_size =2, latch=True)
 		self.prediction_pub = rospy.Publisher('OL_predictions', prediction, queue_size=1)
 
-		self.sinusoidal_input = 0
+		self.sinusoidal_input = 1
 
 		self.rateHz = 10.0
 		self.rate = rospy.Rate(self.rateHz)  ##TODO: Can we run this fast?
@@ -255,6 +255,8 @@ class LanekeepingPublisher():
 				acc_lat=self.acc_lat
 				uApplied = np.array([delta, accel])
 
+				oneStepPredictionError = 0
+
 			else: 
 				self.steer_pub.publish(delta)
 				self.accel_pub.publish(accel)
@@ -325,7 +327,7 @@ class LanekeepingPublisher():
 			self.closedLoopData.addMeasurement(xMeasuredGlob, xMeasuredLoc, uApplied, solverTime, sysIDTime, contrTime, measSteering, acc_lon, acc_lat)
 
 			if self.lapCounter >= 1:
-				self.LMPC.addPoint(xMeasuredLoc, xMeasuredGlob, uApplied, self.timeCounter)
+				self.LMPC.addPoint(xMeasuredLoc, xMeasuredGlob, uApplied, self.timeCounter, oneStepPredictionError)
 
 			self.timeCounter = self.timeCounter + 1
 

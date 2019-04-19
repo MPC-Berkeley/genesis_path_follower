@@ -79,6 +79,7 @@ class ControllerLMPC():
         self.LapCounter  = -10000 * np.ones(Laps).astype(int)        # Time at which each j-th iteration is completed
         self.SS          = -10000 * np.ones((NumPoints, 6, Laps))    # Sampled Safe SS
         self.uSS         = -10000 * np.ones((NumPoints, 2, Laps))    # Input associated with the points in SS
+        self.eSS         =      0 * np.ones((NumPoints, 1, Laps))    # Input associated with the points in SS
         self.Qfun        =      0 * np.ones((NumPoints, Laps))       # Qfun: cost-to-go from each point in SS
         self.SS_glob     = -10000 * np.ones((NumPoints, 6, Laps))    # SS in global (X-Y) used for plotting
         self.qpTime      = -10000 * np.ones((NumPoints, Laps))    # Input associated with the points in SS
@@ -271,7 +272,7 @@ class ControllerLMPC():
         self.it = self.it + 1
  
 
-    def addPoint(self, x, x_glob, u, i):
+    def addPoint(self, x, x_glob, u, i, oneStepPrediction):
         """at iteration j add the current point to SS, uSS and Qfun of the previous iteration
         Arguments:
             x: current state
@@ -282,6 +283,10 @@ class ControllerLMPC():
         self.SS[Counter, :, self.it - 1] = x + np.array([0, 0, 0, 0, self.trackLength, 0])
         self.SS_glob[Counter, :, self.it - 1] = x_glob
         self.uSS[Counter, :, self.it - 1] = u
+        if Counter > 0:
+            self.uSS[Counter - 1, :, self.it - 1] = np.linalg.norm( oneStepPrediction )
+
+
         if self.Qfun[Counter, self.it - 1] == 0:
             self.Qfun[Counter, self.it - 1] = self.Qfun[Counter + i - 1, self.it - 1] - 1        
         self.TimeSS[self.it - 1] = self.TimeSS[self.it - 1] + 1
