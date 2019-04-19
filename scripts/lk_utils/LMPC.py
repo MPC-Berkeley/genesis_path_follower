@@ -68,7 +68,7 @@ class ControllerLMPC():
         self.OldSteering = [0.0]*int(1 + steeringDelay)
         self.OldAccelera = [0.0]*int(1)
 
-        self.MaxNumPoint = 100
+        self.MaxNumPoint = 100 # max number of points used for system identification
         self.itUsedSysID = 2
 
         self.lapSelected = []
@@ -159,7 +159,6 @@ class ControllerLMPC():
         if (self.zVector[4]-x0[4] > self.trackLength/2):
             self.zVector[4] = self.zVector[4] - self.trackLength
 
-        #print self.lapSelected[0:self.numSS_it]
         for jj in self.lapSelected[0:self.numSS_it]:
             SS_PointSelected, uSS_PointSelected, SS_glob_PointSelected, Qfun_Selected = _SelectPoints(self, jj, self.zVector, numSS_Points / self.numSS_it + 1)
             SS_PointSelectedTot      =  np.append(SS_PointSelectedTot, SS_PointSelected[:,0:-1], axis=1)
@@ -177,11 +176,29 @@ class ControllerLMPC():
         self.A, self.B, self.C, indexUsed_list = _LMPC_EstimateABC(self)
         endTimer = datetime.datetime.now(); deltaTimer = endTimer - startTimer
         self.linearizationTime = deltaTimer
+
+
+        # Build matrix equality constraint
         npL, npG, npE, npEu = _LMPC_BuildMatEqConst(self)
 
         # Build Terminal cost and Constraint
         G, E, L, Eu = _LMPC_TermConstr(self, npG, npE, npL, npEu)
         M, q = _LMPC_BuildMatCost(self)
+
+
+        # Select indices used for system ID of the first matrix A
+        indicesA_lap1 = indexUsed_list[0][0:self.MaxNumPoint]
+        indicesA_lap2 = indexUsed_list[0][self.MaxNumPoint+1:]
+
+        errorVector1 = self.eSS[indicesA_lap1, 1, self.lapSelected[0]]
+        errorVector2 = self.eSS[indicesA_lap2, 1, self.lapSelected[1]]
+        stateVector1 = self.SS[indicesA_lap1, 0:3, self.lapSelected[0]]
+        stateVector2 = self.SS[indicesA_lap2, 0:3, self.lapSelected[1]]
+
+        # The QP that we are solving right now looks like
+        # \min z^T M z + z^T q
+        # subject to: F*z <= b and G*z = E * matrix(x0) + L + Eu * matrix(uOld)
+        # need to evaluate exploration cost on z[n:2*n+1]
 
         # Solve QP
         startTimer = datetime.datetime.now()
