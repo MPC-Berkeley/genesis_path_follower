@@ -10,7 +10,7 @@ from Utilities import Curvature
 from numpy import hstack, inf, ones
 from scipy.sparse import vstack
 from osqp import OSQP
-
+from numpy import random
 solvers.options['show_progress'] = False
 
 class ControllerLMPC():
@@ -79,7 +79,7 @@ class ControllerLMPC():
         self.LapCounter  = -10000 * np.ones(Laps).astype(int)        # Time at which each j-th iteration is completed
         self.SS          = -10000 * np.ones((NumPoints, 6, Laps))    # Sampled Safe SS
         self.uSS         = -10000 * np.ones((NumPoints, 2, Laps))    # Input associated with the points in SS
-        self.eSS         =      0 * np.ones((NumPoints, 1, Laps))    # Input associated with the points in SS
+        self.eSS         =      0 * np.ones((NumPoints, 3, Laps))    # Input associated with the points in SS
         self.Qfun        =      0 * np.ones((NumPoints, Laps))       # Qfun: cost-to-go from each point in SS
         self.SS_glob     = -10000 * np.ones((NumPoints, 6, Laps))    # SS in global (X-Y) used for plotting
         self.qpTime      = -10000 * np.ones((NumPoints, Laps))    # Input associated with the points in SS
@@ -140,7 +140,7 @@ class ControllerLMPC():
         LinInput     = self.LinInput
         path          = self.path
 
-  
+        #pdb.set_trace()
 
         # Select laps from SS based on LapTime, always keep the last lap
         sortedLapTime = np.argsort(self.Qfun[0, 0:it])
@@ -187,11 +187,20 @@ class ControllerLMPC():
 
 
         # Select indices used for system ID of the first matrix A
-        indicesA_lap1 = indexUsed_list[0][0:self.MaxNumPoint]
-        indicesA_lap2 = indexUsed_list[0][self.MaxNumPoint+1:]
+    
+        indicesA_lap1 = indexUsed_list[0][0]
+        indicesA_lap2 = indexUsed_list[0][1]
 
-        errorVector1 = self.eSS[indicesA_lap1, 1, self.lapSelected[0]]
-        errorVector2 = self.eSS[indicesA_lap2, 1, self.lapSelected[1]]
+
+        Qscale = np.eye(3)
+        Qscale[0,0] = 0.0
+        Qscale[1,1] = 0.0
+        Qscale[2,2] = 0.0
+        #pdb.set_trace()
+        # self.eSS is 100x3 and has zeros
+        errorVector1 = -np.linalg.norm( np.dot(Qscale, np.transpose(self.eSS[indicesA_lap1, :, self.lapSelected[0]])), axis=0)
+        errorVector2 = -np.linalg.norm( np.dot(Qscale, np.transpose(self.eSS[indicesA_lap2, :, self.lapSelected[1]])), axis=0)
+        print(self.eSS[indicesA_lap1, :, self.lapSelected[0]])
         stateVector1 = self.SS[indicesA_lap1, 0:3, self.lapSelected[0]]
         stateVector2 = self.SS[indicesA_lap2, 0:3, self.lapSelected[1]]
 
@@ -199,6 +208,45 @@ class ControllerLMPC():
         # \min z^T M z + z^T q
         # subject to: F*z <= b and G*z = E * matrix(x0) + L + Eu * matrix(uOld)
         # need to evaluate exploration cost on z[n:2*n+1]
+        
+
+        n_e1 = len(indicesA_lap1) 
+        n_e2 = len(indicesA_lap2)
+
+        slackPenalty =  1
+
+        M_new = linalg.block_diag(M, np.zeros((n_e1+n_e2, n_e1+n_e2)), slackPenalty*np.identity(3) )
+        q_new = np.append(np.append(np.append(q, errorVector1), errorVector2), np.zeros((3,1)))
+
+
+        newVar = n_e1 + n_e2 + 3
+
+
+        # Change equality constraint
+        rowG, colG  = G.shape
+        G_top = np.concatenate((G, np.zeros((rowG, newVar))), axis=1)
+
+        select = np.concatenate((np.zeros((3,n)), np.eye(3), np.zeros((3,colG-n-3))), axis=1)
+
+        G_bottom = np.concatenate((select, stateVector1.T, stateVector2.T, np.eye(3)), axis=1)
+
+        G_new = np.concatenate((G_top, G_bottom),axis=0)
+
+        E_new = np.concatenate((E, np.zeros((3, E.shape[1]))), axis=0)
+
+        L_new = np.concatenate((L, np.zeros((3, L.shape[1]))), axis=0)
+
+        Eu_new = np.concatenate((Eu, np.zeros((3, Eu.shape[1]))), axis=0)
+
+
+        # Change inequality constraints
+        rowF, colF  = F.shape
+        F_top = np.concatenate((F, np.zeros((rowF, newVar))), axis=1)
+        F_bottom = np.concatenate(( np.zeros((n_e1 + n_e2, colF)) ,  np.eye(n_e1 + n_e2), np.zeros((n_e1 + n_e2,3)) ), axis=1)
+
+        F_new = np.concatenate((F_top, F_bottom), axis=0)
+
+        b_new = np.concatenate((b, np.zeros(n_e1 + n_e2) ), axis=0)
 
         # Solve QP
         startTimer = datetime.datetime.now()
@@ -222,17 +270,22 @@ class ControllerLMPC():
             # np.savetxt('M.csv', q, delimiter=',', fmt='%f')
             # np.savetxt('M.csv', M, delimiter=',', fmt='%f')
             # np.savetxt('M.csv', M, delimiter=',', fmt='%f')
-
-            res_cons, feasible = osqp_solve_qp(sparse.csr_matrix(M), q, sparse.csr_matrix(F), b, sparse.csr_matrix(G), np.add(np.dot(E,x0),L[:,0], np.dot(Eu,uOld)) )
+            
+            res_cons, feasible = osqp_solve_qp(sparse.csr_matrix(M_new), q_new, sparse.csr_matrix(F_new), b_new, sparse.csr_matrix(G_new), np.add(np.dot(E_new,x0),L_new[:,0], np.dot(Eu_new,uOld)) )
+            # res_cons, feasible = osqp_solve_qp(sparse.csr_matrix(M), q, sparse.csr_matrix(F), b, sparse.csr_matrix(G), np.add(np.dot(E,x0),L[:,0], np.dot(Eu,uOld)) )
+            
             Solution = res_cons.x
 
         self.feasible = feasible
 
         endTimer = datetime.datetime.now(); deltaTimer = endTimer - startTimer
         self.solverTime = deltaTimer
-
+        
         # Extract solution and set linerizations points
-        xPred, uPred, lambd, laneSlack, slack = _LMPC_GetPred(Solution, n, d, N, np)
+        numLambda = Succ_SS_PointSelectedTot.shape[1]
+
+        xPred, uPred, lambd, laneSlack, slack = _LMPC_GetPred(Solution, n, d, N, np, numLambda)
+        
         self.zVector = np.dot(Succ_SS_PointSelectedTot, lambd)
         self.uVector = np.dot(Succ_uSS_PointSelectedTot, lambd)
 
@@ -269,6 +322,8 @@ class ControllerLMPC():
         # print self.TimeSS[it], it 
         self.SS[0:(self.TimeSS[it] + 1), :, it] = ClosedLoopData.x[0:(self.TimeSS[it] + 1), :]
         self.SS_glob[0:(self.TimeSS[it] + 1), :, it] = ClosedLoopData.x_glob[0:(self.TimeSS[it] + 1), :]
+
+        self.eSS[0:(self.TimeSS[it] + 1), :, it] = ClosedLoopData.e[0:(self.TimeSS[it] + 1), :]
         self.uSS[0:(self.TimeSS[it]), :, it]      = ClosedLoopData.u[0:(self.TimeSS[it]), :]
         self.Qfun[0:(self.TimeSS[it] + 1), it]  = _ComputeCost(ClosedLoopData.x[0:(self.TimeSS[it] + 1), :],
                                                                ClosedLoopData.u[0:(self.TimeSS[it]), :], self.trackLength)
@@ -300,8 +355,8 @@ class ControllerLMPC():
         self.SS[Counter, :, self.it - 1] = x + np.array([0, 0, 0, 0, self.trackLength, 0])
         self.SS_glob[Counter, :, self.it - 1] = x_glob
         self.uSS[Counter, :, self.it - 1] = u
-        if Counter > 0:
-            self.uSS[Counter - 1, :, self.it - 1] = np.linalg.norm( oneStepPrediction )
+
+        self.eSS[Counter - 1, :, self.it - 1] = oneStepPrediction
 
 
         if self.Qfun[Counter, self.it - 1] == 0:
@@ -788,10 +843,10 @@ def _LMPC_BuildMatEqConst(LMPC):
     # return L_return, G, E
     return L, G, E, Eu
 
-def _LMPC_GetPred(Solution,n,d,N, np):
+def _LMPC_GetPred(Solution,n,d,N, np, numLambda):
     xPred = np.squeeze(np.transpose(np.reshape((Solution[np.arange(n*(N+1))]),(N+1,n))))
     uPred = np.squeeze(np.transpose(np.reshape((Solution[n*(N+1)+np.arange(d*N)]),(N, d))))
-    lambd = Solution[(n*(N+1)+d*N):(Solution.shape[0]-n-2*N)]
+    lambd = Solution[(n*(N+1)+d*N):(n*(N+1)+d*N+numLambda)]
     slack = Solution[Solution.shape[0]-n-2*N:]
     laneSlack = Solution[Solution.shape[0]-2*N:]
 
@@ -1110,6 +1165,7 @@ def Compute_Q_M(SS, uSS, indexSelected, stateFeatures, inputFeatures, usedIt, la
             
             X0 = np.append( X0, np.hstack((np.squeeze(SS[np.ix_(indexSelected[Counter], stateFeatures, [it])]),
                             np.squeeze(uSS[np.ix_(indexSelected[Counter] - inputDelay, inputFeatures, [it])], axis=2))), axis=0)
+
         else:
             
             # print indexSelected[Counter]

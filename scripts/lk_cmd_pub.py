@@ -151,7 +151,7 @@ class LanekeepingPublisher():
 		print(homedir)  
 		# == Start: Save Data
 		if self.sinusoidal_input == 1:
-			file_data = open(homedir+'/genesis_data'+'/ClosedLoopDataLMPC_Sinusoidal.obj', 'wb')
+			file_data = open(homedir+'/genesis_data'+'/ClosedLoopDataLMPC_Sinusoidal_withoutexploration.obj', 'wb')
 			pickle.dump(self.closedLoopData, file_data)
 			print("Data Saved closedLoopData")    
 		else:	
@@ -239,8 +239,8 @@ class LanekeepingPublisher():
 				desiredError = desiredErrorArray[self.lapCounter]
 				self.controller.updateInput(self.localState, self.controlInput, desiredError)
 				if self.sinusoidal_input==1:
-					delta = self.controlInput.delta + 0.05*np.sin(1*np.pi*rospy.get_time())
-					Fx = self.controlInput.Fx + 0.8*np.sin(1.0*np.pi*rospy.get_time())
+					delta = self.controlInput.delta #+ 0.05*np.sin(1*np.pi*rospy.get_time())
+					Fx = self.controlInput.Fx #+ 0.8*np.sin(1.0*np.pi*rospy.get_time())
 				else:
 					delta = self.controlInput.delta
 					Fx = self.controlInput.Fx
@@ -255,7 +255,7 @@ class LanekeepingPublisher():
 				acc_lat=self.acc_lat
 				uApplied = np.array([delta, accel])
 
-				oneStepPredictionError = 0
+				oneStepPredictionError = np.array([0,0,0,0,0,0])
 
 			else: 
 				self.steer_pub.publish(delta)
@@ -295,7 +295,7 @@ class LanekeepingPublisher():
 				self.OneStepPredicted=self.LMPC.xPred[1,:]
 				
 
-				self.openLoopData.oneStepPredictionError[:,self.timeCounter, self.LMPC.it]      = oneStepPredictionError               
+				self.openLoopData.oneStepPredictionError[:,self.timeCounter, self.LMPC.it]      = oneStepPredictionError              
 				self.openLoopData.PredictedStates[0:(self.LMPC.N+1),:,self.timeCounter, self.LMPC.it] = self.LMPC.xPred
 				self.openLoopData.PredictedInputs[0:(self.LMPC.N), :, self.timeCounter, self.LMPC.it] = self.LMPC.uPred
 				self.openLoopData.SSused[:, :, self.timeCounter, self.LMPC.it]                  = self.LMPC.SS_PointSelectedTot
@@ -324,10 +324,10 @@ class LanekeepingPublisher():
 			contrTime = self.LMPC.solverTime.total_seconds() + self.LMPC.linearizationTime.total_seconds()
 			
 
-			self.closedLoopData.addMeasurement(xMeasuredGlob, xMeasuredLoc, uApplied, solverTime, sysIDTime, contrTime, measSteering, acc_lon, acc_lat)
+			self.closedLoopData.addMeasurement(xMeasuredGlob, xMeasuredLoc, uApplied, solverTime, sysIDTime, contrTime, measSteering, acc_lon, acc_lat, oneStepPredictionError[0:3])
 
 			if self.lapCounter >= 1:
-				self.LMPC.addPoint(xMeasuredLoc, xMeasuredGlob, uApplied, self.timeCounter, oneStepPredictionError)
+				self.LMPC.addPoint(xMeasuredLoc, xMeasuredGlob, uApplied, self.timeCounter, oneStepPredictionError[0:3])
 
 			self.timeCounter = self.timeCounter + 1
 

@@ -38,6 +38,8 @@ class ClosedLoopData():
         self.acc_lon = np.zeros((self.Points, 1))
         self.u = np.zeros((self.Points, 2))  # Initialize the input vector
         self.x = np.zeros((self.Points + 1, 6))  # Initialize state vector (In curvilinear abscissas)
+        self.e = np.zeros((self.Points + 1, 3))  # Initialize error vector (In curvilinear abscissas)
+        
         self.x_glob = np.zeros((self.Points + 1, 6))  # Initialize the state vector in absolute reference frame
         self.solverTime = np.zeros((self.Points + 1, 1))  # Initialize state vector (In curvilinear abscissas)
         self.sysIDTime  = np.zeros((self.Points + 1, 1))  # Initialize state vector (In curvilinear abscissas)
@@ -57,15 +59,19 @@ class ClosedLoopData():
 
         self.x[1:, :] = np.zeros((self.x.shape[0]-1, 6))
         self.x_glob[1:, :] = np.zeros((self.x.shape[0]-1, 6))
+
+        self.e[:, :] = np.zeros((self.e.shape[0], 3))
+
         self.SimTime = -1
 
-    def addMeasurement(self, xMeasuredGlob, xMeasuredLoc, uApplied, solverTime, sysIDTime, contrTime, measSteering, acc_lon, acc_lat):
+    def addMeasurement(self, xMeasuredGlob, xMeasuredLoc, uApplied, solverTime, sysIDTime, contrTime, measSteering, acc_lon, acc_lat, oneStepPredictionError):
         """Add point to the object ClosedLoopData
         xMeasuredGlob: measured state in the inerial reference frame
         xMeasuredLoc: measured state in the curvilinear reference frame
         uApplied: input applied to the system
         """
         self.SimTime = self.SimTime + 1
+        self.e[self.SimTime - 1, :]  = oneStepPredictionError
         self.x[self.SimTime, :]      = xMeasuredLoc
         self.x_glob[self.SimTime, :] = xMeasuredGlob
         self.u[self.SimTime, :]      = uApplied

@@ -31,7 +31,7 @@ def main():
 
 
 	
-	file_data = open(homedir+'/genesis_data/Cl_nice4.obj', 'rb')
+	file_data = open(homedir+'/genesis_data/ClosedLoopDataLMPC_Sinusoidal.obj', 'rb')
 
 	# file_data = open(homedir+'/genesis_data/ClosedLoopDataLMPC.obj', 'rb')
 	# file_data2 = open(homedir+'/genesis_data/ClosedLoopDataLMPC_wo.obj', 'rb')
@@ -84,7 +84,7 @@ def main():
 	plt.show()
 	# pdb.set_trace()
 	# ## Plot First initial learning
-	LapToPlotLearningProcess = [0,1,2,4, 6, 8, 11, 13]
+	LapToPlotLearningProcess = range(5,10)#[0,1,2,3,4, 5,7,8,9,10]
 	# LapToPlotLearningProcess = [15,16]#[0, 2, 3, 4, 5, 7]
 	LapCompare=[3]	
 
@@ -92,7 +92,7 @@ def main():
 	# plotClosedLoopLMPC(LMPController2, grt, LapToPlotLearningProcess)
 	# plotClosedLoopLMPC(LMPController3, grt, LapToPlotLearningProcess)
 	# plotMeasuredAndAppliedSteering(LMPController, LapToPlotLearningProcess)
-	# plotOneStepPreditionError(LMPController, LMPCOpenLoopData, LapToPlotLearningProcess)
+	plotOneStepPreditionError(LMPController, LMPCOpenLoopData, LapToPlotLearningProcess)
 
 	plotClosedLoopColorLMPC(LMPController, grt, LapToPlotLearningProcess)
 	plt.show()
@@ -537,7 +537,7 @@ def plotClosedLoopColorLMPC(LMPController, grt, LapToPlot):
 			yPlot.append(SS_glob[0:LapCounter[i], 5, i].tolist()[j])
 			Color.append(np.sqrt( (SS_glob[0:LapCounter[i], 0, i].tolist()[j])**2 +  (SS_glob[0:LapCounter[i], 0, i].tolist()[j]) ) )
 
-	pdb.set_trace()
+	#pdb.set_trace()
 	plt.scatter(xPlot, yPlot, alpha=1.0, c = Color, s = 100)
 	plt.xlabel("x [m]")
 	plt.ylabel("y [m]")
