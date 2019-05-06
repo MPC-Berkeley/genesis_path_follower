@@ -124,7 +124,10 @@ class LanekeepingPublisher():
 		# initialize safe set with lk laps without sinusoidal injection in input
 		if self.sinusoidal_input == 0:
 			homedir = os.path.expanduser("~")
-			file_data = open(homedir+'/genesis_data/ClosedLoopDataLMPC_Sinusoidal.obj', 'rb')
+			if self.simulation_flag==0:
+				file_data = open(homedir+'/genesis_data/ClosedLoopDataLMPC_Sinusoidal.obj', 'rb')
+			else:
+				file_data = open(homedir+'/genesis_data/ClosedLoopDataLMPC_load.obj', 'rb')
 			self.ClosedLoopDist = pickle.load(file_data)
 			self.LMPCDist = pickle.load(file_data)
 			self.LMPCOpenLoopDataDist = pickle.load(file_data)
