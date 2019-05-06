@@ -158,8 +158,8 @@ class ControllerLMPC():
 
         if (self.zVector[4]-x0[4] > self.trackLength/2):
             self.zVector[4] = self.zVector[4] - self.trackLength
-
-        for jj in self.lapSelected[0:self.numSS_it]:
+        print('HEEEREEEE') 
+        for jj in self.lapSelected[0:it]:
             SS_PointSelected, uSS_PointSelected, SS_glob_PointSelected, Qfun_Selected = _SelectPoints(self, jj, self.zVector, numSS_Points / self.numSS_it + 1)
             SS_PointSelectedTot      =  np.append(SS_PointSelectedTot, SS_PointSelected[:,0:-1], axis=1)
             Succ_SS_PointSelectedTot =  np.append(Succ_SS_PointSelectedTot, SS_PointSelected[:,1:], axis=1)
@@ -682,7 +682,12 @@ def _SelectPoints(LMPC, it, x0, numSS_Points):
         predCurrLap = LMPC.N - sum(sPred > TrackLength)
         currLapTime = LMPC.LapTime
         Sel_Qfun = Qfun[indexSSandQfun, it] + currLapTime + predCurrLap
-
+    #pdb.set_trace()
+    rand_ind=random.choice(SS_Points.shape[1],int(np.floor(0.2*SS_Points.shape[1])),replace=False)
+    SS_Points=SS_Points[:,rand_ind]
+    uSS_Points=uSS_Points[:,rand_ind]
+    SS_glob_Points=SS_glob_Points[:,rand_ind]
+    Sel_Qfun=Sel_Qfun[rand_ind]
     return SS_Points, uSS_Points, SS_glob_Points, Sel_Qfun
 
 def _ComputeCost(x, u, TrackLength):
