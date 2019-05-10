@@ -121,7 +121,7 @@ class LanekeepingPublisher():
 		self.halfWidth = rospy.get_param('half_width') #meters - hardcoded for now, can be property of map
 		self.LMPC  = ControllerLMPC(numSS_Points, numSS_it, N, Qslack, Qlane, Q, R, dR,  dt, self.path, Laps, TimeLMPC, Solver, SysID_Solver, steeringDelay, idDelay, aConstr, self.trackLength, self.halfWidth, sysID_Alternate)
 		self.openLoopData = LMPCprediction(N, 6, 2, TimeLMPC, numSS_Points, Laps)
-		# initialize safe set with lk laps without sinusoidal injection in input
+		# initialize safe set with lk laps with sinusoidal injection in input
 		if self.sinusoidal_input == 0:
 			homedir = os.path.expanduser("~")
 			if self.simulation_flag==0:
@@ -154,7 +154,10 @@ class LanekeepingPublisher():
 		print(homedir)  
 		# == Start: Save Data
 		if self.sinusoidal_input == 1:
-			file_data = open(homedir+'/genesis_data'+'/ClosedLoopDataLMPC_Sinusoidal.obj', 'wb')
+			if self.simulation_flag==0:
+				file_data = open(homedir+'/genesis_data'+'/ClosedLoopDataLMPC_Sinusoidal.obj', 'wb')
+			else:
+				file_data = open(homedir+'/genesis_data'+'/ClosedLoopDataLMPC_load.obj', 'wb')
 			pickle.dump(self.closedLoopData, file_data)
 			print("Data Saved closedLoopData")    
 		else:	
@@ -179,7 +182,7 @@ class LanekeepingPublisher():
 		self.Ax    = msg.a
 		self.acc_lon = msg.a_lon
 		self.acc_lat = msg.a_lat
-		self.delta = msg.df/(1.0 + 0.11715 * self.simulation_flag)
+		self.delta = msg.df/(1.0 + 0.1715 * self.simulation_flag)
 		self.Uy    = msg.vy #msg.vy #switching from Borrelli's notation to Hedrick's
 		self.Ux    = msg.vx #switching from Borrelli's notation to Hedrick's
 		self.r     = msg.wz  #switching from Borrelli's notation to Hedrick's
@@ -242,7 +245,7 @@ class LanekeepingPublisher():
 				desiredError = desiredErrorArray[self.lapCounter]
 				self.controller.updateInput(self.localState, self.controlInput, desiredError)
 				if self.sinusoidal_input==1:
-					delta = self.controlInput.delta + 0.05*np.sin(1*np.pi*rospy.get_time())
+					delta = self.controlInput.delta + 0.05*np.sin(2*np.pi*rospy.get_time())
 					Fx = self.controlInput.Fx + 0.8*np.sin(1.0*np.pi*rospy.get_time())
 				else:
 					delta = self.controlInput.delta

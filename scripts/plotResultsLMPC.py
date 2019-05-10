@@ -31,9 +31,8 @@ def main():
 
 
 	
-	file_data = open(homedir+'/genesis_data/Cl_nice4.obj', 'rb')
 
-	# file_data = open(homedir+'/genesis_data/ClosedLoopDataLMPC.obj', 'rb')
+	file_data = open(homedir+'/genesis_data/ClosedLoopDataLMPC.obj', 'rb')
 	# file_data2 = open(homedir+'/genesis_data/ClosedLoopDataLMPC_wo.obj', 'rb')
 	# file_data3 = open(homedir+'/genesis_data/ClosedLoopDataLMPC_sinmeas.obj', 'rb')
 	# file_data4 = open(homedir+'/genesis_data/ClosedLoopDataLMPC_n14a.obj', 'rb')
@@ -78,13 +77,13 @@ def main():
 	grt = r.GPSRefTrajectory(mat_filename=mat_name, LAT0=lat0, LON0=lon0, YAW0=yaw0) # only 1 should be valid.
 
 	# Plot Lap Time
-	plt.figure()
-	plt.plot([i*LMPController.dt for i in LMPController.LapCounter[1:LMPController.it]], '-o', label="Lap Time")
-	plt.legend()
-	plt.show()
+	# plt.figure()
+	# plt.plot([i*LMPController.dt for i in LMPController.LapCounter[1:LMPController.it]], '-o', label="Lap Time")
+	# plt.legend()
+	# plt.show()
 	# pdb.set_trace()
 	# ## Plot First initial learning
-	LapToPlotLearningProcess = [0,1,2,4, 6, 8, 11, 13]
+	LapToPlotLearningProcess = [0,1,2,3]
 	# LapToPlotLearningProcess = [15,16]#[0, 2, 3, 4, 5, 7]
 	LapCompare=[3]	
 

@@ -251,9 +251,9 @@ class ControllerLMPC():
         # print self.TimeSS[it], it 
         self.SS[0:(self.TimeSS[it] + 1), :, it] = ClosedLoopData.x[0:(self.TimeSS[it] + 1), :]
         self.SS_glob[0:(self.TimeSS[it] + 1), :, it] = ClosedLoopData.x_glob[0:(self.TimeSS[it] + 1), :]
-        self.uSS[0:(self.TimeSS[it]), :, it]      = ClosedLoopData.u[0:(self.TimeSS[it]), :]
+        self.uSS[0:(self.TimeSS[it] + 1), :, it]      = ClosedLoopData.u[0:(self.TimeSS[it] + 1), :]
         self.Qfun[0:(self.TimeSS[it] + 1), it]  = _ComputeCost(ClosedLoopData.x[0:(self.TimeSS[it] + 1), :],
-                                                               ClosedLoopData.u[0:(self.TimeSS[it]), :], self.trackLength)
+                                                               ClosedLoopData.u[0:(self.TimeSS[it] + 1), :], self.trackLength)
         for i in np.arange(0, self.Qfun.shape[0]):
             if self.Qfun[i, it] == 0:
                 self.Qfun[i, it] = self.Qfun[i - 1, it] - 1
@@ -278,13 +278,13 @@ class ControllerLMPC():
             u: current input
             i: at the j-th iteration i is the time at which (x,u) are recorded
         """
+        self.TimeSS[self.it - 1] = self.TimeSS[self.it - 1] + 1
         Counter = self.TimeSS[self.it - 1]
         self.SS[Counter, :, self.it - 1] = x + np.array([0, 0, 0, 0, self.trackLength, 0])
         self.SS_glob[Counter, :, self.it - 1] = x_glob
         self.uSS[Counter, :, self.it - 1] = u
         if self.Qfun[Counter, self.it - 1] == 0:
             self.Qfun[Counter, self.it - 1] = self.Qfun[Counter + i - 1, self.it - 1] - 1        
-        self.TimeSS[self.it - 1] = self.TimeSS[self.it - 1] + 1
 
     def update(self, SS, SS_glob, uSS, Qfun, TimeSS, it, LinPoints, LinInput):
         """update controller parameters. This function is useful to transfer information among LMPC controller
