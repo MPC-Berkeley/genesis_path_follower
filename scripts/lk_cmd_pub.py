@@ -49,11 +49,13 @@ class LanekeepingPublisher():
 		self.prediction_pub = rospy.Publisher('OL_predictions', prediction, queue_size=1)
 
 		self.sinusoidal_input = 0
+		self.include_sinusoidal_laps = 0
 
 		self.rateHz = 10.0
 		self.rate = rospy.Rate(self.rateHz)  ##TODO: Can we run this fast?
 
 		self.simulation_flag = rospy.get_param('simulation_flag')
+		self.steering_delay_model=0
 
 		#Initialize Path object
 		self.path = Path()
@@ -115,14 +117,14 @@ class LanekeepingPublisher():
 		R = 0*np.zeros((2,2)); dR =  1 * np.array([ 25.0, 1.0]) # Input rate cost u 
 		#R = np.array([[1.0, 0.0],[0.0, 0.0]]); dR =  1 * np.array([ 1.0, 1.0]) # Input rate cost u 
 		dt = 1.0 / self.rateHz; Laps = 30; TimeLMPC = 600
-		Solver = "OSQP"; steeringDelay = 2; idDelay= 0; aConstr = np.array([self.accelMin, self.accelMax]) #min and max acceleration
+		Solver = "OSQP"; steeringDelay = 0; idDelay= 0; aConstr = np.array([self.accelMin, self.accelMax]) #min and max acceleration
 		
 		SysID_Solver = "CVX" 
 		self.halfWidth = rospy.get_param('half_width') #meters - hardcoded for now, can be property of map
 		self.LMPC  = ControllerLMPC(numSS_Points, numSS_it, N, Qslack, Qlane, Q, R, dR,  dt, self.path, Laps, TimeLMPC, Solver, SysID_Solver, steeringDelay, idDelay, aConstr, self.trackLength, self.halfWidth, sysID_Alternate)
 		self.openLoopData = LMPCprediction(N, 6, 2, TimeLMPC, numSS_Points, Laps)
 		# initialize safe set with lk laps with sinusoidal injection in input
-		if self.sinusoidal_input == 0:
+		if self.sinusoidal_input == 0 and self.include_sinusoidal_laps == 1:
 			homedir = os.path.expanduser("~")
 			if self.simulation_flag==0:
 				file_data = open(homedir+'/genesis_data/ClosedLoopDataLMPC_Sinusoidal.obj', 'rb')
@@ -182,7 +184,7 @@ class LanekeepingPublisher():
 		self.Ax    = msg.a
 		self.acc_lon = msg.a_lon
 		self.acc_lat = msg.a_lat
-		self.delta = msg.df/(1.0 + 0.1715 * self.simulation_flag)
+		self.delta = msg.df/(1.0 + 0.1715 * self.simulation_flag*self.steering_delay_model)
 		self.Uy    = msg.vy #msg.vy #switching from Borrelli's notation to Hedrick's
 		self.Ux    = msg.vx #switching from Borrelli's notation to Hedrick's
 		self.r     = msg.wz  #switching from Borrelli's notation to Hedrick's
@@ -240,7 +242,7 @@ class LanekeepingPublisher():
 			#Calculate control inputs
 			if self.lapCounter <= Path_Keeping_Laps and Path_Keeping_Data_Flag==0:
 
-				desiredErrorArray = np.array([0.0, 1.0, -1.0])
+				desiredErrorArray = np.array([0.0, 0.0, -0.0])
 				# desiredErrorArray = np.array([self.halfWidth, self.halfWidth, -self.halfWidth, -self.halfWidth, 0.])
 				desiredError = desiredErrorArray[self.lapCounter]
 				self.controller.updateInput(self.localState, self.controlInput, desiredError)
@@ -261,6 +263,7 @@ class LanekeepingPublisher():
 				acc_lat=self.acc_lat
 				uApplied = np.array([delta, accel])
 
+
 			else: 
 				self.steer_pub.publish(delta)
 				self.accel_pub.publish(accel)
@@ -268,6 +271,7 @@ class LanekeepingPublisher():
 				acc_lon=self.acc_lon
 				acc_lat=self.acc_lat
 				uApplied = np.array([delta, accel])
+
 
 				# self.LMPC.OldSteering.append(delta)
 				self.LMPC.OldSteering.append(measSteering)

@@ -5,6 +5,7 @@ import math
 from std_msgs.msg import Float32 as float_msg
 from genesis_path_follower.msg import state_est
 import lk_utils.tiremodel_lib as tm
+import pdb
 
 class VehicleSimulator():
 	'''
@@ -33,7 +34,7 @@ class VehicleSimulator():
 		self.hz = int(1.0/self.dt_model)
 		self.r = rospy.Rate(self.hz)
 
-		self.steering_delay_modifications=True # Toggle for reverting to default delay model
+		self.steering_delay_modifications=False # Toggle for reverting to default delay model
 		self.enable_steering_rate_constr=True
 
 		self.cmd_slow=0  #becomes 1 whenever a steering command is received inside callback fn
@@ -64,7 +65,8 @@ class VehicleSimulator():
 		
 
 		self.acc_time_constant = 0.4 # s
-		self.df_time_constant  = 0.1 # s
+		# self.df_time_constant  = 0.1 # s
+		self.df_time_constant  = 0
 
 		self.pub_loop()
 
@@ -119,9 +121,10 @@ class VehicleSimulator():
 		Fzr = m*lf*g/(lr+lf)   #Maximium force on rear vehicles
 
 		deltaT = self.dt_model/disc_steps
-		self.df_delay=self.df
 		self._update_low_level_control(self.dt_model)
-		df_used=self.df/(1+0.1715*self.steering_delay_modifications)
+		df_used=self.df#/(1.0+0.1715*self.steering_delay_modifications)
+		print self.df
+		# pdb.set_trace()
 		#self. df, self.df_delay = self.df_delay, self.df
 
 		#print (self.df, self.df_delay)
