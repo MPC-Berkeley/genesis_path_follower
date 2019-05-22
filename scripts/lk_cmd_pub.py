@@ -33,6 +33,7 @@ class LanekeepingPublisher():
 	'''
 
 	def __init__(self):
+		lap = 10
 
 		#Initialize nodes, publishers, and subscribers
 		rospy.init_node('lk_cmd_pub', anonymous=True)
@@ -48,14 +49,16 @@ class LanekeepingPublisher():
 		self.enable_steer_pub = rospy.Publisher("/control/enable_spas",  UInt8, queue_size =2, latch=True)
 		self.prediction_pub = rospy.Publisher('OL_predictions', prediction, queue_size=1)
 
-		self.sinusoidal_input = 0
-		self.include_sinusoidal_laps = 0
+		
 
 		self.rateHz = 10.0
 		self.rate = rospy.Rate(self.rateHz)  ##TODO: Can we run this fast?
 
+		## FLAGS
 		self.simulation_flag = rospy.get_param('simulation_flag')
 		self.steering_delay_model=0
+		self.sinusoidal_input = 0
+		self.include_sinusoidal_laps = 0
 
 		#Initialize Path object
 		self.path = Path()
@@ -79,14 +82,14 @@ class LanekeepingPublisher():
 		self.delta = 0.
 		# self.accelMax = 9.8
 		# self.accelMin = 9.8 #negative value implied by LMPC controller
-		self.accelMax = 4.0
-		self.accelMin = 5.0 #negative value implied by LMPC controller
+		self.accelMax = 40.0
+		self.accelMin = 50.0 #negative value implied by LMPC controller
 
 		#Initialize vehicle
 		self.genesis = Vehicle('genesis')
 
 		#Create speed profile - choose between constant velocity limit or track-varying velocity limit
-		self.speedProfile  = BasicProfile(self.genesis, self.path, friction = 0.1, vMax = 8., AxMax = 2.)
+		self.speedProfile  = BasicProfile(self.genesis, self.path, friction = 0.1, vMax = 10., AxMax = 2.)
 
 		plt.plot(self.speedProfile.s, self.speedProfile.Ux)
 		plt.show()
@@ -104,7 +107,7 @@ class LanekeepingPublisher():
 		self.lapCounter = 0
 
 		
-		self.closedLoopData = ClosedLoopData(dt = 1.0 / self.rateHz, Time = 800., v0 = 8.0)
+		self.closedLoopData = ClosedLoopData(dt = 1.0 / self.rateHz, Time = 10000., v0 = 8.0)
 		
 
 		#Initialization Parameters for LMPC controller; 
@@ -116,7 +119,7 @@ class LanekeepingPublisher():
 		Q = np.zeros((6,6))
 		R = 0*np.zeros((2,2)); dR =  1 * np.array([ 25.0, 1.0]) # Input rate cost u 
 		#R = np.array([[1.0, 0.0],[0.0, 0.0]]); dR =  1 * np.array([ 1.0, 1.0]) # Input rate cost u 
-		dt = 1.0 / self.rateHz; Laps = 30; TimeLMPC = 600
+		dt = 1.0 / self.rateHz; Laps = 30; TimeLMPC = 10000
 		Solver = "OSQP"; steeringDelay = 0; idDelay= 0; aConstr = np.array([self.accelMin, self.accelMax]) #min and max acceleration
 		
 		SysID_Solver = "CVX" 
@@ -167,10 +170,10 @@ class LanekeepingPublisher():
 			pickle.dump(self.closedLoopData, file_data)
 			print("Data Saved closedLoopData")    
 
-		pickle.dump(self.LMPC, file_data)
+		pickle.dump(self.LMPC, file_data, pickle.HIGHEST_PROTOCOL)
 		print("Data Saved LMPC")    
 
-		pickle.dump(self.openLoopData, file_data)	        
+		pickle.dump(self.openLoopData, file_data, pickle.HIGHEST_PROTOCOL)	        
 		print("Data Saved openLoopData")    
 		file_data.close()
 		print("Data Saved Correctly")    
@@ -236,13 +239,14 @@ class LanekeepingPublisher():
 				# 	self.LMPC.update(self.LMPCexp.SS, self.LMPCexp.uSS, self.LMPCexp.Qfun, self.LMPCexp.TimeSS, self.lapCounter, self.LMPCexp.LinPoints, self.LMPCexp.LinInput)
 
 			self.oldS = sNow
+			print sNow
 
 
 
 			#Calculate control inputs
 			if self.lapCounter <= Path_Keeping_Laps and Path_Keeping_Data_Flag==0:
 
-				desiredErrorArray = np.array([0.0, 0.0, -0.0])
+				desiredErrorArray = np.array([0.0, 1.0, -1.0])
 				# desiredErrorArray = np.array([self.halfWidth, self.halfWidth, -self.halfWidth, -self.halfWidth, 0.])
 				desiredError = desiredErrorArray[self.lapCounter]
 				self.controller.updateInput(self.localState, self.controlInput, desiredError)

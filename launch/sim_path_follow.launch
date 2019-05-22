@@ -5,8 +5,8 @@
 	
 	<!-- Pick between CPG + RFS coordinate systems here. -->
 	<!--rosparam command="load" file="$(find genesis_path_follower)/launch/rfs.yaml" ns="vehicle"/-->
-	<!-- <rosparam command="load" file="$(find genesis_path_follower)/launch/cpg.yaml" ns="vehicle"/> -->
-  <rosparam command="load" file="$(find genesis_path_follower)/launch/thunderhill.yaml" ns="vehicle"/>
+	<rosparam command="load" file="$(find genesis_path_follower)/launch/cpg.yaml" ns="vehicle"/>
+  <!-- <rosparam command="load" file="$(find genesis_path_follower)/launch/thunderhill.yaml" ns="vehicle"/> -->
 
   <param name="vehicle/scripts_dir" type="str" value="$(find genesis_path_follower)/scripts/" />
   
@@ -19,9 +19,9 @@
   <param name="vehicle/simulation_flag" type="int" value="1" />
 
   <!-- Waypoints CSV to specify path. -->
-  <!-- Set is_heading_info to true if Heading (N = 0) is used instead of Yaw (E = 0). --><!-- 
-  <param name="vehicle/mat_waypoints" type="str" value="$(find genesis_path_follower)/paths/cpgSmoothModifiedFriction.mat" /> -->
-  <param name="vehicle/mat_waypoints" type="str" value="$(find genesis_path_follower)/paths/lmpcMap.mat" />
+  <!-- Set is_heading_info to true if Heading (N = 0) is used instead of Yaw (E = 0). -->
+  <param name="vehicle/mat_waypoints" type="str" value="$(find genesis_path_follower)/paths/cpgSmoothModifiedFriction.mat" /> 
+  <!-- <param name="vehicle/mat_waypoints" type="str" value="$(find genesis_path_follower)/paths/lmpcMap.mat" /> -->
   <param name="vehicle/road_edges" type="str" value="$(find genesis_path_follower)/paths/cpg_winding_track_edges.mat" />
   <param name="vehicle/is_heading_info" type="bool" value="True"/>
   <param name="vehicle/time_check_on" type="bool" value="False"/>

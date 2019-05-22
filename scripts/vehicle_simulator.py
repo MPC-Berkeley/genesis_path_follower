@@ -65,8 +65,8 @@ class VehicleSimulator():
 		
 
 		self.acc_time_constant = 0.4 # s
-		# self.df_time_constant  = 0.1 # s
-		self.df_time_constant  = 0
+		self.df_time_constant  = 0.1 # s
+		# self.df_time_constant  = 0
 
 		self.pub_loop()
 

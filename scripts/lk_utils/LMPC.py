@@ -594,17 +594,18 @@ def _SelectPoints(LMPC, it, x0, numSS_Points):
 
 
     # Modify the cost if the predicion has crossed the finisch line
-    if xPred == []:
-        Sel_Qfun = Qfun[indexSSandQfun, it]
-    elif (np.all((xPred[:, 4] > TrackLength) == False)):
-        Sel_Qfun = Qfun[indexSSandQfun, it]
-    elif  it < currIt - 1:
-        Sel_Qfun = Qfun[indexSSandQfun, it] + Qfun[0, it + 1]
-    else:
-        sPred = xPred[:, 4]
-        predCurrLap = LMPC.N - sum(sPred > TrackLength)
-        currLapTime = LMPC.LapTime
-        Sel_Qfun = Qfun[indexSSandQfun, it] + currLapTime + predCurrLap
+    # Need to change ==================== #
+    # if xPred == []:
+    #     Sel_Qfun = Qfun[indexSSandQfun, it]
+    # elif (np.all((xPred[:, 4] > TrackLength) == False)):
+    #     Sel_Qfun = Qfun[indexSSandQfun, it]
+    # elif  it < currIt - 1:
+    #     Sel_Qfun = Qfun[indexSSandQfun, it] + Qfun[0, it + 1]
+    # else:
+    #     sPred = xPred[:, 4]
+    #     predCurrLap = LMPC.N - sum(sPred > TrackLength)
+    #     currLapTime = LMPC.LapTime
+    #     Sel_Qfun = Qfun[indexSSandQfun, it] + currLapTime + predCurrLap
 
     return SS_Points, uSS_Points, SS_glob_Points, Sel_Qfun
 
