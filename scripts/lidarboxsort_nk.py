@@ -17,10 +17,13 @@ class LidarBoxSort():
 		rospy.Subscriber('/vehicle/cur_state', cur_state, self.parseCurState, queue_size = 2)
 		self.ped_pub = rospy.Publisher("/ped_state", ped_state, queue_size =2)
 		self.dist2crosswalk = 10.0 #initial value, will be updated by parseCurState
-		self.posX = None; #pedestrian X position
-		self.posY = None; #pedestrian Y position 
+		self.posX = -100.; #pedestrian X position
+		self.posY = -100.; #pedestrian Y position 
 		self.yBounds = 5.0; #defines search region for Euclidean clusters
 		self.xBounds = 5.0; #defines search region for Euclidean clusters
+		self.rate = rospy.get_param('rate')
+		self.r = rospy.Rate(self.rate)		
+
 		self.pub_loop()
 
 	def parseCurState(self,data):
@@ -48,13 +51,14 @@ class LidarBoxSort():
 		print([x[possiblePedestrian], y[possiblePedestrian]])
 
 	def pub_loop(self):
-		pedestrian_state = ped_state()
-		pedestrian_state.header.stamp = rospy.Time.now()
+		while not rospy.is_shutdown():
+			pedestrian_state = ped_state()
+			pedestrian_state.header.stamp = rospy.Time.now()
 
-		pedestrian_state.posX = self.posX
-		pedestrian_state.posY = self.posY
-		self.ped_pub.publish(pedestrian_state)
-		self.r.sleep()
+			pedestrian_state.posX = self.posX
+			pedestrian_state.posY = self.posY
+			self.ped_pub.publish(pedestrian_state)
+			self.r.sleep()
 	
 
 
