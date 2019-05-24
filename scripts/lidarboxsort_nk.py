@@ -48,7 +48,9 @@ class LidarBoxSort():
 		if len(possiblePedestrian) > 1:
 			print("Warning - more than 1 pedestrian found")
 
-		print([x[possiblePedestrian], y[possiblePedestrian]])
+		# print([x[possiblePedestrian], y[possiblePedestrian]])
+		self.posX = x[possiblePedestrian[0]].squeeze()
+		self.posY = y[possiblePedestrian[0]].squeeze()
 
 	def pub_loop(self):
 		while not rospy.is_shutdown():
