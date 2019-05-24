@@ -1,9 +1,11 @@
 # CPG Coordinate System and Initial Conditions.
 lat0: 35.04884687
 lon0: -118.040313
-yaw0: 0.0
-X0:   -29
-Y0:   5.2
-Psi0: 1.2
+yaw0: -1.0
+# X0:   -29
+X0:   -925.374
+Y0:   210.724
+#Y0:   5.2
+Psi0: -1.0
 V0:   0.0
 

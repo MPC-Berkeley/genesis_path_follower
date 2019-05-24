@@ -68,8 +68,8 @@ class ControllerLMPC():
         self.OldSteering = [0.0]*int(1 + steeringDelay)
         self.OldAccelera = [0.0]*int(1)
 
-        self.MaxNumPoint = 100
-        self.itUsedSysID = 2
+        self.MaxNumPoint = 25
+        self.itUsedSysID = 3
 
         self.lapSelected = []
 
@@ -278,15 +278,15 @@ class ControllerLMPC():
             u: current input
             i: at the j-th iteration i is the time at which (x,u) are recorded
         """
-        self.TimeSS[self.it - 1] = self.TimeSS[self.it - 1] + 1
-        Counter = self.TimeSS[self.it - 1]
-        self.SS[Counter, :, self.it - 1] = x + np.array([0, 0, 0, 0, self.trackLength, 0])
-        self.SS_glob[Counter, :, self.it - 1] = x_glob
-        self.uSS[Counter, :, self.it - 1] = u
-        if self.Qfun[Counter, self.it - 1] == 0:
-            self.Qfun[Counter, self.it - 1] = self.Qfun[Counter + i - 1, self.it - 1] - 1        
+        self.TimeSS[self.it-1] = self.TimeSS[self.it-1] + 1
+        Counter = self.TimeSS[self.it-1]
+        self.SS[Counter, :, self.it -1] = x
+        self.SS_glob[Counter, :, self.it -1] = x_glob
+        self.uSS[Counter, :, self.it-1] = u
+        if self.Qfun[Counter, self.it-1] == 0:
+            self.Qfun[Counter, self.it-1] = self.Qfun[Counter + i - 1, self.it-1] - 1        
 
-    def update(self, SS, SS_glob, uSS, Qfun, TimeSS, it, LinPoints, LinInput):
+    def update(self, SS, SS_glob, uSS, Qfun, TimeSS, it, LinPoints, LinInput, LapCounter):
         """update controller parameters. This function is useful to transfer information among LMPC controller
            with different tuning
         Arguments:
@@ -303,6 +303,7 @@ class ControllerLMPC():
         self.uSS = uSS
         self.Qfun  = Qfun
         self.TimeSS  = TimeSS
+        self.LapCounter = LapCounter
         self.it = it
 
         self.LinPoints = LinPoints
@@ -847,7 +848,7 @@ def RegressionAndLinearization(ControllerLMPC, i):
     Ci = np.zeros((n, 1))
     time_localreg=datetime.datetime.now()
     # Compute Index to use
-    h = 2 * 5
+    h =2 * 2 * 5
     lamb = 0.000001
     stateFeatures = [0, 1, 2]
     ConsiderInput = 1
@@ -1184,6 +1185,7 @@ def ComputeIndex(h, SS, uSS, LapCounter, it, x0, stateFeatures, scaling, MaxNumP
 
     indexTot =  np.squeeze(np.where(norm < h))
     # print indexTot.shape, np.argmin(norm), norm, x0
+
     if (indexTot.shape[0] >= MaxNumPoint):
         index = np.argsort(norm)[0:MaxNumPoint]
         # MinNorm = np.argmin(norm)
