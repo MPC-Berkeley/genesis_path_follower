@@ -34,7 +34,7 @@
   <param name="vehicle/pedStart"    type="string" value="right" />
   <param name="vehicle/dt" type="double" value="0.1" />
   <param name="vehicle/actuatorDelay" type="int" value="0" />
-  <param name="vehicle/carLane" type="int" value="3" />
+  <param name="vehicle/carLane" type="int" value="1" />
 
 
 

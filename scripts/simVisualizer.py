@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from utils import *
 from genesis_path_follower.msg import plotting_state
+from genesis_path_follower.msg import ped_state
 from matplotlib import animation
 import pdb
 
@@ -27,8 +28,7 @@ class PlotSimulationTrajectory():
 
 		#Initialize nodes, publishers, and subscribers
 		rospy.init_node('vehicle_plotter', anonymous=True)
-		rospy.Subscriber('plotting_state', plotting_state, self.parsePlottingMessage, queue_size=2)
-		
+
 		self.r = rospy.Rate(self.rate)  ##TODO: Can we run this fast?
 
 		#Initialize objects
@@ -58,11 +58,17 @@ class PlotSimulationTrajectory():
 		self.ax.add_patch(self.pedRect)
 		self.accel = 0.
 
+		rospy.Subscriber('plotting_state', plotting_state, self.parsePlottingMessage, queue_size=2)
+		rospy.Subscriber('/ped_state', ped_state, self.parsePedStateMessage, queue_size = 2)
+
+
 		self.loop()
 
+	def parsePedStateMessage(self, msg):
+		self.xP = self.vehicleX + msg.posX
+		self.pedestrianY = self.xV + msg.posY
 
 	def parsePlottingMessage(self, msg):
-		self.xP    = msg.xP
 		self.xV    = msg.xV
 		self.accel = msg.ddxV
 		self.acceptedGap = msg.acceptedGap

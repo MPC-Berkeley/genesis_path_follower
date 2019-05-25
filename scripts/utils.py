@@ -9,7 +9,7 @@ class Road:
         
         x0 = 0
         y0 = 0 #start at origin
-        self.numLanes = 4 
+        self.numLanes = 2 
         self.laneWidth = 3.7 #meters
         self.length = length #meters
         self.fig, self.ax = plt.subplots(1)
