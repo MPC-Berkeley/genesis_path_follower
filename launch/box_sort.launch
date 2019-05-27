@@ -34,7 +34,7 @@
   <param name="vehicle/pedStart"    type="string" value="right" />
   <param name="vehicle/dt" type="double" value="0.1" />
   <param name="vehicle/actuatorDelay" type="int" value="0" />
-  <param name="vehicle/carLane" type="int" value="3" />
+  <param name="vehicle/carLane" type="int" value="1" />
 
 
 
@@ -43,12 +43,9 @@
   <!--...................................................................-->
 
   <!-- MPC, Simulation, and Plotting Nodes -->
-  <node ns="vehicle" pkg="genesis_path_follower" type="lk_cmd_pub.py" name="mpc_node" output="screen"/>
-  <node ns="vehicle" pkg="genesis_path_follower" type="vehicle_simulator.py" name="sim_node" output="log"/>
-  <node ns="vehicle" pkg="genesis_path_follower" type="gps_vehicle_plotter.py" name="plot_node" output="screen"/>
-  <node ns = "vehicle" pkg="genesis_path_follower" type="simVisualizer.py" name ="crosswalk_plot_node" output="screen"/> 
-  <node ns = "vehicle" pkg="genesis_path_follower" type="crosswalkSimulator.py" name ="crosswalk_simulator_node" output="screen"/> 
   <node ns = "vehicle" pkg="genesis_path_follower" type="lidarboxsort_nk.py" name ="lidar_box_sort_node" output="screen"/>
+  <node ns = "vehicle" pkg="genesis_path_follower" type="simVisualizer.py" name ="crosswalk_plot_node" output="screen"/> 
+
 
   <!-- Recording Node -->
   <arg name="exclude_topics" default="/image_raw"/>

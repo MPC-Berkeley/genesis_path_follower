@@ -27,8 +27,7 @@ class PlotSimulationTrajectory():
 
 		#Initialize nodes, publishers, and subscribers
 		rospy.init_node('vehicle_plotter', anonymous=True)
-		rospy.Subscriber('plotting_state', plotting_state, self.parsePlottingMessage, queue_size=2)
-		
+
 		self.r = rospy.Rate(self.rate)  ##TODO: Can we run this fast?
 
 		#Initialize objects
@@ -58,14 +57,15 @@ class PlotSimulationTrajectory():
 		self.ax.add_patch(self.pedRect)
 		self.accel = 0.
 
+		rospy.Subscriber('plotting_state', plotting_state, self.parsePlottingMessage, queue_size=2)
+
 		self.loop()
 
-
 	def parsePlottingMessage(self, msg):
-		self.xP    = msg.xP
 		self.xV    = msg.xV
 		self.accel = msg.ddxV
-		self.acceptedGap = msg.acceptedGap
+		self.xP    = msg.xP
+		self.pedestrianY = msg.yP
 
 
 	def loop(self):

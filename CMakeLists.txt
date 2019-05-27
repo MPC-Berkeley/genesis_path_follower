@@ -42,6 +42,7 @@ add_message_files(
 	mpc_path.msg
 	prediction.msg
 	cur_state.msg
+  ped_state.msg
 	plotting_state.msg
 	command.msg
   vehicle_state.msg
