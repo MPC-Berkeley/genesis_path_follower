@@ -46,6 +46,7 @@ class CrosswalkController():
 
 		self.xP = 0.
 		self.dxP = 0. 
+		self.posY = 0. #Y position of pedestrian
 		self.time = 0.0
 
 		#initialize acceleration to send to vehicle
@@ -55,6 +56,7 @@ class CrosswalkController():
 	def parsePedestrianState(self, msg):
 		self.xP = self.vehicleX + msg.posX
 		self.dxP = msg.velX
+		self.posY = msg.posY
 
 	def parseVehicleState(self, msg):
 		self.xV = msg.xV
@@ -64,13 +66,9 @@ class CrosswalkController():
 		self.currAx_mps2,_,_     = self.veh.getAccel(self.xP, self.dxP, self.xV, self.dxV, 0, self.pedStart)
 
 		commandedAccel = self.currAx_mps2
-		#append commanded accel to delayed input vector
 		self.accel_pub.publish(commandedAccel)
 
 		#update variables to publish to policy server. Note that prevAccel is updated in subscriber callback function
-		self.velocity_mps = self.dxV #velocity of vehicle in mps
-		self.distance_m = self.crosswalk.start[1] - self.xV
-		self.inCrosswalk_bool = abs(self.dxP) > 0 and not self.veh.checkTransition(self.xP, self.xV, self.pedStart) #uses the same logic as FB/FFW controller
 		self.time += self.dt
 
 	def pub_loop(self):
@@ -82,28 +80,16 @@ class CrosswalkController():
 			dt = t_now - t_start
 			dt_secs = dt.secs + 1e-9 * dt.nsecs
 
-			current_state = cur_state()
-			current_state.header.stamp = rospy.Time.now()
-
 			plot_state = plotting_state()
 			plot_state.header.stamp = rospy.Time.now()
 
 			self.getAccel()
 
-			current_state.velocity_mps = self.velocity_mps
-			current_state.distance_m = self.distance_m
-			current_state.inCrosswalk_bool = self.inCrosswalk_bool
-			current_state.posture_int = self.posture_int
-			current_state.prevAx_mps2 = self.prevAx_mps2
-
 			plot_state.xP = self.xP
 			plot_state.xV = self.xV
 			plot_state.ddxV = self.currAx_mps2
-			plot_state.time = self.time
-			plot_state.trialNumber = self.numTrials
-			plot_state.acceptedGap = self.acceptedGap
+			plot_state.yP = self.xV + self.posY
 
-			self.state_pub.publish(current_state)
 			self.plot_pub.publish(plot_state)
 			self.r.sleep()
 

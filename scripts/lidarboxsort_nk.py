@@ -2,8 +2,8 @@
 import rospy
 from jsk_recognition_msgs.msg import BoundingBoxArray
 from jsk_recognition_msgs.msg import BoundingBox
-from genesis_path_follower.msg import cur_state
 from genesis_path_follower.msg import ped_state
+from genesis_path_follower.msg import vehicle_state
 import numpy as np
 
 #This class takes in bounding boxes from Euclidean clustering of LIDAR data
@@ -14,7 +14,7 @@ class LidarBoxSort():
 	def __init__(self):
 		rospy.init_node('lidar_box_filter', anonymous = True)
 		rospy.Subscriber('/bounding_boxes', BoundingBoxArray, self.parseBoxes, queue_size = 2)
-		rospy.Subscriber('/vehicle/cur_state', cur_state, self.parseCurState, queue_size = 2)
+		rospy.Subscriber('/vehicle/vehicle_state', vehicle_state, self.parseVehicleState, queue_size = 2)
 		self.ped_pub = rospy.Publisher("/ped_state", ped_state, queue_size =2)
 		self.dist2crosswalk = 10.0 #initial value, will be updated by parseCurState
 		self.posX = -100.; #pedestrian X position
@@ -29,7 +29,7 @@ class LidarBoxSort():
 
 		self.pub_loop()
 
-	def parseCurState(self,data):
+	def parseVehicleState(self,data):
 		self.dist2crosswalk = data.distance_m
 
 	def parseBoxes(self,data):
