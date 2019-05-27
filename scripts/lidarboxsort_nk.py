@@ -18,7 +18,10 @@ class LidarBoxSort():
 		self.ped_pub = rospy.Publisher("/ped_state", ped_state, queue_size =2)
 		self.dist2crosswalk = 10.0 #initial value, will be updated by parseCurState
 		self.posX = -100.; #pedestrian X position
-		self.posY = -100.; #pedestrian Y position 
+		self.posY = -100.; #pedestrian Y position
+		self.prevPosX = self.posX #last pedestrian X position (for velocity calculation)
+		self.prevPosY = self.posY #last pedestrian Y position (for velocity calculation)
+
 		self.yBounds = 5.0; #defines search region for Euclidean clusters
 		self.xBounds = 5.0; #defines search region for Euclidean clusters
 		self.rate = rospy.get_param('rate')
@@ -52,6 +55,21 @@ class LidarBoxSort():
 		self.posX = x[possiblePedestrian[0]].squeeze()
 		self.posY = y[possiblePedestrian[0]].squeeze()
 
+	def getVelX(self):
+		velX = (self.posX - self.prevPosX) / self.rate #simple numerical differentation for now
+		self.prevPosX = self.posX
+
+		return velX
+
+
+	def getVelY(self):
+		velY = (self.posY - self.prevPosY) / self.rate #simple numerical differentation for now
+		self.prevPosY = self.posY 
+
+		return velY
+
+
+
 	def pub_loop(self):
 		while not rospy.is_shutdown():
 			pedestrian_state = ped_state()
@@ -59,6 +77,8 @@ class LidarBoxSort():
 
 			pedestrian_state.posX = self.posX
 			pedestrian_state.posY = self.posY
+			pedestrian_state.velX = self.getVelX()
+			pedestrian_state.velY = self.getVelY()
 			self.ped_pub.publish(pedestrian_state)
 			self.r.sleep()
 	
