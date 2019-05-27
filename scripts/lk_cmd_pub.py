@@ -83,9 +83,9 @@ class LanekeepingPublisher():
 		self.acc_lat=0.
 		self.acc_lon=0.
 		self.delta = 0.
-		self.s_0=1785.0 # Start here on CPG map
-		self.s_f=3400.0 # End LMPC here on CPG map
-		self.s_fr=3500.0 # Restart process here on CPG map
+		self.s_0=2430.0 # Start here on CPG map
+		self.s_f=3140.0 # End LMPC here on CPG map
+		self.s_fr=3200.0 # Restart process here on CPG map
 		self.trackLength_winding=self.s_f-self.s_0
 		self.trackLength_buffer=self.s_fr-self.s_f
 
@@ -113,7 +113,7 @@ class LanekeepingPublisher():
 		self.OL_predictions = prediction()
 
 		self.oldS = 0.
-		self.lapCounter = 18
+		self.lapCounter = 3
 
 		self.closedLoopData = ClosedLoopData(dt = 1.0 / self.rateHz, Time = 10000., v0 = 8.0)
 		
@@ -144,7 +144,7 @@ class LanekeepingPublisher():
 			self.LMPCOpenLoopDataDist = pickle.load(file_data)
 			file_data.close()
 			self.LMPC.update(self.LMPCDist.SS, self.LMPCDist.SS_glob, self.LMPCDist.uSS, self.LMPCDist.Qfun, self.LMPCDist.TimeSS, self.LMPCDist.it, self.LMPCDist.LinPoints, self.LMPCDist.LinInput, self.LMPCDist.LapCounter)
-
+			self.openLoopData=self.LMPCOpenLoopDataDist
 
 
 		# initialize safe set with lk laps with sinusoidal injection in input
@@ -242,11 +242,16 @@ class LanekeepingPublisher():
 			xMeasuredLoc = np.array([self.localState.Ux, self.localState.Uy, self.localState.r, self.localState.deltaPsi, self.localState.s, self.localState.e])
 			xMeasuredGlob  = np.array([self.localState.Ux, self.localState.Uy, self.localState.r, self.globalState.psi, self.globalState.posE, self.globalState.posN])
 			
+			if self.timeCounter==0:
+				xInitLoc=xMeasuredLoc
+				xInitGlob=xMeasuredGlob
+				print xInitLoc
+
 			if (self.OneStepPredicted!=[]):
 				self.OneStepPredictionError=xMeasuredLoc-self.OneStepPredicted
 
 			#Localize Vehicle
-
+			# print self.localState.s
 			## =============================================================================
 			if (self.localState.s < self.s_0):
 
@@ -405,11 +410,11 @@ class LanekeepingPublisher():
 						file_data = open(homedir+'/genesis_data'+'/ClosedLoopDataLMPC_Sinusoidal.obj', 'wb')
 					else:
 						file_data = open(homedir+'/genesis_data'+'/ClosedLoopDataLMPC_load.obj', 'wb')
-					pickle.dump(self.closedLoopData, file_data)
+					pickle.dump(self.closedLoopData, file_data, pickle.HIGHEST_PROTOCOL)
 					print("Data Saved closedLoopData")    
 				else:	
 					file_data = open(homedir+'/genesis_data'+'/ClosedLoopDataLMPC'+str(self.lapCounter)+'.obj', 'wb')
-					pickle.dump(self.closedLoopData, file_data)
+					pickle.dump(self.closedLoopData, file_data, pickle.HIGHEST_PROTOCOL)
 					print("Data Saved closedLoopData")    
 
 				pickle.dump(self.LMPC, file_data, pickle.HIGHEST_PROTOCOL)
@@ -418,8 +423,17 @@ class LanekeepingPublisher():
 				pickle.dump(self.openLoopData, file_data, pickle.HIGHEST_PROTOCOL)	        
 				print("Data Saved openLoopData")    
 				file_data.close()
-				print("Data Saved Correctly") 
-				sys.exit()   
+				print("Data Saved Correctly")
+				if self.lapCounter<20: 
+					# self.lapCounter=self.lapCounter+1
+					self.timeCounter=-1
+					self.closedLoopData.updateInitialConditions(xInitLoc, xInitGlob)
+					self.localState.update(Ux = xInitLoc[0], Uy = xInitLoc[1], r = xInitLoc[2])
+					self.globalState.update(posE = xInitGlob[4], posN = xInitGlob[5], psi = xInitGlob[3])
+					self.mapMatch.localize(self.localState, self.globalState)
+					print self.localState.s
+				else:
+					sys.exit()   
 
 			# ## =============================================================================
 			# #print("Lateral Error is " + str(self.localState.e) )
