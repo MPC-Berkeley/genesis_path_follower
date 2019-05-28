@@ -58,8 +58,9 @@ class LanekeepingPublisher():
 		self.simulation_flag = rospy.get_param('simulation_flag')
 		self.steering_delay_model=0
 		self.sinusoidal_input = 0
-		self.include_sinusoidal_laps = 0
+		self.include_sinusoidal_laps = 1
 		self.LMPC_Lap_done=0
+		self.lapCounter =8
 
 
 		#Initialize Path object
@@ -113,7 +114,7 @@ class LanekeepingPublisher():
 		self.OL_predictions = prediction()
 
 		self.oldS = 0.
-		self.lapCounter = 3
+		
 
 		self.closedLoopData = ClosedLoopData(dt = 1.0 / self.rateHz, Time = 10000., v0 = 8.0)
 		
@@ -136,29 +137,61 @@ class LanekeepingPublisher():
 		
 		self.LMPC  = ControllerLMPC(numSS_Points, numSS_it, N, Qslack, Qlane, Q, R, dR,  dt, self.path, Laps, TimeLMPC, Solver, SysID_Solver, steeringDelay, idDelay, aConstr, self.trackLength, self.halfWidth, sysID_Alternate)
 		self.openLoopData = LMPCprediction(N, 6, 2, TimeLMPC, numSS_Points, Laps)
-		if self.lapCounter!=0:
-			homedir = os.path.expanduser("~")
-			file_data = open(homedir+'/genesis_data/ClosedLoopDataLMPC'+str(self.lapCounter-1)+'.obj', 'rb')
-			self.ClosedLoopDist = pickle.load(file_data)
-			self.LMPCDist = pickle.load(file_data)
-			self.LMPCOpenLoopDataDist = pickle.load(file_data)
-			file_data.close()
-			self.LMPC.update(self.LMPCDist.SS, self.LMPCDist.SS_glob, self.LMPCDist.uSS, self.LMPCDist.Qfun, self.LMPCDist.TimeSS, self.LMPCDist.it, self.LMPCDist.LinPoints, self.LMPCDist.LinInput, self.LMPCDist.LapCounter)
-			self.openLoopData=self.LMPCOpenLoopDataDist
+		if self.sinusoidal_input==1:
+			if self.lapCounter==1:
+				homedir = os.path.expanduser("~")
+				if self.simulation_flag==0:
+					file_data = open(homedir+'/genesis_data/ClosedLoopDataLMPC_Sinusoidaln'+str(self.lapCounter+1)+'.obj', 'rb')
+				else:	
+					file_data = open(homedir+'/genesis_data/ClosedLoopDataLMPC_loadn'+str(self.lapCounter+1)+'.obj', 'rb')
+				self.ClosedLoopDist = pickle.load(file_data)
+				self.LMPCDist = pickle.load(file_data)
+				self.LMPCOpenLoopDataDist = pickle.load(file_data)
+				file_data.close()
+				self.LMPC.update(self.LMPCDist.SS, self.LMPCDist.SS_glob, self.LMPCDist.uSS, self.LMPCDist.Qfun, self.LMPCDist.TimeSS, self.LMPCDist.it, self.LMPCDist.LinPoints, self.LMPCDist.LinInput, self.LMPCDist.LapCounter)
+				self.openLoopData=self.LMPCOpenLoopDataDist
+		else:
+
+			if self.lapCounter!=0:
+				homedir = os.path.expanduser("~")
+
+				file_data = open(homedir+'/genesis_data/ClosedLoopDataLMPC'+str(self.lapCounter-1)+'.obj', 'rb')
+				self.ClosedLoopDist = pickle.load(file_data)
+				self.LMPCDist = pickle.load(file_data)
+				self.LMPCOpenLoopDataDist = pickle.load(file_data)
+				file_data.close()
+				self.LMPC.update(self.LMPCDist.SS, self.LMPCDist.SS_glob, self.LMPCDist.uSS, self.LMPCDist.Qfun, self.LMPCDist.TimeSS, self.LMPCDist.it, self.LMPCDist.LinPoints, self.LMPCDist.LinInput, self.LMPCDist.LapCounter)
+				self.openLoopData=self.LMPCOpenLoopDataDist
+
+			else:
+				if self.include_sinusoidal_laps ==1:
+					homedir = os.path.expanduser("~")
+					if self.simulation_flag==0:
+						file_data = open(homedir+'/genesis_data/ClosedLoopDataLMPC_Sinusoidaln1.obj', 'rb')
+					else:
+						file_data = open(homedir+'/genesis_data/ClosedLoopDataLMPC_loadn1.obj', 'rb')
+					self.ClosedLoopDist = pickle.load(file_data)
+					self.LMPCDist = pickle.load(file_data)
+					self.LMPCOpenLoopDataDist = pickle.load(file_data)
+					file_data.close()
+					self.LMPC.update(self.LMPCDist.SS, self.LMPCDist.SS_glob, self.LMPCDist.uSS, self.LMPCDist.Qfun, self.LMPCDist.TimeSS, self.LMPCDist.it, self.LMPCDist.LinPoints, self.LMPCDist.LinInput, self.LMPCDist.LapCounter)
+					self.openLoopData=self.LMPCOpenLoopDataDist
+
+
 
 
 		# initialize safe set with lk laps with sinusoidal injection in input
-		if self.sinusoidal_input == 0 and self.include_sinusoidal_laps == 1:
-			homedir = os.path.expanduser("~")
-			if self.simulation_flag==0:
-				file_data = open(homedir+'/genesis_data/ClosedLoopDataLMPC_Sinusoidal.obj', 'rb')
-			else:
-				file_data = open(homedir+'/genesis_data/ClosedLoopDataLMPC_load.obj', 'rb')
-			self.ClosedLoopDist = pickle.load(file_data)
-			self.LMPCDist = pickle.load(file_data)
-			self.LMPCOpenLoopDataDist = pickle.load(file_data)
-			file_data.close()
-			self.LMPC.update(self.LMPCDist.SS, self.LMPCDist.SS_glob, self.LMPCDist.uSS, self.LMPCDist.Qfun, self.LMPCDist.TimeSS, self.LMPCDist.it, self.LMPCDist.LinPoints, self.LMPCDist.LinInput)
+		# if self.sinusoidal_input == 0 and self.include_sinusoidal_laps == 1:
+		# 	homedir = os.path.expanduser("~")
+		# 	if self.simulation_flag==0:
+		# 		file_data = open(homedir+'/genesis_data/ClosedLoopDataLMPC_Sinusoidal.obj', 'rb')
+		# 	else:
+		# 		file_data = open(homedir+'/genesis_data/ClosedLoopDataLMPC_loadn'+str(self.lapCounter)+'.obj', 'rb')
+		# 	self.ClosedLoopDist = pickle.load(file_data)
+		# 	self.LMPCDist = pickle.load(file_data)
+		# 	self.LMPCOpenLoopDataDist = pickle.load(file_data)
+		# 	file_data.close()
+		# 	self.LMPC.update(self.LMPCDist.SS, self.LMPCDist.SS_glob, self.LMPCDist.uSS, self.LMPCDist.Qfun, self.LMPCDist.TimeSS, self.LMPCDist.it, self.LMPCDist.LinPoints, self.LMPCDist.LinInput)
 		
 
 		self.timeCounter = 0
@@ -259,12 +292,12 @@ class LanekeepingPublisher():
 				# desiredErrorArray = np.array([self.halfWidth, self.halfWidth, -self.halfWidth, -self.halfWidth, 0.])
 				desiredError = 0.0
 				self.controller.updateInput(self.localState, self.controlInput, desiredError)
-				if self.sinusoidal_input==1:
-					delta = self.controlInput.delta + 0.05*np.sin(2*np.pi*rospy.get_time())
-					Fx = self.controlInput.Fx + 0.8*np.sin(1.0*np.pi*rospy.get_time())
-				else:
-					delta = self.controlInput.delta
-					Fx = self.controlInput.Fx
+				# if self.sinusoidal_input==1:
+				# 	delta = self.controlInput.delta + 0.05*np.sin(2*np.pi*rospy.get_time())
+				# 	Fx = self.controlInput.Fx + 0.8*np.sin(1.0*np.pi*rospy.get_time())
+				# else:
+				delta = self.controlInput.delta
+				Fx = self.controlInput.Fx
 
 				# use F = m*a to get desired acceleration. Limit acceleration command to 2 m/s
 				accel = min( Fx / self.genesis.m , self.accelMax)
@@ -379,12 +412,12 @@ class LanekeepingPublisher():
 				# desiredErrorArray = np.array([self.halfWidth, self.halfWidth, -self.halfWidth, -self.halfWidth, 0.])
 				desiredError = 0.0
 				self.controller.updateInput(self.localState, self.controlInput, desiredError)
-				if self.sinusoidal_input==1:
-					delta = self.controlInput.delta + 0.05*np.sin(2*np.pi*rospy.get_time())
-					Fx = self.controlInput.Fx + 0.8*np.sin(1.0*np.pi*rospy.get_time())
-				else:
-					delta = self.controlInput.delta
-					Fx = self.controlInput.Fx
+				# if self.sinusoidal_input==1:
+				# 	delta = self.controlInput.delta + 0.05*np.sin(2*np.pi*rospy.get_time())
+				# 	Fx = self.controlInput.Fx + 0.8*np.sin(1.0*np.pi*rospy.get_time())
+				# else:
+				delta = self.controlInput.delta
+				Fx = self.controlInput.Fx
 
 				# use F = m*a to get desired acceleration. Limit acceleration command to 2 m/s
 				accel = min( Fx / self.genesis.m , self.accelMax)
@@ -407,9 +440,9 @@ class LanekeepingPublisher():
 				# == Start: Save Data
 				if self.sinusoidal_input == 1:
 					if self.simulation_flag==0:
-						file_data = open(homedir+'/genesis_data'+'/ClosedLoopDataLMPC_Sinusoidal.obj', 'wb')
+						file_data = open(homedir+'/genesis_data'+'/ClosedLoopDataLMPC_Sinusoidaln'+str(self.lapCounter)+'.obj', 'wb')
 					else:
-						file_data = open(homedir+'/genesis_data'+'/ClosedLoopDataLMPC_load.obj', 'wb')
+						file_data = open(homedir+'/genesis_data'+'/ClosedLoopDataLMPC_loadn'+str(self.lapCounter)+'.obj', 'wb')
 					pickle.dump(self.closedLoopData, file_data, pickle.HIGHEST_PROTOCOL)
 					print("Data Saved closedLoopData")    
 				else:	
@@ -425,8 +458,9 @@ class LanekeepingPublisher():
 				file_data.close()
 				print("Data Saved Correctly")
 				if self.lapCounter<20: 
-					# self.lapCounter=self.lapCounter+1
+					self.lapCounter=self.lapCounter+1
 					self.timeCounter=-1
+					self.LMPC_Lap_done=0
 					self.closedLoopData.updateInitialConditions(xInitLoc, xInitGlob)
 					self.localState.update(Ux = xInitLoc[0], Uy = xInitLoc[1], r = xInitLoc[2])
 					self.globalState.update(posE = xInitGlob[4], posN = xInitGlob[5], psi = xInitGlob[3])
