@@ -40,7 +40,8 @@ class LanekeepingPublisher():
 		rospy.on_shutdown(self.shutdownFunc)
 
 		rospy.Subscriber('state_est', state_est, self.parseStateEstMessage, queue_size=2)
-
+		self.simulation_flag = rospy.get_param('simulation_flag')
+		self.steering_delay_model=1
 		self.accel_pub = rospy.Publisher("/control/accel", Float32, queue_size =2)
 		self.steer_pub = rospy.Publisher("/control/steer_angle", Float32, queue_size = 2)
 
@@ -52,9 +53,7 @@ class LanekeepingPublisher():
 
 		self.rateHz = 10.0
 		self.rate = rospy.Rate(self.rateHz)  ##TODO: Can we run this fast?
-		if not rospy.has_param('delay_hack'):
-			raise ValueError('delay_hack error')
-		self.delay_hack=rospy.get_param('delay_hack')
+		
 		#Initialize Path object
 		self.path = Path()
 		if not rospy.has_param('mat_waypoints'):
@@ -103,6 +102,8 @@ class LanekeepingPublisher():
 		self.n=7
 		self.closedLoopData = ClosedLoopData(dt = 1.0 / self.rateHz, Time = 800., v0 = 8.0, n=self.n)
 		self.sinusoidal_input = 0
+		self.include_sinusoidal_laps = 1
+		
 		
 
 		#Initialization Parameters for LMPC controller;
@@ -115,16 +116,16 @@ class LanekeepingPublisher():
 		R = 0*np.zeros((2,2)); dR =  1 * np.array([ 1*25.0, 1.0]) # Input rate cost u 
 		#R = np.array([[1.0, 0.0],[0.0, 0.0]]); dR =  1 * np.array([ 1.0, 1.0]) # Input rate cost u 
 		dt = 1.0 / self.rateHz; Laps = 30; TimeLMPC = 600
-		Solver = "OSQP"; steeringDelay = 0; idDelay= 0; aConstr = np.array([self.accelMin, self.accelMax]) #min and max acceleration
+		Solver = "OSQP"; steeringDelay = 1; idDelay= 0; aConstr = np.array([self.accelMin, self.accelMax]) #min and max acceleration
 		
 		SysID_Solver = "CVX" 
 		self.halfWidth = rospy.get_param('half_width') #meters - hardcoded for now, can be property of map
 		self.LMPC  = ControllerLMPC(numSS_Points, numSS_it, N, Qslack, Qlane, Q, R, dR, dt, self.path, Laps, TimeLMPC, Solver, SysID_Solver, steeringDelay, idDelay, aConstr, self.trackLength, self.halfWidth, sysID_Alternate) 
 		self.openLoopData = LMPCprediction(N, self.n, 2, TimeLMPC, numSS_Points, Laps)
 		# initialize safe set with lk laps without sinusoidal injection in input
-		if self.sinusoidal_input==0:
+		if self.sinusoidal_input==0 and self.include_sinusoidal_laps == 1:
 			homedir = os.path.expanduser("~")
-			file_data = open(homedir+'/genesis_data/ClosedLoopDataLMPC_Sinusoidal2.obj', 'rb')
+			file_data = open(homedir+'/genesis_data/tClosedLoopDataLMPC_load.obj', 'rb')
 			self.ClosedLoopDist = pickle.load(file_data)
 			self.LMPCDist = pickle.load(file_data)
 			self.LMPCOpenLoopDataDist = pickle.load(file_data)
@@ -151,11 +152,14 @@ class LanekeepingPublisher():
 		print(homedir)  
 		# == Start: Save Data
 		if self.sinusoidal_input == 1:
-			file_data = open(homedir+'/genesis_data'+'/ClosedLoopDataLMPC_Sinusoidal2.obj', 'wb')
+			if self.simulation_flag==0:
+				file_data = open(homedir+'/genesis_data'+'/tClosedLoopDataLMPC_Sinusoidal.obj', 'wb')
+			else:
+				file_data = open(homedir+'/genesis_data'+'/tClosedLoopDataLMPC_load.obj', 'wb')
 			pickle.dump(self.closedLoopData, file_data)
 			print("Data Saved closedLoopData")    
 		else:
-			file_data = open(homedir+'/genesis_data'+'/ClosedLoopDataLMPC.obj', 'wb')
+			file_data = open(homedir+'/genesis_data'+'/tClosedLoopDataLMPC.obj', 'wb')
 			pickle.dump(self.closedLoopData, file_data)
 			print("Data Saved closedLoopData")    
 
@@ -177,7 +181,7 @@ class LanekeepingPublisher():
 		self.acc_lon = msg.a_lon
 		self.acc_lat = msg.a_lat
 
-		self.delta = msg.df/(1+self.delay_hack*0.1715)
+		self.delta = msg.df/(1+self.simulation_flag*self.steering_delay_model*0.1715)
 		self.Uy    = msg.vy #msg.vy #switching from Borrelli's notation to Hedrick's
 		self.Ux    = msg.vx #switching from Borrelli's notation to Hedrick's
 		self.r     = msg.wz  #switching from Borrelli's notation to Hedrick's
@@ -192,7 +196,7 @@ class LanekeepingPublisher():
 		Path_Keeping_Data_Flag=0
 		Path_Keeping_Laps=2
 		oneStepPrediction = np.zeros((self.n))
-		first_order_delay_flag=0
+	
 
 
 		
@@ -264,10 +268,8 @@ class LanekeepingPublisher():
 				measSteering=self.delta
 				acc_lon=self.acc_lon
 				acc_lat=self.acc_lat
-				if first_order_delay_flag==0:
-					uApplied = np.array([delta, accel])
-				else:
-					uApplied = np.array([self.delta, accel])
+				uApplied = np.array([delta, accel])
+
 
 				# self.LMPC.OldSteering.append(delta)
 				self.LMPC.OldSteering.append(measSteering)
@@ -278,10 +280,9 @@ class LanekeepingPublisher():
 				# print Controller.OldAccelera, Controller.OldSteering
 
 				oneStepPredictionError = xMeasuredLoc - oneStepPrediction # Subtract the local measurement to the previously predicted one step
-				if first_order_delay_flag == 0:
-					uRealApplied = [self.LMPC.OldSteering[-1 - self.LMPC.steeringDelay], self.LMPC.OldAccelera[-1]]
-				else:
-					uRealApplied = [self.delta, self.LMPC.OldAccelera[-1]]
+
+				uRealApplied = [self.LMPC.OldSteering[-1 - self.LMPC.steeringDelay], self.LMPC.OldAccelera[-1]]
+				
 				# uRealApplied = [self.LMPC.OldSteering[-1 - self.LMPC.steeringDelay], self.LMPC.OldAccelera[-1]]
 				
 
