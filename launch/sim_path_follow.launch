@@ -22,7 +22,6 @@
   <param name="vehicle/vel_profile" type="str" value="$(find genesis_path_follower)/paths/royaVP1.mat" />
   <param name="vehicle/delta_cmd" type="str" value="$(find genesis_path_follower)/paths/royaCmd1.mat" />
 
-  <param name="vehicle/road_edges" type="str" value="$(find genesis_path_follower)/paths/cpg_winding_track_edges.mat" />
   <param name="vehicle/is_heading_info" type="bool" value="True"/>
   <param name="vehicle/time_check_on" type="bool" value="False"/>
 
