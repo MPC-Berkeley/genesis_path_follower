@@ -16,6 +16,8 @@ class VehicleSimulator():
 		rospy.init_node('vehicle_simulator', anonymous=True)
 		rospy.Subscriber('/control/accel', float_msg, self._acc_cmd_callback, queue_size=1)
 		rospy.Subscriber('/control/steer_angle', float_msg, self._df_cmd_callback, queue_size=1)
+		rospy.Subscriber('/control/updateIC', state_est, self.updateIC_callback, queue_size=2)
+
 		self.state_pub = rospy.Publisher('state_est', state_est, queue_size=1)
 
 		self.tcmd_a = None	# rostime (s) of received acc command
@@ -34,7 +36,7 @@ class VehicleSimulator():
 		self.hz = int(1.0/self.dt_model)
 		self.r = rospy.Rate(self.hz)
 
-		self.steering_delay_modifications=False # Toggle for reverting to default delay model
+		self.steering_delay_modifications=True # Toggle for reverting to default delay model
 		self.enable_steering_rate_constr=True
 
 		self.cmd_slow=0  #becomes 1 whenever a steering command is received inside callback fn
@@ -103,7 +105,13 @@ class VehicleSimulator():
 		self.df_slow=self.df
 		self.cmd_slow=1
 		
-
+	def updateIC_callback(self, msg):
+		self.X     = msg.x
+		self.Y     = msg.y
+		self.psi   = msg.psi
+		self.vy    = msg.vy #msg.vy #switching from Borrelli's notation to Hedrick's
+		self.vx    = msg.vx #switching from Borrelli's notation to Hedrick's
+		self.wz     = msg.wz  #switching from Borrelli's notation to Hedrick's
 
 	def _update_vehicle_model(self, disc_steps = 10):
 		# Genesis Parameters from HCE:

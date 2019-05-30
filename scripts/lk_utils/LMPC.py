@@ -68,8 +68,8 @@ class ControllerLMPC():
         self.OldSteering = [0.0]*int(1 + steeringDelay)
         self.OldAccelera = [0.0]*int(1)
 
-        self.MaxNumPoint = 25
-        self.itUsedSysID = 3
+        self.MaxNumPoint = 80
+        self.itUsedSysID = 2
 
         self.lapSelected = []
 
@@ -155,10 +155,11 @@ class ControllerLMPC():
         SS_glob_PointSelectedTot = np.empty((n, 0))
         Qfun_SelectedTot         = np.empty((0))
 
-        if (self.zVector[4]-x0[4] > self.trackLength/2):
-            self.zVector[4] = self.zVector[4] - self.trackLength
+        # if (self.zVector[4]-x0[4] > self.trackLength/2):
+        #     self.zVector[4] = self.zVector[4] - self.trackLength
 
-        #print self.lapSelected[0:self.numSS_it]
+        # print self.lapSelected[0:self.numSS_it]        
+
         for jj in self.lapSelected[0:self.numSS_it]:
             SS_PointSelected, uSS_PointSelected, SS_glob_PointSelected, Qfun_Selected = _SelectPoints(self, jj, self.zVector, numSS_Points / self.numSS_it + 1)
             SS_PointSelectedTot      =  np.append(SS_PointSelectedTot, SS_PointSelected[:,0:-1], axis=1)
@@ -937,10 +938,11 @@ def RegressionAndLinearization(ControllerLMPC, i):
 
     startTimer = datetime.datetime.now()  # Start timer for LMPC iteration
 
-    if s > ControllerLMPC.trackLength:
-        s_wrap = s - ControllerLMPC.trackLength
-    else:
-        s_wrap = s
+    # if s > ControllerLMPC.trackLength:
+    #     s_wrap = s - ControllerLMPC.trackLength
+    # else:
+    #     s_wrap = s
+    s_wrap=s
 
     cur = Curvature(s_wrap, path)
     den = 1 - cur * ey
@@ -1025,10 +1027,11 @@ def Linearization(ControllerLMPC, i, A, B, C):
 
     startTimer = datetime.datetime.now()  # Start timer for LMPC iteration
 
-    if s > ControllerLMPC.trackLength:
-        s_wrap = s - ControllerLMPC.trackLength
-    else:
-        s_wrap = s
+    # if s > ControllerLMPC.trackLength:
+    #     s_wrap = s - ControllerLMPC.trackLength
+    # else:
+    #     s_wrap = s
+    s_wrap=s
 
     cur = Curvature(s_wrap, path)
     den = 1 - cur * ey

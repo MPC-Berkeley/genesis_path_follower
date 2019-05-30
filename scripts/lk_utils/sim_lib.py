@@ -583,70 +583,70 @@ class Animation:
 
 
 
-def  bicycleModel(vehicle, controlInput, localState, globalState, matchType, ts, K):
-    #Implementation of bicycle model with force derating, but no longitudinal dynamics
+# def  bicycleModel(vehicle, controlInput, localState, globalState, matchType, ts, K):
+#     #Implementation of bicycle model with force derating, but no longitudinal dynamics
 
-    #Unpack variables for brevity
-    FxDes = controlInput.Fx
-    delta = controlInput.delta
+#     #Unpack variables for brevity
+#     FxDes = controlInput.Fx
+#     delta = controlInput.delta
     
 
 
-    Ux = localState.Ux    
-    r = localState.r
-    Uy = localState.Uy
-    e = localState.e
-    deltaPsi = localState.deltaPsi
-    s = localState.s
+#     Ux = localState.Ux    
+#     r = localState.r
+#     Uy = localState.Uy
+#     e = localState.e
+#     deltaPsi = localState.deltaPsi
+#     s = localState.s
 
-    psi = globalState.psi
-    posN = globalState.posN
-    posE = globalState.posE
+#     psi = globalState.psi
+#     posN = globalState.posN
+#     posE = globalState.posE
 
-    m = vehicle.m
-    a = vehicle.a
-    b = vehicle.b
-    Iz = vehicle.Iz
+#     m = vehicle.m
+#     a = vehicle.a
+#     b = vehicle.b
+#     Iz = vehicle.Iz
 
-    #calculate forces and tire slips
-    FxF, FxR = getFx(FxDes, Ux, vehicle)
-    alphaF, alphaR = getSlips(localState, vehicle, controlInput)
-    FyF, FyR, zetaF, zetaR = tm.coupledTireForces(alphaF, alphaR,  FxF, FxR, vehicle)
+#     #calculate forces and tire slips
+#     FxF, FxR = getFx(FxDes, Ux, vehicle)
+#     alphaF, alphaR = getSlips(localState, vehicle, controlInput)
+#     FyF, FyR, zetaF, zetaR = tm.coupledTireForces(alphaF, alphaR,  FxF, FxR, vehicle)
     
     
-    #Calculate state derivatives and update
-    dUy = (FyF + FyR) / m - r*Ux
-    dr  = (a*FyF - b*FyR) / Iz
-    dUx = Uy * r + (FxF + FxR - FyF * delta) / m
+#     #Calculate state derivatives and update
+#     dUy = (FyF + FyR) / m - r*Ux
+#     dr  = (a*FyF - b*FyR) / Iz
+#     dUx = Uy * r + (FxF + FxR - FyF * delta) / m
 
-    if matchType is "euler":
-        de = Uy * np.cos(deltaPsi) + Ux * np.sin(deltaPsi)
-        ds = Ux * np.cos(deltaPsi) - Uy * np.sin(deltaPsi)
-        dDeltaPsi = r - K  * Ux
+#     if matchType is "euler":
+#         de = Uy * np.cos(deltaPsi) + Ux * np.sin(deltaPsi)
+#         ds = Ux * np.cos(deltaPsi) - Uy * np.sin(deltaPsi)
+#         dDeltaPsi = r - K  * Ux
 
-    dE = - Uy * np.cos(psi) - Ux * np.sin(psi)
-    dN =   Ux * np.cos(psi) - Uy * np.sin(psi)
-    dotPsi = r 
+#     dE = - Uy * np.cos(psi) - Ux * np.sin(psi)
+#     dN =   Ux * np.cos(psi) - Uy * np.sin(psi)
+#     dotPsi = r 
 
-    #update states with Euler integration
-    Uy = Uy + ts * dUy
-    r  = r + ts * dr
-    Ux = Ux + ts * dUx
-    posE = posE + ts*dE
-    posN = posN + ts*dN
-    psi = psi + ts*dotPsi
+#     #update states with Euler integration
+#     Uy = Uy + ts * dUy
+#     r  = r + ts * dr
+#     Ux = Ux + ts * dUx
+#     posE = posE + ts*dE
+#     posN = posN + ts*dN
+#     psi = psi + ts*dotPsi
 
 
-    #For Euler integration, update states with ODEs 
-    if matchType is "euler":
-        e = e + ts*de 
-        s = s + ts*ds
-        deltaPsi = deltaPsi + ts * dDeltaPsi
+#     #For Euler integration, update states with ODEs 
+#     if matchType is "euler":
+#         e = e + ts*de 
+#         s = s + ts*ds
+#         deltaPsi = deltaPsi + ts * dDeltaPsi
 
-    localState.update(Ux, Uy, r, e, deltaPsi, s)
-    globalState.update(posE, posN, psi)
+#     localState.update(Ux, Uy, r, e, deltaPsi, s)
+#     globalState.update(posE, posN, psi)
         
-    return localState, globalState  
+#     return localState, globalState  
       
 
 
@@ -659,36 +659,36 @@ def  bicycleModel(vehicle, controlInput, localState, globalState, matchType, ts,
 
 
 
-def getSlips(localState, veh, controlInput):
-    Ux = localState.Ux
-    Uy = localState.Uy
-    r  = localState.r
-    delta = controlInput.delta
+# def getSlips(localState, veh, controlInput):
+#     Ux = localState.Ux
+#     Uy = localState.Uy
+#     r  = localState.r
+#     delta = controlInput.delta
     
-    if Ux < 2.0:
-        alphaF = 0 #speed too low to get slip estimate
-        alphaR = 0
+#     if Ux < 2.0:
+#         alphaF = 0 #speed too low to get slip estimate
+#         alphaR = 0
 
-    else:
-        alphaF = np.arctan( (Uy + veh.a * r) / Ux ) - delta
-        alphaR = np.arctan( (Uy - veh.b * r) / Ux ) 
+#     else:
+#         alphaF = np.arctan( (Uy + veh.a * r) / Ux ) - delta
+#         alphaR = np.arctan( (Uy - veh.b * r) / Ux ) 
 
-    return alphaF, alphaR
+#     return alphaF, alphaR
 
 
-def getFx(FxDes, Ux, vehicle):
+# def getFx(FxDes, Ux, vehicle):
 
-    #Implement engine and brake limits
-    if FxDes > 0:
-        if Ux == 0:
-            Fx = FxDes #set to FxDes to avoid divide by zero
-        else:
-            Fx = min( vehicle.powerLimit / Ux - 0.7 * Ux ** 2 - 300, FxDes)
-    else:
-        Fx = FxDes
+#     #Implement engine and brake limits
+#     if FxDes > 0:
+#         if Ux == 0:
+#             Fx = FxDes #set to FxDes to avoid divide by zero
+#         else:
+#             Fx = min( vehicle.powerLimit / Ux - 0.7 * Ux ** 2 - 300, FxDes)
+#     else:
+#         Fx = FxDes
 
-    #Distribute according to weight
-    FxF = Fx * vehicle.b / vehicle.L
-    FxR = Fx * vehicle.a / vehicle.L
-    return FxF, FxR
+#     #Distribute according to weight
+#     FxF = Fx * vehicle.b / vehicle.L
+#     FxR = Fx * vehicle.a / vehicle.L
+#     return FxF, FxR
 

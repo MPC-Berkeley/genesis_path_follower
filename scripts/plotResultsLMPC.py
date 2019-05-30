@@ -32,7 +32,8 @@ def main():
 
 	
 
-	file_data = open(homedir+'/genesis_data/ClosedLoopDataLMPC.obj', 'rb')
+	# file_data = open(homedir+'/genesis_data/ClosedLoopDataLMPC.obj', 'rb')
+	file_data = open(homedir+'/genesis_data/Cl_nice4.obj', 'rb')
 	# file_data2 = open(homedir+'/genesis_data/ClosedLoopDataLMPC_wo.obj', 'rb')
 	# file_data3 = open(homedir+'/genesis_data/ClosedLoopDataLMPC_sinmeas.obj', 'rb')
 	# file_data4 = open(homedir+'/genesis_data/ClosedLoopDataLMPC_n14a.obj', 'rb')
