@@ -296,7 +296,7 @@ class ControllerLMPC():
             self.Qfun[Counter, self.it - 1] = self.Qfun[Counter + i - 1, self.it - 1] - 1        
         self.TimeSS[self.it - 1] = self.TimeSS[self.it - 1] + 1
 
-    def update(self, SS, SS_glob, uSS, Qfun, TimeSS, it, LinPoints, LinInput):
+    def update(self, SS, SS_glob, uSS, Qfun, TimeSS, it, LinPoints, LinInput, LapCounter):
         """update controller parameters. This function is useful to transfer information among LMPC controller
            with different tuning
         Arguments:
@@ -317,6 +317,7 @@ class ControllerLMPC():
 
         self.LinPoints = LinPoints
         self.LinInput  = LinInput
+        self.LapCounter = LapCounter
 
     def oneStepPrediction(self, x, u, UpdateModel=0):
         """Propagate the model one step foreward
