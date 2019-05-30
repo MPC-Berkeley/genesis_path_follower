@@ -65,8 +65,8 @@ class LanekeepingPublisher():
 		#Create speed profile - choose between constant velocity limit or track-varying velocity limit
 		self.speedProfile  = PrecalculatedProfile(vpLocation)
 
-		plt.plot(self.speedProfile.s, self.speedProfile.Ux)
-		plt.show()
+		# plt.plot(self.speedProfile.s, self.speedProfile.Ux)
+		# plt.show()
 
 		#Create controller object - use lanekeeping
 		self.controller = LaneKeepingController(self.path, self.genesis, self.speedProfile, cmdLocation)
