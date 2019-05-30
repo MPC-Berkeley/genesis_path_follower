@@ -3,13 +3,14 @@ import tiremodel_lib as tm
 import vehicle_lib
 import path_lib
 import math
+import scipy.io as sio
 
 
 
 #Controller from Nitin Kapania's PhD thesis - lookahead with augmented sideslip for
 #steering feedback, longitudinal is simple PID feedback control
 class LaneKeepingController():
-    def __init__(self, path, vehicle, profile):
+    def __init__(self, path, vehicle, profile, filePath):
         self.path = path
         self.vehicle = vehicle
         self.profile = profile
@@ -37,6 +38,10 @@ class LaneKeepingController():
         self.alphaRtable = np.flip(alphaRtable, 0)
         self.FyFtable = np.flip(FyFtable, 0) 
         self.FyRtable = np.flip(FyRtable, 0)
+
+        steeringDataTable  = sio.loadmat(filePath, squeeze_me = True)
+        self.sTable        = steeringDataTable['cmd']['s'].sum()
+        self.deltaFFWtable = steeringDataTable['cmd']['delta'].sum()
         
 
 
@@ -100,10 +105,11 @@ def _lanekeeping(sim,localState):
     sTable = sim.path.s
     kTable = sim.path.curvature
 
-    K = np.interp(localState.s, sTable, kTable) #run interp every time - this is slow, but we may be able to get away with    
-    deltaFFW, betaFFW, FyFdes, FyRdes, alphaFdes, alphaRdes = _getDeltaFFW(sim, localState, K)
-    deltaFB = _getDeltaFB(sim, localState, betaFFW)
-    delta = deltaFFW + deltaFB
+    K = 0. #No curvature in Roya's framework    
+    deltaFFW = np.interp(localState.s, sim.sTable, sim.deltaFFWtable) #load from data table
+    betaFFW = 0. #not needed in Roya's framework. 
+    deltaFB  = _getDeltaFB(sim, localState, betaFFW)
+    delta    = deltaFFW + deltaFB
     return delta, deltaFFW, deltaFB, K
 
 

@@ -420,7 +420,8 @@ class MapMatch:
 
         #compute K and psi desired via interpolation
         psiDes = path.roadPsi[lowSind] + (path.roadPsi[highSind] - path.roadPsi[lowSind])/(path.s[highSind] - path.s[lowSind])*deltaS
-        K =      path.curvature[lowSind]   + (path.curvature[highSind] - path.curvature[lowSind])/(path.s[highSind] - path.s[lowSind])*deltaS
+        #K =      path.curvature[lowSind]   + (path.curvature[highSind] - path.curvature[lowSind])/(path.s[highSind] - path.s[lowSind])*deltaS
+        K = 0. #no curvature in Roya's framework
 
         if smallestNorm < self.REQUIRED_DISTANCE:
             converged = True

@@ -45,6 +45,10 @@ class LanekeepingPublisher():
 			raise ValueError('Invalid rosparam global origin provided!')	
 
 		pathLocation = rospy.get_param('mat_waypoints')	
+		vpLocation   = rospy.get_param('vel_profile')
+		cmdLocation  = rospy.get_param('delta_cmd')
+
+
 		self.path.loadFromMAT(pathLocation)
 
 		#vehicle information needed - initialize to none
@@ -59,14 +63,13 @@ class LanekeepingPublisher():
 		self.genesis = Vehicle('genesis')
 
 		#Create speed profile - choose between constant velocity limit or track-varying velocity limit
-		self.speedProfile  = BasicProfile(self.genesis, self.path, friction = 0.4, vMax = 15., AxMax = 2.0)
-		#self.speedProfile = BasicProfile(self.genesis, self.path, self.path.friction, self.path.vMax, AxMax = 2.0)
+		self.speedProfile  = PrecalculatedProfile(vpLocation)
 
 		plt.plot(self.speedProfile.s, self.speedProfile.Ux)
 		plt.show()
 
 		#Create controller object - use lanekeeping
-		self.controller = LaneKeepingController(self.path, self.genesis, self.speedProfile)
+		self.controller = LaneKeepingController(self.path, self.genesis, self.speedProfile, cmdLocation)
 
 		#Create local and global states and control input object
 		self.localState   = LocalState()

@@ -32,7 +32,7 @@ class Path:
 	def loadFromMAT(self, pathName):
 		path = sio.loadmat(pathName, squeeze_me = True)
 		self.s = path['world']['s'].sum() #No idea why you need the .sum, but otherwise doesn't work
-		self.curvature = path['world']['K'].sum()
+		#self.curvature = path['world']['K'].sum()
 		self.posE = path['world']['roadE'].sum()
 		self.posN = path['world']['roadN'].sum()
 		self.roadPsi = path['world']['roadPsi'].sum()
