@@ -58,8 +58,8 @@ class LanekeepingPublisher():
 
 		## Configurations and FLAGS
 		
-		self.steering_delay_model=1	
-		self.lapCounterInit = 3
+		self.steering_delay_model=1
+		self.lapCounterInit = 7
 		self.lapCounter = self.lapCounterInit
 		self.lk_Laps=3
 		self.sinusoidal_input = 0*np.ones(self.lk_Laps).astype(int)
@@ -94,7 +94,7 @@ class LanekeepingPublisher():
 		self.acc_lat=0.
 		self.acc_lon=0.
 		self.delta = 0.
-		self.s_0=2430.0 # Start here on CPG map
+		self.s_0=2410.0 # Start here on CPG map
 		self.s_f=3120.0 # End LMPC here on CPG map
 		self.s_fr=3200.0 # Restart process here on CPG map
 		self.trackLength_winding=self.s_f # -self.s_0
@@ -104,8 +104,8 @@ class LanekeepingPublisher():
 
 		# self.accelMax = 9.8
 		# self.accelMin = 9.8 #negative value implied by LMPC controller
-		self.accelMax = 40.0
-		self.accelMin = 50.0 #negative value implied by LMPC controller
+		self.accelMax = 4.0
+		self.accelMin = 6.0 #negative value implied by LMPC controller
 
 		#Initialize vehicle
 		self.genesis = Vehicle('genesis')
@@ -128,21 +128,22 @@ class LanekeepingPublisher():
 		self.oldS = 0.
 		
 
-		self.closedLoopData = ClosedLoopData(dt = 1.0 / self.rateHz, Time = 1500., v0 = 8.0)
 		
+		self.closedLoopData = ClosedLoopData(dt = 1.0 / self.rateHz, Time = 1500, v0 = 8.0)
 
 		#Initialization Parameters for LMPC controller; 
-		sysID_Alternate = 0
-		numSS_Points = 40; numSS_it = 2; N = 14
-		Qslack  =  1 * 5 * np.diag([ 1.0, 0.1, 0.1, 0.1, 10, 1])          # Cost on the slack variable for the terminal constraint
+		sysID_Alternate = 1
+		numSS_Points = 60; numSS_it = 2; N = 18
+		Qslack  =  5 * np.diag([ 1.0, 0.1, 0.1, 0.1, 10, 1])          # Cost on the slack variable for the terminal constraint
 		Qlane   =  np.array([50, 10]) # Quadratic slack lane cost
 
 		Q = np.zeros((6,6))
-		R = 0*np.zeros((2,2)); dR =  0.5 * 1 * np.array([ 0.1*25.0, 1.0]) # Input rate cost u 
+		R = 0*np.zeros((2,2)); dR =  1 * np.array([ 25.0, 1.0]) # Input rate cost u 
 		#R = np.array([[1.0, 0.0],[0.0, 0.0]]); dR =  1 * np.array([ 1.0, 1.0]) # Input rate cost u 
-		dt = 1.0 / self.rateHz; Laps = 20; TimeLMPC = 1500
+		dt = 1.0 / self.rateHz; Laps = 50; TimeLMPC = 1500
 		Solver = "OSQP"; steeringDelay = 1; idDelay= 0; aConstr = np.array([self.accelMin, self.accelMax]) #min and max acceleration
-		
+
+
 		SysID_Solver = "CVX" 
 		
 		self.halfWidth = rospy.get_param('half_width') #meters - hardcoded for now, can be property of map
@@ -349,7 +350,7 @@ class LanekeepingPublisher():
 			## =============================================================================
 			if (self.localState.s < self.s_0):
 
-				desiredErrorArray = np.resize(np.array([0.0, 1.0, -1.0]),self.lk_Laps)
+				# desiredErrorArray = np.resize(np.array([0.0, -1.5, +1.5]),self.lk_Laps)
 				# desiredErrorArray = np.array([self.halfWidth, self.halfWidth, -self.halfWidth, -self.halfWidth, 0.])
 				desiredError = 0.0
 				self.controller.updateInput(self.localState, self.controlInput, desiredError)
@@ -373,7 +374,7 @@ class LanekeepingPublisher():
 			elif (self.localState.s>= self.s_0) and (self.localState.s<self.s_f):
 
 				if  self.lapCounter<self.lk_Laps:
-					desiredErrorArray = np.resize(np.array([0.0, 1.0, -1.0]),self.lk_Laps)
+					desiredErrorArray = np.resize(np.array([0.0, -1.5, +1.5]),self.lk_Laps)
 					# desiredErrorArray = np.array([self.halfWidth, self.halfWidth, -self.halfWidth, -self.halfWidth, 0.])
 					desiredError = desiredErrorArray[self.lapCounter]
 					self.controller.updateInput(self.localState, self.controlInput, desiredError)
@@ -422,7 +423,8 @@ class LanekeepingPublisher():
 					oneStepPrediction, oneStepPredictionTime = self.LMPC.oneStepPrediction(xMeasuredLoc, uRealApplied, 0)
 				
 					self.LMPC.solve(oneStepPrediction)
-					self.LMPC.A0[:,:,self.timeCounter,self.LMPC.it-self.lk_Laps]=self.LMPC.A[0][0:3,0:3]
+					self.LMPC.A0[:,:,self.timeCounter,self.LMPC.it-self.lk_Laps]=self.LMPC.A[0]
+					self.LMPC.B0[:,:,self.timeCounter,self.LMPC.it-self.lk_Laps]=self.LMPC.B[0]
 					delta = self.LMPC.uPred[0 + self.LMPC.steeringDelay, 0]
 					accel = self.LMPC.uPred[0, 1]
 					# print self.LMPC.it, xMeasuredGlob[4], xMeasuredGlob[5], self.LMPC.SS_glob_PointSelectedTot[4,:], self.LMPC.SS_glob_PointSelectedTot[5,:]

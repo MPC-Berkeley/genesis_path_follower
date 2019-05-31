@@ -69,7 +69,7 @@ class ControllerLMPC():
         self.OldAccelera = [0.0]*int(1)
 
         self.MaxNumPoint = 80
-        self.itUsedSysID = 2
+        self.itUsedSysID = 3
 
         self.lapSelected = []
 
@@ -89,7 +89,8 @@ class ControllerLMPC():
         self.accel_lon= 0*np.ones((NumPoints, 1, Laps))
         # Initialize the controller iteration
         self.it      = 0
-        self.A0=np.empty((3,3,NumPoints,Laps))
+        self.A0=np.empty((self.n,self.n,NumPoints,Laps))
+        self.B0=np.empty((self.n,self.d,NumPoints,Laps))
         self.sysID_Alternate = sysID_Alternate
 
         # Initialize pool for parallel computing used in the internal function _LMPC_EstimateABC
@@ -479,8 +480,8 @@ def _LMPC_BuildMatIneqConst(LMPC):
                    [ 0.,  1.],
                    [ 0., -1.]])
 
-    bu = np.array([[0.25],  # Max Steering
-                   [0.25],  # Max Steering
+    bu = np.array([[1.0],  # Max Steering
+                   [1.0],  # Max Steering
                    [LMPC.aConstr[1]],  # Max Acceleration
                    [LMPC.aConstr[0]]])  # Min Acceleration
 
@@ -849,20 +850,20 @@ def RegressionAndLinearization(ControllerLMPC, i):
     Ci = np.zeros((n, 1))
     time_localreg=datetime.datetime.now()
     # Compute Index to use
-    h =2 * 2 * 5
-    lamb = 0.000001
+    h = 2 * 5
+    lamb = 10000000*0.00000001
     stateFeatures = [0, 1, 2]
     ConsiderInput = 1
 
     if ConsiderInput == 1:
-        scaling = np.array([[0.1, 0.0, 0.0, 0.0, 0.0],
+        scaling = np.array([[0.05, 0.0, 0.0, 0.0, 0.0],
                             [0.0, 1.0, 0.0, 0.0, 0.0],
                             [0.0, 0.0, 1.0, 0.0, 0.0],
-                            [0.0, 0.0, 0.0, 1.0, 0.0],
-                            [0.0, 0.0, 0.0, 0.0, 1.0]])
+                            [0.0, 0.0, 0.0, 3.0, 0.0],
+                            [0.0, 0.0, 0.0, 0.0, 0.3]])
         xLin = np.hstack((LinPoints[i, stateFeatures], LinInput[i, :]))
     else:
-        scaling = np.array([[1.0, 0.0, 0.0],
+        scaling = np.array([[0.1, 0.0, 0.0],
                             [0.0, 1.0, 0.0],
                             [0.0, 0.0, 1.0]])
         xLin = LinPoints[i, stateFeatures] 

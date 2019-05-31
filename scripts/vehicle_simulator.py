@@ -36,7 +36,7 @@ class VehicleSimulator():
 		self.hz = int(1.0/self.dt_model)
 		self.r = rospy.Rate(self.hz)
 
-		self.steering_delay_modifications=True # Toggle for reverting to default delay model
+		self.steering_delay_modifications=True	 # Toggle for reverting to default delay model
 		self.enable_steering_rate_constr=True
 
 		self.cmd_slow=0  #becomes 1 whenever a steering command is received inside callback fn
@@ -67,7 +67,7 @@ class VehicleSimulator():
 		
 
 		self.acc_time_constant = 0.4 # s
-		self.df_time_constant  = 0.1 # s
+		self.df_time_constant  = 0.0 # s
 		# self.df_time_constant  = 0
 
 		self.pub_loop()
