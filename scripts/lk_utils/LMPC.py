@@ -73,8 +73,8 @@ class ControllerLMPC():
         self.OldSteering = [0.0]*int(1 + steeringDelay)
         self.OldAccelera = [0.0]*int(1)
 
-        self.MaxNumPoint = 100
-        self.itUsedSysID = 2
+        self.MaxNumPoint = 80
+        self.itUsedSysID = 3
 
         self.lapSelected = []
 
@@ -94,7 +94,8 @@ class ControllerLMPC():
         self.accel_lon= 0*np.ones((NumPoints, 1, Laps))
         # Initialize the controller iteration
         self.it      = 0
-        self.A0=np.empty((3,3,NumPoints,Laps))
+        self.A0=np.empty((self.n,self.n,NumPoints,Laps))
+        self.B0=np.empty((self.n,self.d,NumPoints,Laps))
 
         # Initialize pool for parallel computing used in the internal function _LMPC_EstimateABC
         # self.p = Pool(4)
@@ -159,8 +160,8 @@ class ControllerLMPC():
         SS_glob_PointSelectedTot = np.empty((n, 0))
         Qfun_SelectedTot         = np.empty((0))
 
-        if (self.zVector[4]-x0[4] > self.trackLength/2):
-            self.zVector[4] = self.zVector[4] - self.trackLength
+        # if (self.zVector[4]-x0[4] > self.trackLength/2):
+        #     self.zVector[4] = self.zVector[4] - self.trackLength
 
         #print self.lapSelected[0:self.numSS_it]
         for jj in self.lapSelected[0:self.numSS_it]:
@@ -288,7 +289,7 @@ class ControllerLMPC():
         """
         Counter = self.TimeSS[self.it - 1]
         offset = np.zeros((self.n))
-        offset[4] = self.trackLength
+        # offset[4] = self.trackLength
         self.SS[Counter, :, self.it - 1] = x + offset
         self.SS_glob[Counter, :, self.it - 1] = x_glob
         self.uSS[Counter, :, self.it - 1] = u
@@ -863,22 +864,22 @@ def RegressionAndLinearization(ControllerLMPC, i):
     time_localreg=datetime.datetime.now()
     # Compute Index to use
     h = 2 * 5
-    lamb = 0.000001
+    lamb = 10000000*0.00000001
     stateFeatures = [0, 1, 2]
     ConsiderInput = 1
 
     if ConsiderInput == 1:
-        scaling = np.array([[0.1, 0.0, 0.0, 0.0, 0.0],
+        scaling = np.array([[0.05, 0.0, 0.0, 0.0, 0.0],
                             [0.0, 1.0, 0.0, 0.0, 0.0],
                             [0.0, 0.0, 1.0, 0.0, 0.0],
-                            [0.0, 0.0, 0.0, 1.0, 0.0],
-                            [0.0, 0.0, 0.0, 0.0, 1.0]])
+                            [0.0, 0.0, 0.0, 3.0, 0.0],
+                            [0.0, 0.0, 0.0, 0.0, 0.3]])
         xLin = np.hstack((LinPoints[i, stateFeatures], LinInput[i, :]))
     else:
-        scaling = np.array([[1.0, 0.0, 0.0],
+        scaling = np.array([[0.1, 0.0, 0.0],
                             [0.0, 1.0, 0.0],
                             [0.0, 0.0, 1.0]])
-        xLin = LinPoints[i, stateFeatures] 
+        xLin = LinPoints[i, stateFeatures]  
 
     indexSelected = []
     K = []
@@ -951,10 +952,10 @@ def RegressionAndLinearization(ControllerLMPC, i):
 
     startTimer = datetime.datetime.now()  # Start timer for LMPC iteration
 
-    if s > ControllerLMPC.trackLength:
-        s_wrap = s - ControllerLMPC.trackLength
-    else:
-        s_wrap = s
+    # if s > ControllerLMPC.trackLength:
+    #     s_wrap = s - ControllerLMPC.trackLength
+    # else:
+    s_wrap = s
 
     cur = Curvature(s_wrap, path)
     den = 1 - cur * ey
@@ -1056,10 +1057,10 @@ def Linearization(ControllerLMPC, i, A, B, C):
 
     startTimer = datetime.datetime.now()  # Start timer for LMPC iteration
 
-    if s > ControllerLMPC.trackLength:
-        s_wrap = s - ControllerLMPC.trackLength
-    else:
-        s_wrap = s
+    # if s > ControllerLMPC.trackLength:
+    #     s_wrap = s - ControllerLMPC.trackLength
+    # else:
+    s_wrap = s
 
     cur = Curvature(s_wrap, path)
     den = 1 - cur * ey

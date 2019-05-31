@@ -55,7 +55,7 @@ class LanekeepingPublisher():
 		## Configurations and FLAGS
 		
 		self.steering_delay_model=1	
-		self.lapCounterInit = 0
+		self.lapCounterInit = 3
 		self.lapCounter = self.lapCounterInit
 		self.lk_Laps=3
 		self.sinusoidal_input = 0*np.ones(self.lk_Laps).astype(int)
@@ -92,9 +92,9 @@ class LanekeepingPublisher():
 		self.delta = 0.
 		# self.accelMax = 9.8
 		# self.accelMin = 9.8 #negative value implied by LMPC controller
-		self.accelMax = 40.0
-		self.accelMin = 50.0 #negative value implied by LMPC controller
-		self.s_0=2430.0 # Start here on CPG map
+		self.accelMax = 4.0
+		self.accelMin = 6.0 #negative value implied by LMPC controller
+		self.s_0=2410.0 # Start here on CPG map
 		self.s_f=3120.0 # End LMPC here on CPG map
 		self.s_fr=3200.0 # Restart process here on CPG map
 		self.trackLength_winding=self.s_f # -self.s_0
@@ -127,13 +127,13 @@ class LanekeepingPublisher():
 		
 
 		#Initialization Parameters for LMPC controller;
-		sysID_Alternate = 0 
-		numSS_Points = 40; numSS_it = 2; N = 14
+		sysID_Alternate = 1 
+		numSS_Points = 60; numSS_it = 2; N = 18
 		Qslack  =  5 * np.diag([ 1.0, 0.1, 0.1, 0.1, 10, 1, 1.])          # Cost on the slack variable for the terminal constraint
 		Qlane   =  1*np.array([50, 10]) # Quadratic slack lane cost
 
 		Q = np.zeros((self.n,self.n))
-		R = 0*np.zeros((2,2)); dR =  1 * np.array([ 0.1*25.0, 1.0]) # Input rate cost u 
+		R = 0*np.zeros((2,2)); dR =  1 * np.array([ 2*25.0, 1.0]) # Input rate cost u 
 		#R = np.array([[1.0, 0.0],[0.0, 0.0]]); dR =  1 * np.array([ 1.0, 1.0]) # Input rate cost u 
 		dt = 1.0 / self.rateHz; Laps = 20; TimeLMPC = 1500
 		Solver = "OSQP"; steeringDelay = 1; idDelay= 0; aConstr = np.array([self.accelMin, self.accelMax]) #min and max acceleration
@@ -358,7 +358,8 @@ class LanekeepingPublisher():
 					oneStepPrediction, oneStepPredictionTime = self.LMPC.oneStepPrediction(xMeasuredLoc, uRealApplied, 0)
 				
 					self.LMPC.solve(oneStepPrediction)
-					self.LMPC.A0[:,:,self.timeCounter,self.LMPC.it-self.lk_Laps]=self.LMPC.A[0][0:3,0:3]
+					self.LMPC.A0[:,:,self.timeCounter,self.LMPC.it-self.lk_Laps]=self.LMPC.A[0]
+					self.LMPC.B0[:,:,self.timeCounter,self.LMPC.it-self.lk_Laps]=self.LMPC.B[0]
 					delta = self.LMPC.uPred[0 + self.LMPC.steeringDelay, 0]
 					accel = self.LMPC.uPred[0, 1]
 					# print self.LMPC.it, xMeasuredGlob[4], xMeasuredGlob[5], self.LMPC.SS_glob_PointSelectedTot[4,:], self.LMPC.SS_glob_PointSelectedTot[5,:]
@@ -396,7 +397,7 @@ class LanekeepingPublisher():
 				solverTime = self.LMPC.solverTime.total_seconds()
 				sysIDTime = self.LMPC.linearizationTime.total_seconds()
 				contrTime = self.LMPC.solverTime.total_seconds() + self.LMPC.linearizationTime.total_seconds()
-				print self.closedLoopData.SimTime
+				# print self.closedLoopData.SimTime
 				self.closedLoopData.addMeasurement(xMeasuredGlob, xMeasuredLoc, uApplied, solverTime, sysIDTime, contrTime, measSteering, acc_lon, acc_lat)
 				if self.LMPC_Lap_start==0 and self.lapCounter==self.lapCounterInit:
 					xInitLoc_lmpc=xMeasuredLoc
@@ -482,6 +483,11 @@ class LanekeepingPublisher():
 					
 				else:
 					sys.exit()
+
+			self.timeCounter = self.timeCounter + 1
+
+			self.rate.sleep()
+		
 
 		#Disable inputs after test is ended
 		self.enable_steer_pub.publish(0) # disable steering control.

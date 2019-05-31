@@ -16,6 +16,7 @@ class VehicleSimulator():
 		rospy.init_node('vehicle_simulator', anonymous=True)
 		rospy.Subscriber('/control/accel', float_msg, self._acc_cmd_callback, queue_size=1)
 		rospy.Subscriber('/control/steer_angle', float_msg, self._df_cmd_callback, queue_size=1)
+		rospy.Subscriber('/control/updateIC', state_est, self.updateIC_callback, queue_size=2)
 		self.state_pub = rospy.Publisher('state_est', state_est, queue_size=1)
 
 		self.tcmd_a = None	# rostime (s) of received acc command
@@ -102,6 +103,14 @@ class VehicleSimulator():
 		self.df_prev=self.df_slow
 		self.df_slow=self.df
 		self.cmd_slow=1
+
+	def updateIC_callback(self, msg):
+		self.X     = msg.x
+		self.Y     = msg.y
+		self.psi   = msg.psi
+		self.vy    = msg.vy #msg.vy #switching from Borrelli's notation to Hedrick's
+		self.vx    = msg.vx #switching from Borrelli's notation to Hedrick's
+		self.wz = msg.wz #switching from Borrelli's notation to Hedrick's
 		
 
 
