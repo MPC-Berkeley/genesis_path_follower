@@ -129,7 +129,7 @@ class LanekeepingPublisher():
 		#Initialization Parameters for LMPC controller;
 		sysID_Alternate = 1 
 		numSS_Points = 60; numSS_it = 2; N = 18
-		Qslack  =  5 * np.diag([ 1.0, 0.1, 0.1, 0.1, 10, 1, 1.])          # Cost on the slack variable for the terminal constraint
+		Qslack  =  2 * 2 * 5 * np.diag([ 1.0, 0.1, 0.1, 0.1, 10, 1, 1.])          # Cost on the slack variable for the terminal constraint
 		Qlane   =  1*np.array([50, 10]) # Quadratic slack lane cost
 
 		Q = np.zeros((self.n,self.n))

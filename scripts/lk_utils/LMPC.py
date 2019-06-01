@@ -260,9 +260,9 @@ class ControllerLMPC():
         # print self.TimeSS[it], it 
         self.SS[0:(self.TimeSS[it] + 1), :, it] = ClosedLoopData.x[0:(self.TimeSS[it] + 1), :]
         self.SS_glob[0:(self.TimeSS[it] + 1), :, it] = ClosedLoopData.x_glob[0:(self.TimeSS[it] + 1), :]
-        self.uSS[0:(self.TimeSS[it]), :, it]      = ClosedLoopData.u[0:(self.TimeSS[it]), :]
+        self.uSS[0:(self.TimeSS[it] + 1), :, it]      = ClosedLoopData.u[0:(self.TimeSS[it] + 1), :]
         self.Qfun[0:(self.TimeSS[it] + 1), it]  = _ComputeCost(ClosedLoopData.x[0:(self.TimeSS[it] + 1), :],
-                                                               ClosedLoopData.u[0:(self.TimeSS[it]), :], self.trackLength)
+                                                               ClosedLoopData.u[0:(self.TimeSS[it] + 1), :], self.trackLength)
         for i in np.arange(0, self.Qfun.shape[0]):
             if self.Qfun[i, it] == 0:
                 self.Qfun[i, it] = self.Qfun[i - 1, it] - 1
