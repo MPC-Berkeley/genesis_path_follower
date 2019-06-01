@@ -55,7 +55,7 @@ class LanekeepingPublisher():
 		## Configurations and FLAGS
 		
 		self.steering_delay_model=1	
-		self.lapCounterInit = 3
+		self.lapCounterInit = 0
 		self.lapCounter = self.lapCounterInit
 		self.lk_Laps=3
 		self.sinusoidal_input = 0*np.ones(self.lk_Laps).astype(int)

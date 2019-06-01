@@ -287,15 +287,13 @@ class ControllerLMPC():
             u: current input
             i: at the j-th iteration i is the time at which (x,u) are recorded
         """
-        Counter = self.TimeSS[self.it - 1]
-        offset = np.zeros((self.n))
-        # offset[4] = self.trackLength
-        self.SS[Counter, :, self.it - 1] = x + offset
-        self.SS_glob[Counter, :, self.it - 1] = x_glob
-        self.uSS[Counter, :, self.it - 1] = u
-        if self.Qfun[Counter, self.it - 1] == 0:
-            self.Qfun[Counter, self.it - 1] = self.Qfun[Counter + i - 1, self.it - 1] - 1        
-        self.TimeSS[self.it - 1] = self.TimeSS[self.it - 1] + 1
+        self.TimeSS[self.it-1] = self.TimeSS[self.it-1] + 1
+        Counter = self.TimeSS[self.it-1]
+        self.SS[Counter, :, self.it -1] = x
+        self.SS_glob[Counter, :, self.it -1] = x_glob
+        self.uSS[Counter, :, self.it-1] = u
+        if self.Qfun[Counter, self.it-1] == 0:
+            self.Qfun[Counter, self.it-1] = self.Qfun[Counter + i - 1, self.it-1] - 1 
 
     def update(self, SS, SS_glob, uSS, Qfun, TimeSS, it, LinPoints, LinInput, LapCounter):
         """update controller parameters. This function is useful to transfer information among LMPC controller
@@ -319,6 +317,7 @@ class ControllerLMPC():
         self.LinPoints = LinPoints
         self.LinInput  = LinInput
         self.LapCounter = LapCounter
+        self.zVector = SS[self.N, :, -1]
 
     def oneStepPrediction(self, x, u, UpdateModel=0):
         """Propagate the model one step foreward
