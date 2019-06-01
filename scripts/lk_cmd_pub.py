@@ -54,7 +54,7 @@ class LanekeepingPublisher():
 		self.rate = rospy.Rate(self.rateHz)  ##TODO: Can we run this fast?
 
 		self.simulation_flag = rospy.get_param('simulation_flag')
-
+		self.steering_delay_model=1
 		#Initialize Path object
 		self.path = Path()
 		if not rospy.has_param('mat_waypoints'):
@@ -115,7 +115,7 @@ class LanekeepingPublisher():
 		R = 0*np.zeros((2,2)); dR =  1 * np.array([ 25.0, 1.0]) # Input rate cost u 
 		#R = np.array([[1.0, 0.0],[0.0, 0.0]]); dR =  1 * np.array([ 1.0, 1.0]) # Input rate cost u 
 		dt = 1.0 / self.rateHz; Laps = 30; TimeLMPC = 600
-		Solver = "OSQP"; steeringDelay = 2; idDelay= 0; aConstr = np.array([self.accelMin, self.accelMax]) #min and max acceleration
+		Solver = "OSQP"; steeringDelay = 1; idDelay= 0; aConstr = np.array([self.accelMin, self.accelMax]) #min and max acceleration
 		
 		SysID_Solver = "CVX" 
 		self.halfWidth = rospy.get_param('half_width') #meters - hardcoded for now, can be property of map
@@ -176,7 +176,7 @@ class LanekeepingPublisher():
 		self.Ax    = msg.a
 		self.acc_lon = msg.a_lon
 		self.acc_lat = msg.a_lat
-		self.delta = msg.df/(1.0 + 0.11715 * self.simulation_flag)
+		self.delta = msg.df/(1.0 + 0.1715 * self.simulation_flag*self.steering_delay_model)
 		self.Uy    = msg.vy #msg.vy #switching from Borrelli's notation to Hedrick's
 		self.Ux    = msg.vx #switching from Borrelli's notation to Hedrick's
 		self.r     = msg.wz  #switching from Borrelli's notation to Hedrick's

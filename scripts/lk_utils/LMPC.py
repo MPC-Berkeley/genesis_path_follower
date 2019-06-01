@@ -671,23 +671,23 @@ def _SelectPoints(LMPC, it, x0, numSS_Points):
 
 
     # Modify the cost if the predicion has crossed the finisch line
-    if xPred == []:
-        Sel_Qfun = Qfun[indexSSandQfun, it]
-    elif (np.all((xPred[:, 4] > TrackLength) == False)):
-        Sel_Qfun = Qfun[indexSSandQfun, it]
-    elif  it < currIt - 1:
-        Sel_Qfun = Qfun[indexSSandQfun, it] + Qfun[0, it + 1]
-    else:
-        sPred = xPred[:, 4]
-        predCurrLap = LMPC.N - sum(sPred > TrackLength)
-        currLapTime = LMPC.LapTime
-        Sel_Qfun = Qfun[indexSSandQfun, it] + currLapTime + predCurrLap
+    # if xPred == []:
+    #     Sel_Qfun = Qfun[indexSSandQfun, it]
+    # elif (np.all((xPred[:, 4] > TrackLength) == False)):
+    #     Sel_Qfun = Qfun[indexSSandQfun, it]
+    # elif  it < currIt - 1:
+    #     Sel_Qfun = Qfun[indexSSandQfun, it] + Qfun[0, it + 1]
+    # else:
+    #     sPred = xPred[:, 4]
+    #     predCurrLap = LMPC.N - sum(sPred > TrackLength)
+    #     currLapTime = LMPC.LapTime
+    #     Sel_Qfun = Qfun[indexSSandQfun, it] + currLapTime + predCurrLap
     #pdb.set_trace()
-    rand_ind=random.choice(SS_Points.shape[1],int(np.floor(0.2*SS_Points.shape[1])),replace=False)
-    SS_Points=SS_Points[:,rand_ind]
-    uSS_Points=uSS_Points[:,rand_ind]
-    SS_glob_Points=SS_glob_Points[:,rand_ind]
-    Sel_Qfun=Sel_Qfun[rand_ind]
+    # rand_ind=random.choice(SS_Points.shape[1],int(np.floor(0.2*SS_Points.shape[1])),replace=False)
+    # SS_Points=SS_Points[:,rand_ind]
+    # uSS_Points=uSS_Points[:,rand_ind]
+    # SS_glob_Points=SS_glob_Points[:,rand_ind]
+    # Sel_Qfun=Sel_Qfun[rand_ind]
     return SS_Points, uSS_Points, SS_glob_Points, Sel_Qfun
 
 def _ComputeCost(x, u, TrackLength):
