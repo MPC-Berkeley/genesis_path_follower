@@ -310,6 +310,7 @@ class ControllerLMPC():
 
         self.LinPoints = LinPoints
         self.LinInput  = LinInput
+        self.zVector = SS[self.N, :, -1]
 
     def oneStepPrediction(self, x, u, UpdateModel=0):
         """Propagate the model one step foreward
