@@ -94,9 +94,9 @@ class LanekeepingPublisher():
 		# self.accelMin = 9.8 #negative value implied by LMPC controller
 		self.accelMax = 4.0
 		self.accelMin = 6.0 #negative value implied by LMPC controller
-		self.s_0=2410.0 # Start here on CPG map
-		self.s_f=3120.0 # End LMPC here on CPG map
-		self.s_fr=3200.0 # Restart process here on CPG map
+		self.s_0=170.0 # Start here on CPG map
+		self.s_f=850.0 # End LMPC here on CPG map
+		self.s_fr=950.0 # Restart process here on CPG map
 		self.trackLength_winding=self.s_f # -self.s_0
 		self.trackLength_buffer=self.s_fr-self.s_f
 		self.trackLength=self.trackLength_winding
@@ -130,7 +130,7 @@ class LanekeepingPublisher():
 		sysID_Alternate = 1 
 		numSS_Points = 60; numSS_it = 2; N = 18
 		Qslack  =  2 * 2 * 5 * np.diag([ 1.0, 0.1, 0.1, 0.1, 10, 1, 1.])          # Cost on the slack variable for the terminal constraint
-		Qlane   =  1*np.array([50, 10]) # Quadratic slack lane cost
+		Qlane   =  0.005*np.array([50, 10]) # Quadratic slack lane cost
 
 		Q = np.zeros((self.n,self.n))
 		R = 0*np.zeros((2,2)); dR =  1 * np.array([ 2*25.0, 1.0]) # Input rate cost u 
@@ -482,7 +482,8 @@ class LanekeepingPublisher():
 					
 					
 				else:
-					sys.exit()
+					# sys.exit()
+					print("kill now")
 
 			self.timeCounter = self.timeCounter + 1
 

@@ -68,7 +68,7 @@ def main():
 	# print "Track length is: ", LMPController.trackLength
 
 	currentDirectory = os.getcwd()
-	mat_name = currentDirectory+'/../paths/cpgSmoothMoveAvgK.mat'
+	mat_name = currentDirectory+'/../paths/cpgwinding2.mat'
 	lat0 = 35.04884687
 	lon0 = -118.040313
 	yaw0 = -1.0
