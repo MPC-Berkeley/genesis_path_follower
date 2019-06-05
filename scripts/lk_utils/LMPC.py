@@ -74,7 +74,7 @@ class ControllerLMPC():
         self.OldAccelera = [0.0]*int(1)
 
         self.MaxNumPoint = 80
-        self.itUsedSysID = 3
+        self.itUsedSysID = 2
 
         self.lapSelected = []
 
@@ -314,10 +314,10 @@ class ControllerLMPC():
         self.TimeSS  = TimeSS
         self.it = it
 
-        self.LinPoints = LinPoints
-        self.LinInput  = LinInput
+        self.LinPoints = SS[0:self.N+1,:,it-1]
+        self.LinInput  = uSS[0:self.N,:,it-1]
         self.LapCounter = LapCounter
-        self.zVector = SS[self.N, :, -1]
+        self.zVector = SS[self.N, :, it-1]
 
     def oneStepPrediction(self, x, u, UpdateModel=0):
         """Propagate the model one step foreward
