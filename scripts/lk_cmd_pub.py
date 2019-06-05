@@ -55,7 +55,7 @@ class LanekeepingPublisher():
 		## Configurations and FLAGS
 		
 		self.steering_delay_model=1	
-		self.lapCounterInit = 5
+		self.lapCounterInit = 12
 		self.lapCounter = self.lapCounterInit
 		self.lk_Laps=3
 		self.sinusoidal_input = 0*np.ones(self.lk_Laps).astype(int)
@@ -131,10 +131,10 @@ class LanekeepingPublisher():
 		sysID_Alternate = 1 
 		numSS_Points = 60; numSS_it = 2; N = 18
 		Qslack  =   5 * np.diag([ 1.0, 0.1, 0.1, 0.1, 10, 1, 1.])          # Cost on the slack variable for the terminal constraint
-		Qlane   =  0.005*np.array([50, 10]) # Quadratic slack lane cost
+		Qlane   =  10*2*0.005*np.array([1*50, 10]) # Quadratic slack lane cost
 
 		Q = np.zeros((self.n,self.n))
-		R = 0*np.zeros((2,2)); dR =  1 * np.array([ 2*25.0, 1.0]) # Input rate cost u 
+		R = 0*np.zeros((2,2)); dR =  1 * np.array([ 2*2*2*25.0, 1.0]) # Input rate cost u 
 		#R = np.array([[1.0, 0.0],[0.0, 0.0]]); dR =  1 * np.array([ 1.0, 1.0]) # Input rate cost u 
 		dt = 1.0 / self.rateHz; Laps = 20; TimeLMPC = 1500
 		Solver = "OSQP"; steeringDelay = 0; idDelay= 0; aConstr = np.array([self.accelMin, self.accelMax]) #min and max acceleration
@@ -410,9 +410,9 @@ class LanekeepingPublisher():
 			elif (self.localState.s<=self.s_fr):
 				if self.LMPC_Lap_done==0:
 					self.LMPC_Lap_done=1
-					print(self.lapCounter)
-					print(self.timeCounter)
 					self.LMPC.addTrajectory(self.closedLoopData)
+					print(self.lapCounter)
+					print(self.LMPC.LapCounter[self.lapCounter])
 
 				# desiredErrorArray = np.array([0.0, 1.0, -1.0])
 				# desiredErrorArray = np.array([self.halfWidth, self.halfWidth, -self.halfWidth, -self.halfWidth, 0.])

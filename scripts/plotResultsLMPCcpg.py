@@ -32,7 +32,7 @@ def main():
 
 	
 
-	file_data = open(homedir+'/genesis_data/dClosedLoopDataLMPC5.obj', 'rb')
+	file_data = open(homedir+'/genesis_data/dClosedLoopDataLMPC8.obj', 'rb')
 	# file_data2 = open(homedir+'/genesis_data/ClosedLoopDataLMPC_wo.obj', 'rb')
 	# file_data3 = open(homedir+'/genesis_data/ClosedLoopDataLMPC_sinmeas.obj', 'rb')
 	# file_data4 = open(homedir+'/genesis_data/ClosedLoopDataLMPC_n14a.obj', 'rb')
@@ -68,7 +68,7 @@ def main():
 	# print "Track length is: ", LMPController.trackLength
 
 	currentDirectory = os.getcwd()
-	mat_name = currentDirectory+'/../paths/cpgwinding2.mat'
+	mat_name = currentDirectory+'/../paths/cpgwinding3.mat'
 	lat0 = 35.04884687
 	lon0 = -118.040313
 	yaw0 = -1.0
@@ -78,24 +78,23 @@ def main():
 
 	# Plot Lap Time
 	plt.figure()
-	plt.plot([i*LMPController.dt for i in LMPController.LapCounter[1:LMPController.it]], '-o', label="Lap Time")
+	plt.plot([i*LMPController.dt for i in LMPController.LapCounter[0:LMPController.it]], '-o', label="Lap Time")
 	plt.legend()
 	plt.show()
 	pdb.set_trace()
 	# ## Plot First initial learning
 	# LapToPlotLearningProcess = [25,27,28]
 	# LapToPlotLearningProcess = [4,5,6,7,8]
-	LapToPlotLearningProcess= [6]
-	# LapToPlotLearningProcess = [15,16]#[0, 2, 3, 4, 5, 7]
+	LapToPlotLearningProcess= [8,9,10,11]	# LapToPlotLearningProcess = [15,16]#[0, 2, 3, 4, 5, 7]
 
-	# plotClosedLoopLMPC(LMPController, grt, LapToPlotLearningProcess)
+	plotClosedLoopLMPC(LMPController, grt, LapToPlotLearningProcess)
 	# plotClosedLoopLMPC(LMPController2, grt, LapToPlotLearningProcess)
 	# plotClosedLoopLMPC(LMPController3, grt, LapToPlotLearningProcess)
 	plotMeasuredAndAppliedSteering(LMPController, LapToPlotLearningProcess)
-	plotMeasuredAndAppliedaccel(LMPController, LapToPlotLearningProcess)
+	# plotMeasuredAndAppliedaccel(LMPController, LapToPlotLearningProcess)
 	# plotOneStepPreditionError(LMPController, LMPCOpenLoopData, LapToPlotLearningProcess)
 
-	# plotClosedLoopColorLMPC(LMPController, grt, LapToPlotLearningProcess)
+	plotClosedLoopColorLMPC(LMPController, grt, LapToPlotLearningProcess)
 	# plt.show()
 	# plotCompareSteering(LMPController, LMPController3, LapCompare)#LMPController3, LapCompare)
 	# CompareStates(LMPController,LMPController2,LMPController3, LMPController4, LapCompare)
@@ -109,7 +108,7 @@ def main():
 	# LapToPlot = [16, 18, 20, 25, 30, 35]
 	# plotClosedLoopLMPC(LMPController, grt, LapToPlot)
 	# plotMeasuredAndAppliedSteering(LMPController, LapToPlotLearningProcess)
-	# plotOneStepPreditionError(LMPController, LMPCOpenLoopData, LapToPlotLearningProcess)
+	plotOneStepPreditionError(LMPController, LMPCOpenLoopData, LapToPlotLearningProcess)
 	# plotClosedLoopColorLMPC(LMPController, grt, LapToPlot)
 	plt.show()
 
