@@ -32,7 +32,7 @@ def main():
 
 	
 
-	file_data = open(homedir+'/genesis_data/dClosedLoopDataLMPC7.obj', 'rb')
+	file_data = open(homedir+'/genesis_data/dClosedLoopDataLMPC5.obj', 'rb')
 	# file_data2 = open(homedir+'/genesis_data/ClosedLoopDataLMPC_wo.obj', 'rb')
 	# file_data3 = open(homedir+'/genesis_data/ClosedLoopDataLMPC_sinmeas.obj', 'rb')
 	# file_data4 = open(homedir+'/genesis_data/ClosedLoopDataLMPC_n14a.obj', 'rb')
@@ -85,30 +85,31 @@ def main():
 	# ## Plot First initial learning
 	# LapToPlotLearningProcess = [25,27,28]
 	# LapToPlotLearningProcess = [4,5,6,7,8]
-	LapToPlotLearningProcess= [4,5,7,8, 9]
+	LapToPlotLearningProcess= [6]
 	# LapToPlotLearningProcess = [15,16]#[0, 2, 3, 4, 5, 7]
 
-	plotClosedLoopLMPC(LMPController, grt, LapToPlotLearningProcess)
+	# plotClosedLoopLMPC(LMPController, grt, LapToPlotLearningProcess)
 	# plotClosedLoopLMPC(LMPController2, grt, LapToPlotLearningProcess)
 	# plotClosedLoopLMPC(LMPController3, grt, LapToPlotLearningProcess)
-	# plotMeasuredAndAppliedSteering(LMPController, LapToPlotLearningProcess)
+	plotMeasuredAndAppliedSteering(LMPController, LapToPlotLearningProcess)
+	plotMeasuredAndAppliedaccel(LMPController, LapToPlotLearningProcess)
 	# plotOneStepPreditionError(LMPController, LMPCOpenLoopData, LapToPlotLearningProcess)
 
-	plotClosedLoopColorLMPC(LMPController, grt, LapToPlotLearningProcess)
+	# plotClosedLoopColorLMPC(LMPController, grt, LapToPlotLearningProcess)
 	# plt.show()
 	# plotCompareSteering(LMPController, LMPController3, LapCompare)#LMPController3, LapCompare)
 	# CompareStates(LMPController,LMPController2,LMPController3, LMPController4, LapCompare)
 	# CompareStates(LMPController,LMPController2,LMPController3, LapCompare)
-	plotA(LMPController, LapToPlotLearningProcess)
-	plotB(LMPController, LapToPlotLearningProcess)	
+	# plotA(LMPController, LapToPlotLearningProcess)
+	# plotB(LMPController, LapToPlotLearningProcess)	
 
 	# plotA(LMPController, [4])
 	
 	# Now convergence
 	# LapToPlot = [16, 18, 20, 25, 30, 35]
 	# plotClosedLoopLMPC(LMPController, grt, LapToPlot)
-	# plotMeasuredAndAppliedSteering(LMPController, LapToPlot)
-	plotOneStepPreditionError(LMPController, LMPCOpenLoopData, LapToPlotLearningProcess)
+	# plotMeasuredAndAppliedSteering(LMPController, LapToPlotLearningProcess)
+	# plotOneStepPreditionError(LMPController, LMPCOpenLoopData, LapToPlotLearningProcess)
 	# plotClosedLoopColorLMPC(LMPController, grt, LapToPlot)
 	plt.show()
 
@@ -781,6 +782,24 @@ def plotMeasuredAndAppliedSteering(LMPController, LapToPlot):
 		counter += 1
 	plt.legend()
 	plt.ylabel('Steering [rad]')
+
+def plotMeasuredAndAppliedaccel(LMPController, LapToPlot):
+	plotColors = ['b','g','r','c','y','k','m','b','g','r','c','y','k','m']
+
+	SS_glob = LMPController.SS_glob
+	LapCounter  = LMPController.LapCounter
+	SS      = LMPController.SS
+	uSS     = LMPController.uSS
+
+	plt.figure()
+	counter = 0
+	for i in LapToPlot:
+		time=np.arange(0,SS[0:LapCounter[i]-1, 4, i].shape[0])
+		plt.plot(time, uSS[0:LapCounter[i] - 1, 1, i], '-o', color=plotColors[counter], label="commanded accel")
+		plt.plot(time, LMPController.accel_lon[0:LapCounter[i] - 1, 0, i], '--*', color=plotColors[counter], label="meausred accel")
+		counter += 1
+	plt.legend()
+	plt.ylabel('accel [m/s^2]')
 
 
 def plotCompareSteering(LMPController, LMPController2, LapCompare):#LMPController3, LapCompare):
