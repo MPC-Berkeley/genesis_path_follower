@@ -55,13 +55,13 @@ class LanekeepingPublisher():
 		## Configurations and FLAGS
 		
 		self.steering_delay_model=1	
-		self.lapCounterInit = 12
+		self.lapCounterInit = 18
 		self.lapCounter = self.lapCounterInit
 		self.lk_Laps=3
 		self.sinusoidal_input = 0*np.ones(self.lk_Laps).astype(int)
 		# sinusoidal_laps
 		self.sinusoidal_input[0]=1
-		self.sinusoidal_input[1]=1
+		self.sinusoidal_input[1]=0
 		self.save_flag=1
 		# self.sinusoidal_input[0]=1
 		self.lk_Laps_load=2  # no. of lk laps to load minus 1
@@ -131,12 +131,12 @@ class LanekeepingPublisher():
 		sysID_Alternate = 1 
 		numSS_Points = 60; numSS_it = 2; N = 18
 		Qslack  =   5 * np.diag([ 1.0, 0.1, 0.1, 0.1, 10, 1, 1.])          # Cost on the slack variable for the terminal constraint
-		Qlane   =  10*2*0.005*np.array([1*50, 10]) # Quadratic slack lane cost
-
+		Qlane   =   10*2*0.005*np.array([1*50, 10]) # Quadratic slack lane cost  1*np.array([2*50, 0.0*10])
+		# 10*2*0.005*np.array([1*50, 10])
 		Q = np.zeros((self.n,self.n))
-		R = 0*np.zeros((2,2)); dR =  1 * np.array([ 2*2*2*25.0, 1.0]) # Input rate cost u 
+		R = 0*np.zeros((2,2)); dR =  1 * np.array([ 2*2*2*25.0, 2.0*1.0]) # Input rate cost u 
 		#R = np.array([[1.0, 0.0],[0.0, 0.0]]); dR =  1 * np.array([ 1.0, 1.0]) # Input rate cost u 
-		dt = 1.0 / self.rateHz; Laps = 20; TimeLMPC = 1500
+		dt = 1.0 / self.rateHz; Laps = 35; TimeLMPC = 1500
 		Solver = "OSQP"; steeringDelay = 0; idDelay= 0; aConstr = np.array([self.accelMin, self.accelMax]) #min and max acceleration
 		
 		SysID_Solver = "CVX" 
@@ -286,7 +286,7 @@ class LanekeepingPublisher():
 			#check lap counter to see if lap elapsed
 			if (self.localState.s < self.s_0):
 
-				desiredErrorArray = np.resize(np.array([0.0, 1.0, 1.0]),self.lk_Laps)
+				desiredErrorArray = np.resize(np.array([0.0, 0.0, 0.0]),self.lk_Laps)
 				# desiredErrorArray = np.array([self.halfWidth, self.halfWidth, -self.halfWidth, -self.halfWidth, 0.])
 				desiredError = 0.0
 				self.controller.updateInput(self.localState, self.controlInput, desiredError)
@@ -310,7 +310,7 @@ class LanekeepingPublisher():
 			elif (self.localState.s>= self.s_0) and (self.localState.s<self.s_f):
 
 				if  self.lapCounter<self.lk_Laps:
-					desiredErrorArray = np.resize(np.array([0.0, 1.0, 1.0]),self.lk_Laps)
+					desiredErrorArray = np.resize(np.array([0.0, 0.0, 0.0]),self.lk_Laps)
 					# desiredErrorArray = np.array([self.halfWidth, self.halfWidth, -self.halfWidth, -self.halfWidth, 0.])
 					desiredError = desiredErrorArray[self.lapCounter]
 					self.controller.updateInput(self.localState, self.controlInput, desiredError)

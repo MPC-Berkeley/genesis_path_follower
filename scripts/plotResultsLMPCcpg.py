@@ -32,7 +32,7 @@ def main():
 
 	
 
-	file_data = open(homedir+'/genesis_data/dClosedLoopDataLMPC8.obj', 'rb')
+	file_data = open(homedir+'/genesis_data/dClosedLoopDataLMPC11.obj', 'rb')
 	# file_data2 = open(homedir+'/genesis_data/ClosedLoopDataLMPC_wo.obj', 'rb')
 	# file_data3 = open(homedir+'/genesis_data/ClosedLoopDataLMPC_sinmeas.obj', 'rb')
 	# file_data4 = open(homedir+'/genesis_data/ClosedLoopDataLMPC_n14a.obj', 'rb')
@@ -85,7 +85,7 @@ def main():
 	# ## Plot First initial learning
 	# LapToPlotLearningProcess = [25,27,28]
 	# LapToPlotLearningProcess = [4,5,6,7,8]
-	LapToPlotLearningProcess= [8,9,10,11]	# LapToPlotLearningProcess = [15,16]#[0, 2, 3, 4, 5, 7]
+	LapToPlotLearningProcess= [11,12,13,14]	# LapToPlotLearningProcess = [15,16]#[0, 2, 3, 4, 5, 7]
 
 	plotClosedLoopLMPC(LMPController, grt, LapToPlotLearningProcess)
 	# plotClosedLoopLMPC(LMPController2, grt, LapToPlotLearningProcess)

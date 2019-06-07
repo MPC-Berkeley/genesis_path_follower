@@ -73,7 +73,7 @@ class ControllerLMPC():
         self.OldSteering = [0.0]*int(1 + steeringDelay)
         self.OldAccelera = [0.0]*int(1)
 
-        self.MaxNumPoint = 80
+        self.MaxNumPoint = 100
         self.itUsedSysID = 2
 
         self.lapSelected = []
@@ -307,11 +307,12 @@ class ControllerLMPC():
             LinPoints: points used in the linearization and system identification procedure
             LinInput: inputs associated with the points used in the linearization and system identification procedure
         """
-        self.SS  = SS
-        self.SS_glob= SS_glob
-        self.uSS = uSS
-        self.Qfun  = Qfun
-        self.TimeSS  = TimeSS
+        Laps=SS.shape[2]
+        self.SS[:,:,0:Laps]  = SS
+        self.SS_glob[:,:,0:Laps]= SS_glob
+        self.uSS[:,:,0:Laps] = uSS
+        self.Qfun[:,0:Laps]  = Qfun
+        self.TimeSS[0:Laps]  = TimeSS
         self.it = it
 
         self.LinPoints = SS[0:self.N+1,:,it-1]
@@ -863,7 +864,7 @@ def RegressionAndLinearization(ControllerLMPC, i):
     time_localreg=datetime.datetime.now()
     # Compute Index to use
     h = 2 * 5
-    lamb = 10000000*0.00000001
+    lamb = 0.1*10000000*0.00000001
     stateFeatures = [0, 1, 2]
     ConsiderInput = 1
 
