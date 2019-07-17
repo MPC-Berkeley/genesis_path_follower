@@ -13,8 +13,8 @@ class CrosswalkController():
 	def __init__(self):
 		rospy.init_node('crosswalk_controller', anonymous = True)
 		rospy.Subscriber('vehicle_state',vehicle_state, self.parseVehicleState, queue_size = 2)
-		rospy.Subscriber('pedestrian_state',ped_state, self.parsePedestrianState, queue_size = 2)
-		self.plot_pub  = rospy.Publisher('plotting_state',plotting_state,queue_size = 1)
+		rospy.Subscriber("/ped_state",ped_state, self.parsePedestrianState, queue_size = 2)
+		self.plot_pub  = rospy.Publisher("/vehicle/plotting_state",plotting_state,queue_size = 1)
 		self.accel_pub = rospy.Publisher("/control/accel", Float32, queue_size =2)
 
 		self.rate = rospy.get_param('rate')
@@ -48,6 +48,7 @@ class CrosswalkController():
 		self.dxP = 0. 
 		self.posY = 0. #Y position of pedestrian
 		self.time = 0.0
+		self.pedStart = "right"
 
 		#initialize acceleration to send to vehicle
 		self.currAx_mps2 = 0. #commanded accel

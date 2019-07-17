@@ -48,12 +48,17 @@ class LidarBoxSort():
 		arrX = np.nonzero(np.logical_and(x >= -self.xBounds, x <= self.xBounds))
 
 		possiblePedestrian = np.intersect1d(arrX, arrY)
+
+		#print(possiblePedestrian)
 		if len(possiblePedestrian) > 1:
 			print("Warning - more than 1 pedestrian found")
 
+		if len(possiblePedestrian) > 0:
+			self.posX = x[possiblePedestrian[0]].squeeze()
+			self.posY = y[possiblePedestrian[0]].squeeze()			
+
 		# print([x[possiblePedestrian], y[possiblePedestrian]])
-		self.posX = x[possiblePedestrian[0]].squeeze()
-		self.posY = y[possiblePedestrian[0]].squeeze()
+
 
 	def getVelX(self):
 		velX = (self.posX - self.prevPosX) / self.rate #simple numerical differentation for now

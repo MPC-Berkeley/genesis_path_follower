@@ -9,6 +9,7 @@ from lk_utils.path_lib import *
 from lk_utils.vehicle_lib import *
 from lk_utils.velocityprofiles import *
 from lk_utils.sim_lib import *
+import utils
 import matplotlib.pyplot as plt
 import numpy as np
 import math
@@ -83,8 +84,8 @@ class LanekeepingPublisher():
 		
 		self.roadFraction = rospy.get_param('roadFraction') #defines position of crosswalk
 		self.roadLength   = rospy.get_param('roadLength')   #meters
-		self.road = Road(length = self.roadLength)
-		self.crosswalk = Crosswalk(self.road, roadFraction = self.roadFraction) 
+		self.road = utils.Road(length = self.roadLength)
+		self.crosswalk = utils.Crosswalk(self.road, roadFraction = self.roadFraction) 
 
 
 		#Enable steering

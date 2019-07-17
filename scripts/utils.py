@@ -137,7 +137,7 @@ class Vehicle:
         pedDist2Vehicle = abs(vehicleX - xP)
 
 
-        tc = dist2crosswalk  / dxV
+        tc = dist2crosswalk  / (dxV + .0000000000001)
         tp = pedDist2Vehicle / max(abs(dxP), self.maxPedestrianVelocity)
 
         return tc - tp
