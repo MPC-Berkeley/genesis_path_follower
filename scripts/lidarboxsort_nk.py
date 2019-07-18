@@ -25,7 +25,9 @@ class LidarBoxSort():
 		self.yBounds = 5.0; #defines search region for Euclidean clusters
 		self.xBounds = 5.0; #defines search region for Euclidean clusters
 		self.rate = rospy.get_param('rate')
-		self.r = rospy.Rate(self.rate)		
+		self.r = rospy.Rate(self.rate)	
+		self.t0 = 0.;
+		self.t1 = 0.;	
 
 		self.pub_loop()
 
@@ -55,20 +57,39 @@ class LidarBoxSort():
 
 		if len(possiblePedestrian) > 0:
 			self.posX = x[possiblePedestrian[0]].squeeze()
-			self.posY = y[possiblePedestrian[0]].squeeze()			
+			self.posY = y[possiblePedestrian[0]].squeeze()
+
+		self.t0 = self.t1
+		self.t1 = rospy.Time.now().to_sec()
+
 
 		# print([x[possiblePedestrian], y[possiblePedestrian]])
 
 
 	def getVelX(self):
-		velX = (self.posX - self.prevPosX) / self.rate #simple numerical differentation for now
+
+
+		dt = self.t1 - self.t0
+
+		if dt > 0:
+			velX = (self.posX - self.prevPosX) / dt #simple numerical differentation for now
+		else:
+			velX = 0
+
+
 		self.prevPosX = self.posX
 
 		return velX
 
 
 	def getVelY(self):
-		velY = (self.posY - self.prevPosY) / self.rate #simple numerical differentation for now
+		dt = self.t1 - self.t0
+
+		if dt > 0:
+			velY = (self.posY - self.prevPosY) / dt #simple numerical differentation for now
+		else:
+			velY = 0
+
 		self.prevPosY = self.posY 
 
 		return velY
