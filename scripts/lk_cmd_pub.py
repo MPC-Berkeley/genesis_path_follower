@@ -102,9 +102,9 @@ class LanekeepingPublisher():
 		self.Ux = msg.v
 		self.Ax = msg.a
 		self.delta =  msg.df
-		self.Uy = msg.vy #switching from Borrelli's notation to Hedrick's
-		self.Ux = msg.vx #switching from Borrelli's notation to Hedrick's
-		self.r = msg.wz  #switching from Borrelli's notation to Hedrick's
+		#self.Uy = msg.vy #switching from Borrelli's notation to Hedrick's
+		#self.Ux = msg.vx #switching from Borrelli's notation to Hedrick's
+		#self.r = msg.wz  #switching from Borrelli's notation to Hedrick's
 
 	def pub_loop(self):
 		#Start testing!
