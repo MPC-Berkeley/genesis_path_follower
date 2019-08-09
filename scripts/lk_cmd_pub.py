@@ -9,6 +9,7 @@ from lk_utils.path_lib import *
 from lk_utils.vehicle_lib import *
 from lk_utils.velocityprofiles import *
 from lk_utils.sim_lib import *
+import utils
 import matplotlib.pyplot as plt
 import numpy as np
 import math
@@ -81,6 +82,11 @@ class LanekeepingPublisher():
 		#Initialize map matching object - use closest style
 		self.mapMatch = MapMatch(self.path, "embed")
 		
+		self.roadFraction = rospy.get_param('roadFraction') #defines position of crosswalk
+		self.roadLength   = rospy.get_param('roadLength')   #meters
+		self.road = utils.Road(length = self.roadLength)
+		self.crosswalk = utils.Crosswalk(self.road, roadFraction = self.roadFraction) 
+
 
 		#Enable steering
 		self.enable_steer_pub.publish(0) # enable steering control.
@@ -96,9 +102,9 @@ class LanekeepingPublisher():
 		self.Ux = msg.v
 		self.Ax = msg.a
 		self.delta =  msg.df
-		self.Uy = msg.vy #switching from Borrelli's notation to Hedrick's
-		self.Ux = msg.vx #switching from Borrelli's notation to Hedrick's
-		self.r = msg.wz  #switching from Borrelli's notation to Hedrick's
+		#self.Uy = msg.vy #switching from Borrelli's notation to Hedrick's
+		#self.Ux = msg.vx #switching from Borrelli's notation to Hedrick's
+		#self.r = msg.wz  #switching from Borrelli's notation to Hedrick's
 
 	def pub_loop(self):
 		#Start testing!
@@ -135,6 +141,7 @@ class LanekeepingPublisher():
 			veh_state = vehicle_state()
 			veh_state.xV = self.localState.s
 			veh_state.dxV = self.localState.Ux
+			veh_state.distance_m = self.crosswalk.start[1] - self.localState.s
 
 			self.vehiclestate_pub.publish(veh_state)
 			self.rate.sleep()

@@ -213,6 +213,8 @@ class Vehicle:
         self.crosswalk = crosswalk
         self.road = road
         self.speedTrajectory = Trajectory(self.accelLim, self.jerkLimit, self.v0)
+        self.vThreshold = 0.5 # m/s
+
 
         self.brakeDistance = 0. #to be updated in planning step
         self.s0 = 0 #to be updated for emergency braking or normal braking states
@@ -242,7 +244,7 @@ class Vehicle:
         pedDist2Vehicle = abs(vehicleX - xP)
 
 
-        tc = dist2crosswalk  / dxV
+        tc = dist2crosswalk  / (dxV + .0000000000001)
         tp = pedDist2Vehicle / max(abs(dxP), self.maxPedestrianVelocity)
 
         return tc - tp
@@ -258,6 +260,8 @@ class Vehicle:
             print("Error - must select left or right")    
 
     def getAccelStateMachine(self, xP, dxP, xV, dxV, t, pedStart):
+        print self.state
+
         if self.state == "driving":
             dxVdes = self.v0
             accel = self.kSpeed*(dxVdes - dxV)
@@ -266,7 +270,7 @@ class Vehicle:
             self.eBrakeDistance = dxV**2 / (2 * self.brakeEmergencyLim)
             dist2crosswalk = self.xStop - xV
 
-            if abs(dxP) > 0 and xV < self.xStop and not self.checkTransition(xP, xV, pedStart):
+            if abs(dxP) > self.vThreshold and xV < self.xStop and not self.checkTransition(xP, xV, pedStart):
  
                 if self.calculateTimeAdvantage(xP, dxP, xV, dxV) < -self.maxTimeAdvantage:
                     pass #continue driving at current speed because there is no need to stop in practice
