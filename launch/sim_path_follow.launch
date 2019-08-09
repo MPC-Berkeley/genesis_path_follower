@@ -28,7 +28,7 @@
   <param name="vehicle/roadFraction" type="double" value="0.7" />
   <param name="vehicle/roadLength" type="double" value="100.0" />
   <param name="vehicle/v0" type="double" value="7.0" />
-  <param name="vehicle/gapMu" type="double" value="7.0" />
+  <param name="vehicle/gapMu" type="double" value="4.0" />
   <param name="vehicle/rate" type="double" value="10.0" />
   <param name="vehicle/gapVariance" type="double" value="0" />
   <param name="vehicle/pedStart"    type="string" value="right" />

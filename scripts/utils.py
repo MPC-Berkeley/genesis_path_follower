@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
+from scipy.optimize import fsolve
 from matplotlib import animation
 import pdb
 
@@ -88,6 +89,107 @@ class Sidewalk:
         self.ax.add_patch(rect1)  
         self.ax.add_patch(rect2)      
 
+class Trajectory:
+    def __init__(self, A, J, v0):
+        self.N = 1000 #number of points in trajectory
+        self.s = np.zeros((self.N,1))
+        self.UxDesired = np.zeros(self.s.size)
+        self.AxDesired = np.zeros(self.s.size)
+        self.J = J #desired jerk limit in m/s^3
+        self.A = A #desired maximum decel in m/s
+        self.v0 = v0
+
+    def getAxUx(self, dist2crosswalk):
+        currS = -dist2crosswalk
+        UxDes = np.interp(currS, self.s, self.UxDesired)
+        AxDes = np.interp(currS, self.s, self.AxDesired)
+        return AxDes, UxDes
+
+
+    def getAccel(self, t, t1, t2, t3, t4, J, A):
+        accel = np.zeros(t.size)
+
+        for i in range(len(t)):
+            if t[i] < t1:
+                accel[i] = 0
+            elif t[i] < t2:
+                accel[i] = -J*(t[i] - t1)
+            elif t[i] < t3:
+                accel[i] = -A
+            elif t[i] < t4:
+                accel[i] = -A + J*(t[i] - t3)
+            else:
+                accel[i] = 0
+
+        return accel
+
+    ## function for fsolve
+    def trapezoidalFunc(self, x, s0):
+        t1 = x[0]
+        t3 = x[1]
+        t2 = t1 + self.A / self.J
+        t4 = t3 + self.A / self.J
+        t = np.linspace(0, t4, self.N)
+
+        accel = self.getAccel(t, t1, t2, t3, t4, self.J, self.A)
+        velocity = np.zeros(accel.size)
+        position = np.zeros(accel.size)
+
+        velocity[0] = self.v0
+        position[0] = s0
+
+        dt = t[1] - t[0]
+
+        for i in range(0, len(t)-1):
+            velocity[i+1] = velocity[i] + dt * accel[i]
+            if velocity[i+1] < 0:
+                velocity[i+1] = 0
+
+            position[i+1] = position[i] + dt * velocity[i]
+
+
+        vF = velocity[-1]
+        sF = position[-1]
+
+        F = np.array([vF,sF])
+
+        return F   
+
+    def initialize(self, dist2crosswalk):
+        args = (-dist2crosswalk)
+        x0 = np.array([0,3])
+        x = fsolve(self.trapezoidalFunc, x0, args)
+        t1 = x[0]
+        t2 = t1 + self.A / self.J
+        t3 = x[1]
+        t4 = t3 + self.A / self.J
+
+        t = np.linspace(0, t4, self.N)
+        dt = t[1] - t[0]
+        self.AxDesired = self.getAccel(t, t1, t2, t3, t4, self.J, self.A)
+
+        print(t1)
+        print(t3)
+
+        velocity = np.zeros(self.AxDesired.size)
+        velocity[0] = self.v0
+        position = np.zeros(velocity.size)
+        position[0] = -dist2crosswalk
+
+        for i in range(0, len(t)-1):
+            velocity[i+1] = velocity[i] + dt * self.AxDesired[i]
+            if velocity[i+1] < 0:
+                velocity[i+1] = 0
+
+            position[i+1] = position[i] + dt * velocity[i]
+
+        self.UxDesired = velocity
+        self.s = position
+
+        # plt.figure()
+        # plt.plot(self.s, self.UxDesired);
+        # plt.show()
+
 
 class Vehicle:
     #cY = y coordinate of crosswalk
@@ -105,10 +207,12 @@ class Vehicle:
         self.maxPedestrianVelocity = 1.5 #be conservative
         self.maxTimeAdvantage = 4.0
         self.brakeDelay = 0.0 #estimated brake delay time, in seconds
-        self.maxAccel = 3.0
+        self.maxAccel = 3.0  #m/s2
+        self.jerkLimit = 1.5 #m/s3
         self.sidewalk = sidewalk
         self.crosswalk = crosswalk
         self.road = road
+        self.speedTrajectory = Trajectory(self.accelLim, self.jerkLimit, self.v0)
 
         self.brakeDistance = 0. #to be updated in planning step
         self.s0 = 0 #to be updated for emergency braking or normal braking states
@@ -169,6 +273,7 @@ class Vehicle:
 
                 elif dist2crosswalk > self.brakeDistance:
                     self.state = "braking"
+                    self.speedTrajectory.initialize(dist2crosswalk)
 
                 elif (dist2crosswalk < self.brakeDistance) and (dist2crosswalk > self.eBrakeDistance):
                     self.state = "emergencyBraking"
@@ -208,24 +313,7 @@ class Vehicle:
 
             #don't brake until we need to
             dist2crosswalk = self.xStop - xV
-            
-            #don't need to brake yet
-
-            #account for brake delay
-            if dist2crosswalk > self.brakeDistance + self.brakeDelay * self.v0:
-                accelDesired = 0.
-                dxVdes = self.v0
-
-            #brake at constant deceleration    
-            else:
-
-                #only set once
-                if self.s0 == 0:
-                    self.s0 = xV
-
-                accelDesired = -self.accelLim
-                dxVdes = np.sqrt(max(0, -2*self.accelLim*xV + 2*self.accelLim*self.s0 + self.v0**2))
-                print(xV - self.xStop)
+            accelDesired, dxVdes = self.speedTrajectory.getAxUx(dist2crosswalk)
 
             accel = accelDesired + self.kSpeed*(dxVdes - dxV)
             state = 1
