@@ -4,7 +4,7 @@ from genesis_path_follower.msg import state_est
 from std_msgs.msg import Float32
 from std_msgs.msg import UInt8
 from lk_utils.controllers import *
-from lk_utils.path_lib import *
+from lk_utils.paths import *
 from lk_utils.vehicle_lib import *
 from lk_utils.velocityprofiles import *
 from lk_utils.sim_lib import *

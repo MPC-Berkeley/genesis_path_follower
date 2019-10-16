@@ -4,6 +4,13 @@ import rosbag
 import numpy as np
 import pdb
 import math
+import sys
+
+# Modified to include Nitin's path extraction code (from Wolverine repo).
+import os
+scripts_dir = os.path.dirname( os.path.dirname(os.path.abspath(__file__)) )
+sys.path.insert(0, scripts_dir)
+from lk_utils.paths import Path
 
 ''' Code to convert rosbag into a matfile for further plotting/analysis. 
 	This code should be able to handle data recorded using either the state_est 
@@ -130,6 +137,11 @@ def parse_rosbag(mode, in_rosbag, out_mat):
 	rdict['a_lat'] = se_lat_accel
 	rdict['a_long'] = se_long_accel
 	rdict['df']  = df
+
+	# Adding the entries needed for lk_utils control code.
+	p = Path()
+	p.genFromEN(np.array(x), np.array(y), isOpen = True, KNOT_DISTANCE = 20)
+	rdict['world'] = p.toDict()
 				
 	sio.savemat(out_mat, rdict)
 

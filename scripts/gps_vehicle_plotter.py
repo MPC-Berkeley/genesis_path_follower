@@ -32,16 +32,16 @@ class PlotGPSTrajectory():
 
 		grt = r.GPSRefTrajectory(mat_filename=mat_name, LAT0=lat0, LON0=lon0, YAW0=yaw0) # only 1 should be valid.
 
-		#Load road edge data
-		boundFile = rospy.get_param('road_edges')
-		bounds = sio.loadmat(boundFile)
-
-
+		#Load road edge data ((if it is given)
+		use_road_edges = False
+		if rospy.has_param('road_edges'):
+			boundFile = rospy.get_param('road_edges')
+			bounds = sio.loadmat(boundFile)
+			self.edges_in = bounds["in"]
+			self.edges_out = bounds["out"]
+			use_road_edges = True
 
 		# Set up Data
-		self.edges_in = bounds["in"]
-		self.edges_out = bounds["out"]
-
 		self.x_global_traj = grt.get_Xs()
 		self.y_global_traj = grt.get_Ys()
 		self.x_ref_traj = self.x_global_traj[0]; self.y_ref_traj = self.y_global_traj[0]
@@ -60,10 +60,6 @@ class PlotGPSTrajectory():
 		self.ax = plt.gca()		
 		plt.ion()
 
-		# Road Edges
-		self.e1 = self.ax.plot(self.edges_in[:,0], self.edges_in[:,1])
-		self.e2 = self.ax.plot(self.edges_out[:,0], self.edges_out[:,1])
-		
 		# Trajectory 
 		self.l1, = self.ax.plot(self.x_global_traj, self.y_global_traj, 'k') 			
 		self.l2, = self.ax.plot(self.x_ref_traj,    self.y_ref_traj, 'rx')	
@@ -89,8 +85,6 @@ class PlotGPSTrajectory():
 		# Zoomed Inset Plot: Based off tutorial/code here: http://akuederle.com/matplotlib-zoomed-up-inset
 		self.ax_zoom = zoomed_inset_axes(self.ax, 5, loc=2) # axis, zoom_factor, location (2 = upper left)
 		self.window = 25 # m
-		self.ze1 =  self.ax_zoom.plot(self.edges_in[:,0], self.edges_in[:,1], 'k--')
-		self.ze2 =  self.ax_zoom.plot(self.edges_out[:,0], self.edges_out[:,1], 'k--')
 		self.zl1, = self.ax_zoom.plot(self.x_global_traj, self.y_global_traj, 'k') 			
 		self.zl2, = self.ax_zoom.plot(self.x_ref_traj,    self.y_ref_traj, 'rx')	
 		self.zl3, = self.ax_zoom.plot(self.x_mpc_traj, self.y_mpc_traj, 'g*')
@@ -107,8 +101,14 @@ class PlotGPSTrajectory():
 		self.ax_zoom.set_ylim(self.y_vehicle - self.window, self.y_vehicle + self.window)
 		plt.yticks(visible=False)
 		plt.xticks(visible=False)
-		
 
+		# Road Edges (if given)
+		if use_road_edges:
+			self.e1, = self.ax.plot(self.edges_in[:,0], self.edges_in[:,1])
+			self.e2, = self.ax.plot(self.edges_out[:,0], self.edges_out[:,1])
+			self.ze1, =  self.ax_zoom.plot(self.edges_in[:,0], self.edges_in[:,1], 'k--')
+			self.ze2, =  self.ax_zoom.plot(self.edges_out[:,0], self.edges_out[:,1], 'k--')
+		
 		rospy.init_node('vehicle_plotter', anonymous=True)
 		rospy.Subscriber('state_est', state_est, self.update_state, queue_size=1)
 		rospy.Subscriber('mpc_path', mpc_path, self.update_mpc_trajectory, queue_size=1)
