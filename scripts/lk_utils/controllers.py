@@ -1,7 +1,7 @@
 import numpy as np
 import tiremodel_lib as tm
 import vehicle_lib
-import path_lib
+#import path_lib
 import math
 
 
@@ -13,8 +13,8 @@ class LaneKeepingController():
         self.path = path
         self.vehicle = vehicle
         self.profile = profile
-        self.xLA = 14.2    #lookahead distance, meters
-        self.kLK = 0.0538  #proportional gain , rad / meter
+        self.xLA = 11.1    #lookahead distance, meters
+        self.kLK = 0.055  #proportional gain , rad / meter
         self.kSpeed = 6000.0 #Speed proportional gain - N / (m/s)
         self.alphaFlim = 7.0 * np.pi / 180 #steering limits for feedforward controller
         self.alphaRlim = 5.0 * np.pi / 180 #steering limits for feedforward controller
@@ -37,7 +37,7 @@ class LaneKeepingController():
         self.alphaRtable = np.flip(alphaRtable, 0)
         self.FyFtable = np.flip(FyFtable, 0) 
         self.FyRtable = np.flip(FyRtable, 0)
-        
+	#self.cnt = 0
 
 
     def updateInput(self, localState, controlInput):
@@ -100,7 +100,10 @@ def _lanekeeping(sim,localState):
     sTable = sim.path.s
     kTable = sim.path.curvature
 
-    K = np.interp(localState.s, sTable, kTable) #run interp every time - this is slow, but we may be able to get away with    
+    K = np.interp(localState.s, sTable, kTable) #run interp every time - this is slow, but we may be able to get away with
+    #if(abs(K)>0.01):
+    #	print(str(sim.cnt)+'] K: '+str(round(K,3))+' S: '+str(localState.s))
+    #sim.cnt = sim.cnt + 1 
     deltaFFW, betaFFW, FyFdes, FyRdes, alphaFdes, alphaRdes = _getDeltaFFW(sim, localState, K)
     deltaFB = _getDeltaFB(sim, localState, betaFFW)
     delta = deltaFFW + deltaFB

@@ -140,7 +140,7 @@ def parse_rosbag(mode, in_rosbag, out_mat):
 
 	# Adding the entries needed for lk_utils control code.
 	p = Path()
-	p.genFromEN(np.array(x), np.array(y), isOpen = True, KNOT_DISTANCE = 20)
+	p.genFromEN(np.array(x), np.array(y), np.array(psi), np.array(t), np.array(v), isOpen = True, KNOT_DISTANCE = 20)
 	rdict['world'] = p.toDict()
 				
 	sio.savemat(out_mat, rdict)

@@ -59,7 +59,7 @@ class LanekeepingPublisher():
 		self.genesis = Vehicle('genesis')
 
 		#Create speed profile - choose between constant velocity limit or track-varying velocity limit
-		self.speedProfile  = BasicProfile(self.genesis, self.path, friction = 0.4, vMax = 15., AxMax = 2.0)
+		self.speedProfile  = BasicProfile(self.genesis, self.path, friction = 1.0, vMax = 15., AxMax = 2.0)
 		#self.speedProfile = BasicProfile(self.genesis, self.path, self.path.friction, self.path.vMax, AxMax = 2.0)
 
 		plt.plot(self.speedProfile.s, self.speedProfile.Ux)
@@ -115,10 +115,11 @@ class LanekeepingPublisher():
 			self.controller.updateInput(self.localState, self.controlInput)
 			delta = self.controlInput.delta
 			Fx = self.controlInput.Fx
+			#print("delta: "+str(delta)+", Fx: "+str(Fx))
 
 			# use F = m*a to get desired acceleration. Limit acceleration command to 2 m/s
 			accel = min( Fx / self.genesis.m , 2.0)
-			print("Accel Desired (mps2) is " + str(accel) )
+			print("Accel Desired (mps2) is " + str(accel))
 
 
 
@@ -137,6 +138,7 @@ class LanekeepingPublisher():
 
 if __name__=="__main__":
 	print 'Starting Controller.'
+
 	try:
 		lk = LanekeepingPublisher()
 	except rospy.ROSInterruptException:

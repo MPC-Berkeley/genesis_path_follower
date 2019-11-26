@@ -1,7 +1,7 @@
 import numpy as np
 import tiremodel_lib as tm
 import vehicle_lib
-import path_lib
+#import path_lib
 from controllers import *
 import time
 
@@ -404,7 +404,7 @@ class MapMatch:
         b = np.linalg.norm(EN-np.array([path.posE[highSind], path.posN[highSind]]))
         c = np.linalg.norm(np.array([path.posE[lowSind], path.posN[lowSind]])- np.array([path.posE[highSind], path.posN[highSind]]))
 
-        deltaS = (a**2+c**2-b**2)/(2*c)
+        deltaS = (a**2+c**2-b**2)/(2*max(c,0.01))
         abs_e = np.sqrt(np.abs(a**2 - deltaS**2))
 
         s = path.s[lowSind] + deltaS
@@ -542,8 +542,8 @@ class MapMatch:
             b = np.linalg.norm( np.array(pEN) - np.array([posE[highSind], posN[highSind]]))
             c = np.linalg.norm( np.array([posE[lowSind], posN[lowSind] ])- np.array([posE[highSind], posN[highSind]]) );
          
-            deltaS = (a**2+c**2-b**2)/(2*c)
-            absE = np.sqrt(np.abs(a**2-deltaS**2))
+	    deltaS = (a**2+c**2-b**2)/(2*c)
+	    absE = np.sqrt(np.abs(a**2-deltaS**2))
         
 
             headingVector = [ -np.sin(roadPsi[lowSind]), np.cos(roadPsi[lowSind]), 0]

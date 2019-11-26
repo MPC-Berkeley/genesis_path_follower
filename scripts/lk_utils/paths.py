@@ -6,6 +6,8 @@ from numpy import genfromtxt
 import scipy.io as sio
 from scipy.integrate import odeint
 from scipy import interpolate
+from scipy.signal import filtfilt
+from math import pi
 
 
 #Path is a class that contains the path for the car to be driven. The arrays within class are kept rank 0 in order
@@ -71,7 +73,7 @@ class Path:
 			self.grade = np.zeros((self.s.size, 3))
 
 
-	def genFromEN(self, posE, posN, isOpen = True, KNOT_DISTANCE = 20):
+	def genFromEN(self, posE, posN, psi, t, v, isOpen = True, KNOT_DISTANCE = 20):
 		N = len(posE)
 		self.s = np.zeros((N,))
 		self.posN = posN.squeeze() #keep arrays rank 0, in line with path formats. 
@@ -79,6 +81,7 @@ class Path:
 
 		for i in range(1,N):
 			self.s[i] = self.s[i-1] + np.linalg.norm([posE[i] - posE[i-1], posN[i] - posN[i-1]])
+		self.s = filtfilt(np.ones((11,))/11,1,self.s)
 
 		#smooth curvature estimate by using cubic spline interpolation over sparse knot points
 		M = np.round(self.s[-1] / KNOT_DISTANCE) # number of knot points - spaced evenly every 20 meters
@@ -96,15 +99,25 @@ class Path:
 		#Note that this is different from Xavier MATLAB implementation - I couldn't
 		#figure out how to get the same spline output as the MATLAB code 
 
-		K = np.diff(self.roadPsi) / np.diff(self.s)
-		K = np.concatenate((K[0,np.newaxis], K))
-		self.curvature = K
+		#K = np.diff(self.roadPsi) / np.diff(self.s)
+		#K = np.concatenate((K[0,np.newaxis], K))
+		#self.curvature = K
 		
+		# smooth self.s and self.curvature
+		new_psi = psi
+		d_psi = np.diff(psi)
+		d_psi[d_psi > (2*pi - 0.01)] = d_psi[d_psi > (2*pi - 0.01)] - (2*pi)
+		d_psi[d_psi < (-2*pi + 0.01)] = d_psi[d_psi < (-2*pi + 0.01)] + (2*pi)
+		new_wz = np.divide(np.concatenate((0, d_psi), axis = None), np.concatenate((0.01, np.diff(t)), axis = None))
+		lpf_wz = filtfilt(np.ones((11,))/11,1,new_wz)
+		K = np.divide(lpf_wz,(v+0.1))
+		#K = filtfilt(np.ones((101,))/101,1,K)
+		self.curvature = K
+
 		self.bank = np.zeros((self.s.size, 3)) #by default, no bank or grade
 		self.grade = np.zeros((self.s.size, 3))
 		self.isOpen = isOpen
 		self.roadIC = [self.roadPsi[0], self.posE[0], self.posN[0]]
-
 
 		return
 
