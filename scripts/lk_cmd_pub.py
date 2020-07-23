@@ -59,7 +59,7 @@ class LanekeepingPublisher():
 		self.genesis = Vehicle('genesis')
 
 		#Create speed profile - choose between constant velocity limit or track-varying velocity limit
-		self.speedProfile  = BasicProfile(self.genesis, self.path, friction = 1.0, vMax = 15., AxMax = 2.0)
+		self.speedProfile  = BasicProfile(self.genesis, self.path, friction = 0.3, vMax = 11., AxMax = 2.0)
 		#self.speedProfile = BasicProfile(self.genesis, self.path, self.path.friction, self.path.vMax, AxMax = 2.0)
 
 		plt.plot(self.speedProfile.s, self.speedProfile.Ux)
@@ -78,8 +78,8 @@ class LanekeepingPublisher():
 		
 
 		#Enable steering
-		self.enable_steer_pub.publish(0) # enable steering control.
-		self.enable_acc_pub.publish(0) # enable acceleration control.
+		self.enable_steer_pub.publish(1) # enable steering control.
+		self.enable_acc_pub.publish(1) # enable acceleration control.
 
 		self.pub_loop()
 
