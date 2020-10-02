@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 
 # MPC Command Publisher/Controller Module Interface to the Genesis.
-# This version using the Nonlinear Kinematic Bicycle Model.
+# This version uses the Nonlinear Kinematic Bicycle Model.
 
 ###########################################
-#### ROBOTOS
+#### ROS
 ###########################################
 import rospy
 from genesis_path_follower.msg import state_est
@@ -42,22 +42,18 @@ else:
 ###########################################
 # Access Python modules for path processing.  Ugly way of doing it, can seek to clean this up in the future.
 import sys
-gps_utils_loc = scripts_dir + "gps_utils/"
-sys.path.append(gps_utils_loc)
-import ref_gps_traj as rgt
-grt = rgt.GPSRefTrajectory(mat_filename=mat_fname, LAT0=lat0, LON0=lon0, YAW0=yaw0)
+sys.path.append(scripts_dir)
+
+# TODO: remove hard coded horizon and dt -> should be rosparams.
+from gps_utils import ref_gps_traj as rgt
+grt = rgt.GPSRefTrajectory(mat_filename=mat_fname, LAT0=lat0, LON0=lon0, YAW0=yaw0, traj_horizon=10, traj_dt=0.2)
 
 ###########################################
 #### MPC Controller Module with Cost Function Weights.
 #### Global Variables for Callbacks/Control Loop.
 ###########################################
-import julia
-jl = julia.Julia()
-add_path_script = 'push!(LOAD_PATH, "%s/mpc_utils/")' % scripts_dir
-jl.eval(add_path_script)
-jl.eval('import GPSKinMPCPathFollower')
-from julia import GPSKinMPCPathFollower as kmpc
-kmpc.update_cost(9.0, 9.0, 10.0, 0.0, 100.0, 1000.0, 0.0, 0.0) # x,y,psi,v,da,ddf,a,df
+from mpc_utils.kinematic_mpc import KinMPCPathFollower
+kmpc = KinMPCPathFollower(N=10, DT=0.2, Q =[1., 1., 10., 0.0], R = [10., 100.])
 
 # Reference for MPC
 if target_vel > 0.0:
@@ -114,41 +110,45 @@ def pub_loop(acc_pub_obj, steer_pub_obj, mpc_path_pub_obj):
 				command_stop = True
 		
 		# Update Model
-		kmpc.update_init_cond(x_curr, y_curr, psi_curr, v_curr)
-		kmpc.update_reference(x_ref, y_ref, psi_ref, des_speed)
+		kmpc.update_initial_condition(x_curr, y_curr, psi_curr, v_curr)
+		kmpc.update_reference(x_ref[1:], y_ref[1:], psi_ref[1:], 10*[des_speed]) # TODO: use parameter horizon
 
 		ref_lock = False
 		
 		if command_stop == False:
-			a_opt, df_opt, is_opt, solv_time = kmpc.solve_model()
+			# a_opt, df_opt, is_opt, solv_time = kmpc.solve_model()
+			is_opt, solve_time, u_opt, z_opt, sl_opt, z_ref = kmpc.solve()			
 
 			rostm = rospy.get_rostime()
 			tm_secs = rostm.secs + 1e-9 * rostm.nsecs
 
-			log_str = "Solve Status: %s, Acc: %.3f, SA: %.3f, ST: %.3f" % (is_opt, a_opt, df_opt, solv_time)
+			log_str = "Solve Status: %s, Acc: %.3f, SA: %.3f, ST: %.3f" % (is_opt, u_opt[0,0], u_opt[0,1], solve_time)
 			rospy.loginfo(log_str)
 
-			if is_opt == 'Optimal':
-				acc_pub_obj.publish(Float32Msg(a_opt))
-				steer_pub_obj.publish(Float32Msg(df_opt))
+			if is_opt:
+				acc_pub_obj.publish(Float32Msg(u_opt[0,0]))
+				steer_pub_obj.publish(Float32Msg(u_opt[0,1]))
 
-			kmpc.update_current_input(df_opt, a_opt)
-			res = kmpc.get_solver_results()
+			kmpc.update_previous_input(u_opt[0,0], u_opt[0,1])
 
 			mpc_path_msg = mpc_path()
 			mpc_path_msg.header.stamp = rostm
-			mpc_path_msg.solv_status  = is_opt
-			mpc_path_msg.solv_time = solv_time
-			mpc_path_msg.xs   = res[0] 	# x_mpc
-			mpc_path_msg.ys   = res[1] 	# y_mpc
-			mpc_path_msg.vs   = res[2]	# v_mpc
-			mpc_path_msg.psis = res[3] 	# psi_mpc	
-			mpc_path_msg.xr   = res[4] 	# x_ref
-			mpc_path_msg.yr   = res[5] 	# y_ref
-			mpc_path_msg.vr   = [res[6]]# v_ref
-			mpc_path_msg.psir = res[7] 	# psi_ref
-			mpc_path_msg.df   = res[8]	# d_f
-			mpc_path_msg.acc  = res[9]	# acc
+			mpc_path_msg.solv_status  = str(is_opt)
+			mpc_path_msg.solv_time = solve_time
+
+			mpc_path_msg.xs   = z_opt[:,0] 	# x_mpc
+			mpc_path_msg.ys   = z_opt[:,1] 	# y_mpc
+			mpc_path_msg.psis = z_opt[:,2] 	# psi_mpc	
+			mpc_path_msg.vs   = z_opt[:,3]	# v_mpc
+
+			mpc_path_msg.xr   = z_ref[:,0] 	# x_ref
+			mpc_path_msg.yr   = z_ref[:,1] 	# y_ref
+			mpc_path_msg.psir = z_ref[:,2] 	# psi_ref
+			mpc_path_msg.vr   = z_ref[:,3]  # v_ref
+			
+			mpc_path_msg.df   = u_opt[:,0]	# d_f
+			mpc_path_msg.acc  = u_opt[:,1]	# acc
+
 			mpc_path_pub_obj.publish(mpc_path_msg)
 		else:
 			acc_pub_obj.publish(Float32Msg(-1.0))
@@ -166,10 +166,6 @@ def start_mpc_node():
 
 	mpc_path_pub = rospy.Publisher("mpc_path", mpc_path, queue_size=2)
 	sub_state  = rospy.Subscriber("state_est", state_est, state_est_callback, queue_size=2)
-
-	# Start up Ipopt/Solver.
-	for i in range(3):
-		kmpc.solve_model()
 
 	acc_enable_pub.publish(UInt8Msg(2))
 	steer_enable_pub.publish(UInt8Msg(1))
