@@ -84,7 +84,13 @@ def state_est_callback(msg):
 		received_reference = True
 
 def pub_loop(acc_pub_obj, steer_pub_obj, mpc_path_pub_obj):
-	loop_rate = rospy.Rate(20.0)
+	loop_rate = rospy.Rate(50.0)
+
+	# Warm Start Variables: use the previous solution
+	u_ws  = None
+	z_ws  = None
+	sl_ws = None
+
 	while not rospy.is_shutdown():
 		if not received_reference:
 			# Reference not received so don't use MPC yet.
@@ -117,7 +123,12 @@ def pub_loop(acc_pub_obj, steer_pub_obj, mpc_path_pub_obj):
 		
 		if command_stop == False:
 			# a_opt, df_opt, is_opt, solv_time = kmpc.solve_model()
-			is_opt, solve_time, u_opt, z_opt, sl_opt, z_ref = kmpc.solve()			
+			
+			# Use warm start from previous solution.
+			is_opt, solve_time, u_opt, z_opt, sl_opt, z_ref = kmpc.solve(z_dv_warm_start = z_ws, u_dv_warm_start = u_ws, sl_dv_warm_start = sl_ws)			
+
+			# Don't warm start.
+			# is_opt, solve_time, u_opt, z_opt, sl_opt, z_ref = kmpc.solve()			
 
 			rostm = rospy.get_rostime()
 			tm_secs = rostm.secs + 1e-9 * rostm.nsecs
@@ -130,6 +141,7 @@ def pub_loop(acc_pub_obj, steer_pub_obj, mpc_path_pub_obj):
 				steer_pub_obj.publish(Float32Msg(u_opt[0,1]))
 
 			kmpc.update_previous_input(u_opt[0,0], u_opt[0,1])
+			z_ws, u_ws, sl_ws = z_opt, u_opt, sl_opt
 
 			mpc_path_msg = mpc_path()
 			mpc_path_msg.header.stamp = rostm

@@ -162,11 +162,11 @@ class KinMPCPathFollower(object):
 		self.opti.minimize( cost )
 
 	def solve(self, z_dv_warm_start = None, u_dv_warm_start = None, sl_dv_warm_start = None):
-		if z_dv_warm_start:
+		if z_dv_warm_start is not None:
 			self.opti.set_initial(self.z_dv, z_dv_warm_start)
-		if u_dv_warm_start:
+		if u_dv_warm_start is not None:
 			self.opti.set_initial(self.u_dv, u_dv_warm_start)
-		if sl_dv_warm_start:
+		if sl_dv_warm_start is not None:
 			self.opti.set_initial(self.sl_dv, sl_dv_warm_start)
 
 
