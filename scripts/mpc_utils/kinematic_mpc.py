@@ -144,7 +144,7 @@ class KinMPCPathFollower(object):
 		# Other Constraints
 		self.opti.subject_to( 0 <= self.sl_df_dv )
 		self.opti.subject_to( 0 <= self.sl_acc_dv )
-		# e.g. things like collision avoidanc or lateral acceleration bounds could go here.
+		# e.g. things like collision avoidance or lateral acceleration bounds could go here.
 
 	def _add_cost(self):
 		def _quad_form(z, Q):
@@ -162,13 +162,13 @@ class KinMPCPathFollower(object):
 		self.opti.minimize( cost )
 
 	def solve(self, z_dv_warm_start = None, u_dv_warm_start = None, sl_dv_warm_start = None):
+                # Warm Start used if provided.  Else I believe the problem is solved from scratch with initial values of 0.
 		if z_dv_warm_start is not None:
 			self.opti.set_initial(self.z_dv, z_dv_warm_start)
 		if u_dv_warm_start is not None:
 			self.opti.set_initial(self.u_dv, u_dv_warm_start)
 		if sl_dv_warm_start is not None:
 			self.opti.set_initial(self.sl_dv, sl_dv_warm_start)
-
 
 		st = time.time()
 		try:
@@ -194,15 +194,10 @@ class KinMPCPathFollower(object):
 		# is_opt = stats['success']
 		# TODO: could also use stats wall clock time.
 
-		# TODO, warm start: self.opti.set_initial(sol.value_variables())
-		# see sec 9.2 here: https://web.casadi.org/docs/
-
 		return is_opt, solve_time, u_opt, z_opt, sl_opt, z_ref
-
 
 	def update_initial_condition(self, x0, y0, psi0, vel0):
 		self.opti.set_value(self.z_curr, [x0, y0, psi0, vel0])
-
 
 	def update_reference(self, x_ref, y_ref, psi_ref, v_ref):
 		self.opti.set_value(self.x_ref,   x_ref)
@@ -212,7 +207,6 @@ class KinMPCPathFollower(object):
 
 	def update_previous_input(self, acc_prev, df_prev):
 		self.opti.set_value(self.u_prev, [acc_prev, df_prev])
-
 
 if __name__ == '__main__':
 	kmpc = KinMPCPathFollower()
