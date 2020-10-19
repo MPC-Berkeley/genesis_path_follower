@@ -1,0 +1,4 @@
+This is where raw rosbags are stored.  They can be of the following types, based on which launch file was used:
+(1) recorded paths without MPC solutions/low-level control activated (path_record)
+(2) simulated MPC tracking results (sim_path_follow)
+(3) actual vehicle testing with MPC and low level control activated (path_follow)

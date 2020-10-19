@@ -1,5 +1,5 @@
 *.pyc
-*.bag
+bags/*.bag
 paths/sim
 paths/pf_6_23
 paths/pf_6_24
