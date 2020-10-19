@@ -9,6 +9,7 @@ from genesis_path_follower.msg import state_est
 from tf.transformations import euler_from_quaternion
 
 # Vehicle State Publisher for the Hyundai Genesis.  Uses OxTS and vehicle CAN messages to localize.
+# You will need to add the package from https://github.com/MPC-Berkeley/genesis_msgs for the steering angle measurement.
 
 ''' Global Variables for Callbacks '''
 tm_gps = None; lat = None; lon = None			# GPS
