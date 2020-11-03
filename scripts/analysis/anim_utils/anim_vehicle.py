@@ -5,6 +5,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from rosbag_synch import MessageByTimestamp
+
+import sys, os
+scripts_dir = os.path.realpath(__file__).split('analysis/')[0]
+sys.path.append( scripts_dir + 'plot_utils/')
 from getVehicleFrame import plotVehicle
 
 import matplotlib.animation as manim
