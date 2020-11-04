@@ -6,6 +6,7 @@ import rosbag
 import time
 import rospy
 import scipy.io as sio
+from scipy.signal import filtfilt
 
 ################################################
 # HELPER FUNCTIONS
@@ -30,6 +31,30 @@ def latlon_to_XY(lat0, lon0, lat1, lon1):
 	Y = R_earth * delta_lat
 
 	return X,Y
+
+def compute_curvature(cdists, yaws):
+	# This function estimates curvature using finite differences (curv = dyaw/dcdist).
+	diff_dists = np.diff(cdists)
+	diff_yaws  = np.diff(np.unwrap(yaws))
+
+	assert np.max( np.abs(diff_yaws) )  < np.pi, "Detected a jump in the angle difference."
+
+	curv_raw = diff_psis / np.maximum(diff_dists, 0.1) # use diff_dists where greater than 10 cm
+	curv_raw = np.insert(curv_raw, len(curv_raw), curv_raw[-1]) # curvature at last waypoint
+
+	# Curvature Filtering: (https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.filtfilt.html)
+	curv_filt = filtfilt(np.ones((11,))/11, 1, curv_raw) # curvature filter suggested by Jinkkwon Kim.
+	return curv_filt
+
+def bound_angle_within_pi(angle):
+	return (angle + np.pi) % (2.0 * np.pi) - np.pi # https://stackoverflow.com/questions/15927755/opposite-of-numpy-unwrap
+
+def fix_angle_reference(angle_ref, angle_init):
+	# This function returns a "smoothened" angle_ref wrt angle_init so there are no jumps.
+	diff_angle = angle_ref - angle_init
+	diff_angle = bound_angle_within_pi(diff_angle)
+	diff_angle = np.unwrap(diff_angle) # removes jumps greater than pi
+	return angle_init + diff_angle 
 
 ################################################
 # GPSRefTrajectory Class
@@ -57,12 +82,12 @@ class GPSRefTrajectory():
 		Ys   = []		# global Y position (m, wrt to origin at LON0, LAT0)
 		cdists = []		# cumulative distance along path (m, aka "s" in Frenet formulation)
 
-		data_dict = sio.loadmat(mat_filename)
+		data_dict = sio.loadmat(mat_filename, squeeze_me=True)
 			
-		tms  = np.ravel(data_dict['t'])
-		lats = np.ravel(data_dict['lat'])
-		lons = np.ravel(data_dict['lon'])
-		yaws = np.ravel(data_dict['psi'])
+		tms  = data_dict['t']
+		lats = data_dict['lat']
+		lons = data_dict['lon']
+		yaws = data_dict['psi']
 
 		for i in range(len(lats)):
 			lat = lats[i]; lon = lons[i]
@@ -75,127 +100,64 @@ class GPSRefTrajectory():
 			Xs.append(X)
 			Ys.append(Y)
 
-		# global trajectory matrix
-		self.trajectory =  np.column_stack((tms, lats, lons, yaws, Xs, Ys, cdists)) 
-		
-		# interpolated path or what I call "local trajectory" -> reference to MPC
-		self.x_interp	= None
-		self.y_interp	= None
-		self.psi_interp	= None
-		
-		# some handles for plotting (see plot_interpolation)
-		self.f = None
-		self.l_arr = None
+		curv = compute_curvature(cdists, yaws)
 
-	def get_global_trajectory_reference(self):
-		return self.trajectory
+		# Trajectory in Numpy Array and Dict to Look up by Index.  Keep these two consistent!
+		# Alternatively, could use pandas to organize this.  But would require an additional import.
+		self.trajectory =  np.column_stack((tms, lats, lons, yaws, Xs, Ys, cdists, curvs)) 
+		self.access_map = {key:index for index, key in \
+		                   enumerate(['t', 'lat', 'lon', 'yaw', 'x', 'y', 'cdist', 'curv'])}
 
-	def get_Xs(self):
-		return self.trajectory[:,4]
-
-	def get_Ys(self):
-		return self.trajectory[:,5]
-
-	def get_yaws(self):
-		return self.trajectory[:,3]
-		
 	# Main callback function to get the waypoints from the vehicle's initial pose and the prerecorded global trajectory.
 	def get_waypoints(self, X_init, Y_init, yaw_init, v_target=None):
+		waypoint_dict = {}
 
-		XY_traj = self.trajectory[:,4:6]		# full XY global trajectory
+		xy_traj = self.trajectory[ :, [self.access_map['x'], self.access_map['y']] ] # XY trajectory
 		xy_query = np.array([[X_init,Y_init]])	# the vehicle's current position (XY)
 
-		# find the index of the closest point on the trajectory to the initial vehicle pose
-		diff_dists = np.sum( (XY_traj-xy_query)**2, axis=1)
-		closest_traj_ind = np.argmin(diff_dists) 
+		# (1) Find the index of the closest point on the trajectory to the initial vehicle position.
+		#     This could be sped up by restricting a search neighborhood of xy_traj or using a kd-tree.
+		closest_index = np.argmin( np.linalg.norm(xy_traj - xy_query, axis=1) )
 
-		# TODO: this function does not handle well the case where the car is far from the recorded path!  Ill-defined behavior/speed.
-		# May use np.min(diff_dists) and add appropriate logic to handle this edge case.
+		# (2) Find error coordinates (aka road-aligned or Frenet frame):
+		xy_waypoint  = self.trajectory[ closest_index, [self.access_map['x'], self.access_map['y']] ]
+		yaw_waypoint = self.trajectory[ closest_index, self.access_map['yaw'] ]
+		rot_global_to_frenet = np.array([[ np.cos(yaw_waypoint), np.sin(yaw_waypoint)], \
+			                             [-np.sin(yaw_waypoint), np.cos(yaw_waypoint)]])
+
+		error_xy = xy_query - xy_waypoint # xy deviation (global frame)
+		error_frenet = np.dot(rot_global_to_frenet, error_xy[0,:]) # e_s, e_y deviation (Frenet frame)
+
+		waypoint_dict['s']     = self.trajectory[ closest_index, self.access_map['cdist'] ] # we assume e_s is approx. 0.
+		waypoint_dict['e_y']   = error_frenet[1]
+		waypoint_dict['e_psi'] = bound_angle_within_pi(yaw_init - yaw_waypoint)
+
+		# (3) Find the reference trajectory using distance or time interpolation.
+		#     WARNING: this function does not handle well the case where the car is far from the recorded path!
+		#     Ill-defined behavior/speed.
+		#     Could use the actual minimum distance and add appropriate logic to handle this edge case.
 
 		if v_target is not None:
-			return self.__waypoints_using_vtarget(closest_traj_ind, v_target, yaw_init) #v_ref given, use distance information for interpolation
+			# Given a velocity reference, use the cumulative distance for interpolation.
+			start_dist = self.trajectory[closest_index, self.access_map['cdist']]			
+			interp_by_key = 'cdist'
+			interp_to_fit = [h*self.traj_dt*v_target + start_dist for h in range(0, self.traj_horizon+1)]
 		else:
-			return self.__waypoints_using_time(closest_traj_ind, yaw_init)			  #no v_ref, use time information for interpolation
+			# No velocity reference provided.  So use timestamp for interpolation.
+			start_tm   = self.trajectory[closest_index, self.access_map['t']]
+			interp_by_key = 't'
+			interp_to_fit = [h*self.traj_dt + start_tm for h in range(0, self.traj_horizon+1)]
 
-	# Visualization Function to plot the vehicle's current position, the full global trajectory, and the local trajectory for MPC.
-	def plot_interpolation(self, x,y):
-		if self.x_interp is None:
-			print 'First call get_waypoints before plotting!'
-			return
+		waypoint_dict = {}
+		for waypoint_key in ['x', 'y', 'yaw', 'cdist', 'curv']:
+			waypoint_dict[waypoint_key] = np.interp(interp_to_fit, \
+				                                    self.trajectory[:, self.access_map[interp_by_key]], \
+				                                    self.trajectory[:, self.access_map[waypoint_key]])
+			if waypoint_key == 'yaw':
+				waypoint_dict['yaw'] = fix_heading_wraparound(waypoint_dict['yaw'], yaw_init)
 
-		if self.f is None:
-		# figure creation		
-			self.f = plt.figure()
-			plt.ion()
+		waypoint_dict['stop'] = False
+		if waypoint_dict['cdist'][-1] == self.trajectory[:, self.access_map['cdist']][-1]:
+			waypoint_dict['stop'] = True # reached the end of the trajectory, so give a stop command.
 
-			l1, = plt.plot(self.trajectory[:,4], self.trajectory[:,5], 'k') # global trajectory
-			l2, = plt.plot(self.x_interp, self.y_interp, 'rx')			  	# local trajectory using vehicle's current position
-			l3, = plt.plot(x,y, 'bo')									   	# vehicle's current position
-			self.l_arr = [l1,l2,l3]
-			plt.axis('equal')
-
-		else:
-		# figure update
-			self.l_arr[1].set_xdata(self.x_interp)
-			self.l_arr[1].set_ydata(self.y_interp)
-			self.l_arr[2].set_xdata(x)
-			self.l_arr[2].set_ydata(y)
-
-		self.f.canvas.draw()
-		plt.pause(0.05)	
-
-	''' Helper functions: you shouldn't need to call these! '''
-	def __waypoints_using_vtarget(self, closest_traj_ind, v_target, yaw_init):
-		start_dist = self.trajectory[closest_traj_ind,6] # s0, cumulative dist corresponding to closest point
-
-		dists_to_fit = [x*self.traj_dt*v_target + start_dist for x in range(0,self.traj_horizon+1)] # edit bounds
-		# NOTE: np.interp returns the first value x[0] if t < t[0] and the last value x[-1] if t > t[-1].
-		self.x_interp = np.interp(dists_to_fit, self.trajectory[:,6], self.trajectory[:,4]) 	 # x_des = f_interp(d_des, d_actual, x_actual)
-		self.y_interp = np.interp(dists_to_fit, self.trajectory[:,6], self.trajectory[:,5]) 	 # y_des = f_interp(d_des, d_actual, y_actual)
-		psi_ref = np.interp(dists_to_fit, self.trajectory[:,6], self.trajectory[:,3])    # psi_des = f_interp(d_des, d_actual, psi_actual)
-		self.psi_interp = self.__fix_heading_wraparound(psi_ref, yaw_init)
-
-		# Send a stop command if the end of the trajectory is within the horizon of the waypoints.
-		# Alternatively, could use start_dist as well: if start_dist + some delta_s > end_dist, then stop.
-		stop_cmd = False
-		if self.x_interp[-1] == self.trajectory[-1,4] and self.y_interp[-1] == self.trajectory[-1,5]:
-			stop_cmd = True
-
-		return self.x_interp, self.y_interp, self.psi_interp, stop_cmd
-
-	def __waypoints_using_time(self, closest_traj_ind, yaw_init):
-		start_tm = self.trajectory[closest_traj_ind,0] # t0, time of recorded trajectory corresponding to closest point
-		
-		times_to_fit = [h*self.traj_dt + start_tm for h in range(0,self.traj_horizon+1)]
-		# NOTE: np.interp returns the first value x[0] if t < t[0] and the last value x[-1] if t > t[-1].
-		self.x_interp = np.interp(times_to_fit, self.trajectory[:,0], self.trajectory[:,4]) 	 # x_des = f_interp(t_des, t_actual, x_actual)
-		self.y_interp = np.interp(times_to_fit, self.trajectory[:,0], self.trajectory[:,5]) 	 # y_des = f_interp(t_des, t_actual, y_actual)
-		psi_ref = np.interp(times_to_fit, self.trajectory[:,0], self.trajectory[:,3])    # psi_des = f_interp(t_des, t_actual, psi_actual)
-		self.psi_interp = self.__fix_heading_wraparound(psi_ref, yaw_init)
-
-		# Send a stop command if the end of the trajectory is within the horizon of the waypoints.
-		# Alternatively, could use start_dist as well: if start_dist + some delta_s > end_dist, then stop.
-		stop_cmd = False
-		if self.x_interp[-1] == self.trajectory[-1,4] and self.y_interp[-1] == self.trajectory[-1,5]:
-			stop_cmd = True
-
-		return self.x_interp, self.y_interp, self.psi_interp, stop_cmd
-
-	def __fix_heading_wraparound(self, psi_ref, psi_current):
-		# This code ensures that the psi_reference agrees with psi_current, that there are no jumps by +/- 2*pi.
-		# This logic is based on the fact for a given angle on the unit circle, every other angle is within +/- pi away.
-		check_1 = np.max(np.fabs(np.diff(psi_ref))) < np.pi
-		check_2 = np.max(np.fabs(psi_ref - psi_current)) < np.pi
-
-		if check_1 and check_2:
-			return psi_ref
-
-		for i in range(len(psi_ref)):
-			# pick the reference by adding +/- 2*pi s.t. psi_ref is close to psi_current = no jumps.
-			p = psi_ref[i]
-			psi_cands_arr = np.array([p, p + 2*np.pi, p - 2*np.pi])
-			best_cand = np.argmin(np.fabs(psi_cands_arr - psi_current))
-
-			psi_ref[i] = psi_cands_arr[best_cand]
-
-		return psi_ref
+		return waypoint_dict
