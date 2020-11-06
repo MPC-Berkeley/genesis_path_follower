@@ -1,7 +1,8 @@
 import time
 import casadi
+from controller import Controller
 
-class KinMPCPathFollower(object):
+class KinMPCPathFollower(Controller):
 
 	def __init__(self, 
 		         N          = 10,     # timesteps in MPC Horizon
@@ -18,8 +19,8 @@ class KinMPCPathFollower(object):
 		         A_DOT_MAX  =  1.5,
 		         DF_DOT_MIN = -0.5,   # min/max front steer angle rate constraint (rad/s)
 		         DF_DOT_MAX =  0.5, 
-		         Q = [1., 1., 10., 0.1],
-		         R = [10., 100.]):
+		         Q = [1., 1., 10., 0.1], # weights on x, y, psi, and v.
+		         R = [10., 100.]):       # weights on jerk and slew rate (steering angle derivative)
 
 		for key in list(locals()):
 			if key == 'self':
@@ -86,14 +87,14 @@ class KinMPCPathFollower(object):
 		
 		self._add_cost()
 		
-		self.update_initial_condition(0., 0., 0., 1.)
+		self._update_initial_condition(0., 0., 0., 1.)
 		
-		self.update_reference([self.DT * (x+1) for x in range(self.N)],
+		self._update_reference([self.DT * (x+1) for x in range(self.N)],
 			                  self.N*[0.], 
 			                  self.N*[0.], 
 			                  self.N*[1.])
 		
-		self.update_previous_input(0., 0.)
+		self._update_previous_input(0., 0.)
 		
 		# Ipopt with custom options: https://web.casadi.org/docs/ -> see sec 9.1 on Opti stack.
 		p_opts = {'expand': True}
@@ -101,7 +102,6 @@ class KinMPCPathFollower(object):
 		self.opti.solver('ipopt', p_opts, s_opts)
 
 		sol = self.solve()
-
 
 	def _add_constraints(self):
 		# State Bound Constraints
@@ -152,63 +152,72 @@ class KinMPCPathFollower(object):
 
 		cost = 0
 		for i in range(self.N):
-			cost += _quad_form(self.z_dv[i+1, :] - self.z_ref[i,:], self.Q)
+			cost += _quad_form(self.z_dv[i+1, :] - self.z_ref[i,:], self.Q) # tracking cost
 
 		for i in range(self.N - 1):
-			cost += _quad_form(self.u_dv[i+1, :] - self.u_dv[i,:], self.R)
+			cost += _quad_form(self.u_dv[i+1, :] - self.u_dv[i,:], self.R)  # input derivative cost
 
-		cost += (casadi.sum1(self.sl_df_dv) + casadi.sum1(self.sl_acc_dv))
+		cost += (casadi.sum1(self.sl_df_dv) + casadi.sum1(self.sl_acc_dv))  # slack cost
 
 		self.opti.minimize( cost )
 
-	def solve(self, z_dv_warm_start = None, u_dv_warm_start = None, sl_dv_warm_start = None):
-                # Warm Start used if provided.  Else I believe the problem is solved from scratch with initial values of 0.
-		if z_dv_warm_start is not None:
-			self.opti.set_initial(self.z_dv, z_dv_warm_start)
-		if u_dv_warm_start is not None:
-			self.opti.set_initial(self.u_dv, u_dv_warm_start)
-		if sl_dv_warm_start is not None:
-			self.opti.set_initial(self.sl_dv, sl_dv_warm_start)
-
+	def solve(self):
 		st = time.time()
 		try:
 			sol = self.opti.solve()
 			# Optimal solution.
-			u_opt  = sol.value(self.u_dv)
-			z_opt  = sol.value(self.z_dv)
-			sl_opt = sol.value(self.sl_dv)
+			u_mpc  = sol.value(self.u_dv)
+			z_mpc  = sol.value(self.z_dv)
+			sl_mpc = sol.value(self.sl_dv)
 			z_ref  = sol.value(self.z_ref)
 			is_opt = True
 		except:
-			# Suboptimal solution.
-			u_opt  = self.opti.debug.value(self.u_dv)
-			z_opt  = self.opti.debug.value(self.z_dv)
-			sl_opt = self.opti.debug.value(self.sl_dv)
+			# Suboptimal solution (e.g. timed out).
+			u_mpc  = self.opti.debug.value(self.u_dv)
+			z_mpc  = self.opti.debug.value(self.z_dv)
+			sl_mpc = self.opti.debug.value(self.sl_dv)
 			z_ref  = self.opti.debug.value(self.z_ref)
-
 			is_opt = False
 
 		solve_time = time.time() - st
 		
-		# stats = sol.stats()
-		# is_opt = stats['success']
-		# TODO: could also use stats wall clock time.
+		sol_dict = {}
+		sol_dict['u_control']  = u_mpc[0,:]  # control input to apply based on solution
+		sol_dict['optimal']    = is_opt      # whether the solution is optimal or not
+		sol_dict['solve_time'] = solve_time  # how long the solver took in seconds
+		sol_dict['u_mpc']      = u_mpc       # solution inputs (N by 2, see self.u_dv above) 
+		sol_dict['z_mpc']      = z_mpc       # solution states (N+1 by 4, see self.z_dv above)
+		sol_dict['sl_mpc']     = sl_mpc      # solution slack vars (N by 2, see self.sl_dv above)
+		sol_dict['z_ref']      = z_ref       # state reference (N by 4, see self.z_ref above)
 
-		return is_opt, solve_time, u_opt, z_opt, sl_opt, z_ref
+		return sol_dict
 
-	def update_initial_condition(self, x0, y0, psi0, vel0):
+	def update(self, update_dict):
+		self._update_initial_condition( *[update_dict[key] for key in ['x0', 'y0', 'psi0', 'v0']] )
+		self._update_reference( *[update_dict[key] for key in ['x_ref', 'y_ref', 'psi_ref', 'v_ref']] )
+		self._update_previous_input( *[update_dict[key] for key in ['acc_prev', 'df_prev']] )
+
+		if 'warm_start' in update_dict.keys():
+			# Warm Start used if provided.  Else I believe the problem is solved from scratch with initial values of 0.
+			self.opti.set_initial(self.z_dv,  update_dict['warm_start']['z_ws'])
+			self.opti.set_initial(self.u_dv,  update_dict['warm_start']['u_ws'])
+			self.opti.set_initial(self.sl_dv, update_dict['warm_start']['sl_ws'])
+
+	def _update_initial_condition(self, x0, y0, psi0, vel0):
 		self.opti.set_value(self.z_curr, [x0, y0, psi0, vel0])
 
-	def update_reference(self, x_ref, y_ref, psi_ref, v_ref):
+	def _update_reference(self, x_ref, y_ref, psi_ref, v_ref):
 		self.opti.set_value(self.x_ref,   x_ref)
 		self.opti.set_value(self.y_ref,   y_ref)
 		self.opti.set_value(self.psi_ref, psi_ref)
 		self.opti.set_value(self.v_ref,   v_ref)
 
-	def update_previous_input(self, acc_prev, df_prev):
+	def _update_previous_input(self, acc_prev, df_prev):
 		self.opti.set_value(self.u_prev, [acc_prev, df_prev])
 
 if __name__ == '__main__':
 	kmpc = KinMPCPathFollower()
-	sol = kmpc.solve()
-	import pdb; pdb.set_trace()
+	sol_dict = kmpc.solve()
+	
+	for key in sol_dict:
+		print(key, sol_dict[key])
