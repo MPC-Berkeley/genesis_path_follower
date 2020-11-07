@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 
 # MPC Command Publisher/Controller Module Interface to the Genesis.
-# This version uses the Nonlinear Kinematic Bicycle Model.
+
+import sys
+from threading import Lock
 
 ###########################################
 #### ROS
@@ -13,7 +15,7 @@ from std_msgs.msg import UInt8 as UInt8Msg
 from std_msgs.msg import Float32 as Float32Msg
 
 ###########################################
-#### LOAD ROSPARAMS
+#### LOAD ROSPARAMS AND UPDATE SYS.PATH
 ###########################################
 if rospy.has_param("mat_waypoints"):
 	mat_fname = rospy.get_param("mat_waypoints")
@@ -31,157 +33,150 @@ if rospy.has_param("scripts_dir"):
 else:
 	raise ValueError("Did not provide the scripts directory!")
 
-if rospy.has_param("lat0") and rospy.has_param("lat0") and rospy.has_param("lat0"):
+if rospy.has_param("lat0") and rospy.has_param("lon0"):
 	lat0 = rospy.get_param("lat0")
-	lon0 = rospy.get_param("lon0")
-	yaw0 = rospy.get_param("yaw0")
+	lon0 = rospy.get_param("lon0")	
 else:
 	raise ValueError("Invalid rosparam global origin provided!")
-###########################################
-#### Reference GPS Trajectory Module
-###########################################
-# Access Python modules for path processing.  Ugly way of doing it, can seek to clean this up in the future.
-import sys
-sys.path.append(scripts_dir)
 
-# TODO: remove hard coded horizon and dt -> should be rosparams.
-from gps_utils import ref_gps_traj as rgt
-grt = rgt.GPSRefTrajectory(mat_filename=mat_fname, LAT0=lat0, LON0=lon0, YAW0=yaw0, traj_horizon=10, traj_dt=0.2)
+if rospy.has_param("controller"):
+	controller_choice = rospy.get_param("controller")
+else:
+	raise ValueError("Did not select a controller!")
+
+# Access Python code for MPC/path utils.  Ugly way of doing it, can seek to clean this up in the future.
+sys.path.append(scripts_dir)
 
 ###########################################
 #### MPC Controller Module with Cost Function Weights.
-#### Global Variables for Callbacks/Control Loop.
+#### Reference GPS Trajectory Module.
 ###########################################
-from mpc_utils.kinematic_mpc import KinMPCPathFollower
-kmpc = KinMPCPathFollower(N=10, DT=0.2, Q =[1., 1., 10., 0.0], R = [10., 100.])
-
-# Reference for MPC
-if target_vel > 0.0:
-	des_speed = target_vel
+# TODO: We can make some of these things rosparams in the future, like N and DT.
+if controller_choice == 'kinematic_mpc':
+	from controllers.kinematic_mpc import KinMPCPathFollower as MPC
+	MPC_PARAMS = {'N' : 10, 'DT' : 0.2, 'Q' : [1., 1., 10., 0.0], 'R' : [10., 100.]}
+elif controller_choice == 'kinematic_frenet_mpc':
+	pass
 else:
-	des_speed = 0.00
+	raise ValueError("Invalid controller selection: %s" % controller_choice)
 
-ref_lock = False				
-received_reference = False
-x_curr  = 0.0
-y_curr  = 0.0
-psi_curr  = 0.0
-v_curr  = 0.0
-command_stop = False
+from gps_utils import ref_gps_traj as RGT
 
 ###########################################
-#### State Estimation Callback.
+#### MPC Command Publisher Class
 ###########################################
-def state_est_callback(msg):
-	global x_curr, y_curr, psi_curr, v_curr
-	global received_reference
+class MPCCommandPublisher():
 
-	if ref_lock == False:
-		x_curr = msg.x
-		y_curr = msg.y
-		psi_curr = msg.psi
-		v_curr = msg.v
-		received_reference = True
+	def __init__(self):	
+		# Node and Publisher/Subscriber Setup.
+		rospy.init_node("dbw_mpc_path_follower")
+		
+		# Acceleration/Steering Command (for drive-by-wire) + MPC solution publisher (for viz/analysis).
+		self.acc_prev   = 0. # last published acceleration
+		self.steer_prev = 0. # last published steering angle
+		self.acc_pub   = rospy.Publisher("/control/accel", Float32Msg, queue_size=2)      
+		self.steer_pub = rospy.Publisher("/control/steer_angle", Float32Msg, queue_size=2) 
+		self.mpc_path_pub = rospy.Publisher("mpc_path", mpc_path, queue_size=2)            
 
-def pub_loop(acc_pub_obj, steer_pub_obj, mpc_path_pub_obj):
-	loop_rate = rospy.Rate(50.0)
+		# State Estimation Subscriber.
+		self.current_state = {'t': -1., 'x0': 0., 'y0': 0., 'psi0': 0., 'v0': 0}
+		self.state_lock = Lock()
+		self.sub_state  = rospy.Subscriber("state_est", state_est, self.state_est_callback, queue_size=2)
 
-	# Warm Start Variables: use the previous solution
-	u_ws  = None
-	z_ws  = None
-	sl_ws = None
+		# TODO: update description and make yaw/psi consistent.
+		self.mpc = MPC(**MPC_PARAMS)
+		self.ref_traj = RGT.GPSRefTrajectory(mat_filename=mat_fname, LAT0=lat0, LON0=lon0, traj_horizon=self.mpc.N, traj_dt=self.mpc.DT)
+		
+		# One time drive-by-wire enable message published.  We assume the driver will disable drive-by-wire
+		# using brake/steering overrides, although it could be done by this class too.
+		acc_enable_pub   = rospy.Publisher("/control/enable_accel", UInt8Msg, queue_size=2, latch=True)
+		steer_enable_pub = rospy.Publisher("/control/enable_spas",  UInt8Msg, queue_size=2, latch=True)
+		acc_enable_pub.publish(UInt8Msg(1))
+		steer_enable_pub.publish(UInt8Msg(1))
+		
+		self.pub_loop()
 
-	while not rospy.is_shutdown():
-		if not received_reference:
-			# Reference not received so don't use MPC yet.
+	def state_est_callback(self, msg):
+		with self.state_lock:
+			self.current_state['t']    = msg.header.stamp.secs + 1e-9 * msg.header.stamp.nsecs
+			self.current_state['x0']   = msg.x
+			self.current_state['y0']   = msg.y
+			self.current_state['psi0'] = msg.psi
+			self.current_state['v0']   = msg.v			
+			
+	def pub_loop(self):
+		loop_rate = rospy.Rate(50.0)
+		update_dict = {} # contains parameter/warm start information needed for the MPC module.
+
+		while not rospy.is_shutdown():
+			with self.state_lock:
+				state = self.current_state.copy()				
+			
+			if state['t'] < 0:
+				# The state has not been received so don't start publishing yet.
+				loop_rate.sleep()
+				continue
+
+			if track_with_time:
+				# Trajectory tracking with varying speed profile.
+				waypoint_dict = self.ref_traj.get_waypoints(state['x0'], state['y0'], state['psi0'], v_target=None)
+			else:
+				# Trajectory tracking with a fixed speed profile.
+				waypoint_dict = self.ref_traj.get_waypoints(state['x0'], state['y0'], state['psi0'], v_target=target_vel)	
+
+			if waypoint_dict['stop']:
+				self.acc_pub.publish(Float32Msg(-1.0))
+				self.steer_pub.publish(Float32Msg(0.0))
+			else:
+				update_dict.update(state)
+				update_dict.update(waypoint_dict)
+				update_dict['acc_prev'] = self.acc_prev
+				update_dict['df_prev']  = self.steer_prev			
+
+				self.mpc.update(update_dict)
+				sol_dict = self.mpc.solve()
+
+				if sol_dict['optimal']:
+					self.acc_pub.publish(Float32Msg(sol_dict['u_control'][0]))
+					self.steer_pub.publish(Float32Msg(sol_dict['u_control'][1]))
+					self.acc_prev   = sol_dict['u_control'][0]
+					self.steer_prev = sol_dict['u_control'][1]
+
+				if 'warm_start' not in update_dict.keys():
+					update_dict['warm_start'] = {}
+					
+				update_dict['warm_start']['z_ws']  = sol_dict['z_mpc'] 
+				update_dict['warm_start']['u_ws']  = sol_dict['u_mpc'] 
+				update_dict['warm_start']['sl_ws'] = sol_dict['sl_mpc'] 
+
+				self.publish_mpc_path_message(sol_dict)
+
 			loop_rate.sleep()
-			continue
 
-		# Ref lock used to ensure that get/set of state doesn't happen simultaneously.
-		global ref_lock				
-		ref_lock = True
-
-		global x_curr, y_curr, psi_curr, v_curr, des_speed, command_stop
-
-		if not track_with_time:
-			# fixed velocity-based path tracking
-			x_ref, y_ref, psi_ref, stop_cmd = grt.get_waypoints(x_curr, y_curr, psi_curr, des_speed)
-			if stop_cmd == True:
-				command_stop = True			
-		else:
-			# trajectory tracking
-			x_ref, y_ref, psi_ref, stop_cmd = grt.get_waypoints(x_curr, y_curr, psi_curr)
-
-			if stop_cmd == True:
-				command_stop = True
+	def publish_mpc_path_message(self, sol_dict):
+		mpc_path_msg = mpc_path()
 		
-		# Update Model
-		kmpc.update_initial_condition(x_curr, y_curr, psi_curr, v_curr)
-		kmpc.update_reference(x_ref[1:], y_ref[1:], psi_ref[1:], 10*[des_speed]) # TODO: use parameter horizon
+		mpc_path_msg.header.stamp = rospy.get_rostime()
+		mpc_path_msg.solve_status = 'optimal' if sol_dict['optimal'] else 'suboptimal'
+		mpc_path_msg.solve_time = sol_dict['solve_time']
 
-		ref_lock = False
-		
-		if command_stop == False:
-			# a_opt, df_opt, is_opt, solv_time = kmpc.solve_model()
-			
-			# Use warm start from previous solution.
-			is_opt, solve_time, u_opt, z_opt, sl_opt, z_ref = kmpc.solve(z_dv_warm_start = z_ws, u_dv_warm_start = u_ws, sl_dv_warm_start = sl_ws)			
+		mpc_path_msg.xs   = sol_dict['z_mpc'][:,0] # x_mpc
+		mpc_path_msg.ys   = sol_dict['z_mpc'][:,1] # y_mpc
+		mpc_path_msg.psis = sol_dict['z_mpc'][:,2] # psi_mpc
+		mpc_path_msg.vs   = sol_dict['z_mpc'][:,3] # v_mpc
 
-			# Don't warm start.
-			# is_opt, solve_time, u_opt, z_opt, sl_opt, z_ref = kmpc.solve()			
+		mpc_path_msg.xr   = sol_dict['z_ref'][:,0] # x_ref
+		mpc_path_msg.yr   = sol_dict['z_ref'][:,1] # y_ref
+		mpc_path_msg.psir = sol_dict['z_ref'][:,2] # psi_ref
+		mpc_path_msg.vr   = sol_dict['z_ref'][:,3] # v_ref
 
-			rostm = rospy.get_rostime()
-			tm_secs = rostm.secs + 1e-9 * rostm.nsecs
+		mpc_path_msg.acc  = sol_dict['u_mpc'][:,0] # acc_mpc
+		mpc_path_msg.df   = sol_dict['u_mpc'][:,1] # df_mpc
 
-			log_str = "Solve Status: %s, Acc: %.3f, SA: %.3f, ST: %.3f" % (is_opt, u_opt[0,0], u_opt[0,1], solve_time)
-			rospy.loginfo(log_str)
-
-			if is_opt:
-				acc_pub_obj.publish(Float32Msg(u_opt[0,0]))
-				steer_pub_obj.publish(Float32Msg(u_opt[0,1]))
-
-			kmpc.update_previous_input(u_opt[0,0], u_opt[0,1])
-			z_ws, u_ws, sl_ws = z_opt, u_opt, sl_opt
-
-			mpc_path_msg = mpc_path()
-			mpc_path_msg.header.stamp = rostm
-			mpc_path_msg.solv_status  = str(is_opt)
-			mpc_path_msg.solv_time = solve_time
-
-			mpc_path_msg.xs   = z_opt[:,0] 	# x_mpc
-			mpc_path_msg.ys   = z_opt[:,1] 	# y_mpc
-			mpc_path_msg.psis = z_opt[:,2] 	# psi_mpc	
-			mpc_path_msg.vs   = z_opt[:,3]	# v_mpc
-
-			mpc_path_msg.xr   = z_ref[:,0] 	# x_ref
-			mpc_path_msg.yr   = z_ref[:,1] 	# y_ref
-			mpc_path_msg.psir = z_ref[:,2] 	# psi_ref
-			mpc_path_msg.vr   = z_ref[:,3]  # v_ref
-			
-			mpc_path_msg.df   = u_opt[:,0]	# d_f
-			mpc_path_msg.acc  = u_opt[:,1]	# acc
-
-			mpc_path_pub_obj.publish(mpc_path_msg)
-		else:
-			acc_pub_obj.publish(Float32Msg(-1.0))
-			steer_pub_obj.publish(Float32Msg(0.0))						
-
-		loop_rate.sleep()
-
-def start_mpc_node():
-	rospy.init_node("dbw_mpc_pf")
-	acc_pub   = rospy.Publisher("/control/accel", Float32Msg, queue_size=2)
-	steer_pub = rospy.Publisher("/control/steer_angle", Float32Msg, queue_size=2)
-
-	acc_enable_pub   = rospy.Publisher("/control/enable_accel", UInt8Msg, queue_size=2, latch=True)
-	steer_enable_pub = rospy.Publisher("/control/enable_spas",  UInt8Msg, queue_size=2, latch=True)
-
-	mpc_path_pub = rospy.Publisher("mpc_path", mpc_path, queue_size=2)
-	sub_state  = rospy.Subscriber("state_est", state_est, state_est_callback, queue_size=2)
-
-	acc_enable_pub.publish(UInt8Msg(2))
-	steer_enable_pub.publish(UInt8Msg(1))
-	pub_loop(acc_pub, steer_pub, mpc_path_pub)
-
+		self.mpc_path_pub.publish(mpc_path_msg)
+				
+###########################################
+#### Main Function
+###########################################
 if __name__=='__main__':	
-	start_mpc_node()
+	MPCCommandPublisher()

@@ -1,6 +1,6 @@
 Header header
-string solv_status  # e.g. optimal, infeasible, etc.
-float64 solv_time   # time used to solve the optimization problem in seconds
+string solve_status # e.g. optimal, infeasible, etc.
+float64 solve_time  # time used to solve the optimization problem in seconds
 float64[] xs        # MPC solution for x coordinate (m)
 float64[] ys        # MPC solution for y coordinate (m)
 float64[] vs        # MPC solution for speed (m/s)
