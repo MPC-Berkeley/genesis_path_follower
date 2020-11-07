@@ -22,21 +22,20 @@ class PlotGPSTrajectory():
 		else:
 			raise ValueError("No Matfile of waypoints were provided!")
 
-		if not (rospy.has_param('lat0') and rospy.has_param('lon0') and rospy.has_param('yaw0')):
+		if not (rospy.has_param('lat0') and rospy.has_param('lon0')):
 			raise ValueError('Invalid rosparam global origin provided!')
 
 		lat0 = rospy.get_param('lat0')
-		lon0 = rospy.get_param('lon0')
-		yaw0 = rospy.get_param('yaw0')
+		lon0 = rospy.get_param('lon0')		
 
-		grt = r.GPSRefTrajectory(mat_filename=mat_name, LAT0=lat0, LON0=lon0, YAW0=yaw0) # only 1 should be valid.
+		global_traj = r.GPSRefTrajectory(mat_filename=mat_name, LAT0=lat0, LON0=lon0) # only 1 should be valid.
 
 		# Set up Data
-		self.x_global_traj = grt.get_Xs()
-		self.y_global_traj = grt.get_Ys()
+		self.x_global_traj = global_traj.trajectory[:, global_traj.access_map['x']]
+		self.y_global_traj = global_traj.trajectory[:, global_traj.access_map['y']]
 		self.x_ref_traj = self.x_global_traj[0]; self.y_ref_traj = self.y_global_traj[0]
 		self.x_mpc_traj = self.x_global_traj[0]; self.y_mpc_traj = self.y_global_traj[0]
-		self.x_vehicle = self.x_global_traj[0];  self.y_vehicle = self.y_global_traj[0]; self.psi_vehicle = yaw0
+		self.x_vehicle = self.x_global_traj[0];  self.y_vehicle = self.y_global_traj[0]; self.psi_vehicle = 0.
 		self.df_vehicle = 0.0	# rad	(steering angle)
 		
 		# This should be include in a launch file/yaml for the future.

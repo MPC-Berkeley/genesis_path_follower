@@ -18,14 +18,13 @@ class PlotGPSTrajectory():
 		else:
 			raise ValueError("No Matfile of waypoints were provided!")
 
-		if not (rospy.has_param('lat0') and rospy.has_param('lon0') and rospy.has_param('yaw0')):
+		if not (rospy.has_param('lat0') and rospy.has_param('lon0')):
 			raise ValueError('Invalid rosparam global origin provided!')
 
 		lat0 = rospy.get_param('lat0')
-		lon0 = rospy.get_param('lon0')
-		yaw0 = rospy.get_param('yaw0')
+		lon0 = rospy.get_param('lon0')		
 
-		grt = r.GPSRefTrajectory(mat_filename=mat_name, LAT0=lat0, LON0=lon0, YAW0=yaw0) # only 1 should be valid.
+		grt = r.GPSRefTrajectory(mat_filename=mat_name, LAT0=lat0, LON0=lon0) # only 1 should be valid.
 
 		# Set up Data
 		self.x_global_traj = grt.get_Xs()

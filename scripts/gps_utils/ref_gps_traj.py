@@ -32,14 +32,14 @@ def latlon_to_XY(lat0, lon0, lat1, lon1):
 
 	return X,Y
 
-def compute_curvature(cdists, yaws):
-	# This function estimates curvature using finite differences (curv = dyaw/dcdist).
+def compute_curvature(cdists, psis):
+	# This function estimates curvature using finite differences (curv = dpsi/dcdist).
 	diff_dists = np.diff(cdists)
-	diff_yaws  = np.diff(np.unwrap(yaws))
+	diff_psis  = np.diff(np.unwrap(psis))
 
-	assert np.max( np.abs(diff_yaws) )  < np.pi, "Detected a jump in the angle difference."
+	assert np.max( np.abs(diff_psis) )  < np.pi, "Detected a jump in the angle difference."
 
-	curv_raw = diff_psis / np.maximum(diff_dists, 0.1) # use diff_dists where greater than 10 cm
+	curv_raw = diff_psis / np.maximum(diff_dists, 0.1) # use diff_dists where greater than 10 cm	
 	curv_raw = np.insert(curv_raw, len(curv_raw), curv_raw[-1]) # curvature at last waypoint
 
 	# Curvature Filtering: (https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.filtfilt.html)
@@ -64,8 +64,8 @@ class GPSRefTrajectory():
 	Class to load a matfile GPS trajectory and provide functions to obtain a
 	local trajectory from the full trajectory for MPC using the current vehicle state.
 	'''	
-	def __init__(self, mat_filename=None, LAT0=None, LON0=None, YAW0=None, traj_horizon=8, traj_dt=0.2):
-		if type(LAT0) != float or type(LON0) != float or type(YAW0) != float:
+	def __init__(self, mat_filename=None, LAT0=None, LON0=None, traj_horizon=8, traj_dt=0.2):
+		if type(LAT0) != float or type(LON0) != float:
 			raise ValueError('Did not provide proper origin info.')
 
 		if mat_filename is None:
@@ -77,7 +77,7 @@ class GPSRefTrajectory():
 		tms  = []		# ROS Timestamps (s)
 		lats = []		# Latitude (decimal degrees)
 		lons = []		# Longitude (decimal degrees)
-		yaws = []		# heading (radians ccw wrt East, i.e.global X-axis, aka psi)
+		psis = []		# yaw angle (radians ccw wrt East, i.e.global X-axis)
 		Xs   = []		# global X position (m, wrt to origin at LON0, LAT0)
 		Ys   = []		# global Y position (m, wrt to origin at LON0, LAT0)
 		cdists = []		# cumulative distance along path (m, aka "s" in Frenet formulation)
@@ -87,7 +87,7 @@ class GPSRefTrajectory():
 		tms  = data_dict['t']
 		lats = data_dict['lat']
 		lons = data_dict['lon']
-		yaws = data_dict['psi']
+		psis = data_dict['psi']
 
 		for i in range(len(lats)):
 			lat = lats[i]; lon = lons[i]
@@ -100,16 +100,16 @@ class GPSRefTrajectory():
 			Xs.append(X)
 			Ys.append(Y)
 
-		curv = compute_curvature(cdists, yaws)
+		curvs = compute_curvature(cdists, psis)
 
 		# Trajectory in Numpy Array and Dict to Look up by Index.  Keep these two consistent!
 		# Alternatively, could use pandas to organize this.  But would require an additional import.
-		self.trajectory =  np.column_stack((tms, lats, lons, yaws, Xs, Ys, cdists, curvs)) 
+		self.trajectory =  np.column_stack((tms, lats, lons, psis, Xs, Ys, cdists, curvs)) 
 		self.access_map = {key:index for index, key in \
-		                   enumerate(['t', 'lat', 'lon', 'yaw', 'x', 'y', 'cdist', 'curv'])}
+		                   enumerate(['t', 'lat', 'lon', 'psi', 'x', 'y', 'cdist', 'curv'])}
 
 	# Main callback function to get the waypoints from the vehicle's initial pose and the prerecorded global trajectory.
-	def get_waypoints(self, X_init, Y_init, yaw_init, v_target=None):
+	def get_waypoints(self, X_init, Y_init, psi_init, v_target=None):
 		waypoint_dict = {}
 
 		xy_traj = self.trajectory[ :, [self.access_map['x'], self.access_map['y']] ] # XY trajectory
@@ -121,16 +121,16 @@ class GPSRefTrajectory():
 
 		# (2) Find error coordinates (aka road-aligned or Frenet frame):
 		xy_waypoint  = self.trajectory[ closest_index, [self.access_map['x'], self.access_map['y']] ]
-		yaw_waypoint = self.trajectory[ closest_index, self.access_map['yaw'] ]
-		rot_global_to_frenet = np.array([[ np.cos(yaw_waypoint), np.sin(yaw_waypoint)], \
-			                             [-np.sin(yaw_waypoint), np.cos(yaw_waypoint)]])
+		psi_waypoint = self.trajectory[ closest_index, self.access_map['psi'] ]
+		rot_global_to_frenet = np.array([[ np.cos(psi_waypoint), np.sin(psi_waypoint)], \
+			                             [-np.sin(psi_waypoint), np.cos(psi_waypoint)]])
 
 		error_xy = xy_query - xy_waypoint # xy deviation (global frame)
 		error_frenet = np.dot(rot_global_to_frenet, error_xy[0,:]) # e_s, e_y deviation (Frenet frame)
 
 		waypoint_dict['s']     = self.trajectory[ closest_index, self.access_map['cdist'] ] # we assume e_s is approx. 0.
 		waypoint_dict['e_y']   = error_frenet[1]
-		waypoint_dict['e_psi'] = bound_angle_within_pi(yaw_init - yaw_waypoint)
+		waypoint_dict['e_psi'] = bound_angle_within_pi(psi_init - psi_waypoint)
 
 		# (3) Find the reference trajectory using distance or time interpolation.
 		#     WARNING: this function does not handle well the case where the car is far from the recorded path!
@@ -141,23 +141,27 @@ class GPSRefTrajectory():
 			# Given a velocity reference, use the cumulative distance for interpolation.
 			start_dist = self.trajectory[closest_index, self.access_map['cdist']]			
 			interp_by_key = 'cdist'
-			interp_to_fit = [h*self.traj_dt*v_target + start_dist for h in range(0, self.traj_horizon+1)]
+			interp_to_fit = [h*self.traj_dt*v_target + start_dist for h in range(1, self.traj_horizon+1)]
 		else:
 			# No velocity reference provided.  So use timestamp for interpolation.
 			start_tm   = self.trajectory[closest_index, self.access_map['t']]
 			interp_by_key = 't'
-			interp_to_fit = [h*self.traj_dt + start_tm for h in range(0, self.traj_horizon+1)]
+			interp_to_fit = [h*self.traj_dt + start_tm for h in range(1, self.traj_horizon+1)]
 
 		waypoint_dict = {}
-		for waypoint_key in ['x', 'y', 'yaw', 'cdist', 'curv']:
-			waypoint_dict[waypoint_key] = np.interp(interp_to_fit, \
+		for waypoint_key in ['x', 'y', 'psi', 'cdist', 'curv']:
+			waypoint_dict[waypoint_key + '_ref'] = np.interp(interp_to_fit, \
 				                                    self.trajectory[:, self.access_map[interp_by_key]], \
 				                                    self.trajectory[:, self.access_map[waypoint_key]])
-			if waypoint_key == 'yaw':
-				waypoint_dict['yaw'] = fix_heading_wraparound(waypoint_dict['yaw'], yaw_init)
+			if waypoint_key == 'psi':
+				waypoint_dict['psi_ref'] = fix_angle_reference(waypoint_dict['psi_ref'], psi_init)
+
+		# Reference velocity found by approximation using ds/dt finite differencing.
+		waypoint_dict['v_ref'] = np.diff(waypoint_dict['cdist_ref']) / self.traj_dt
+		waypoint_dict['v_ref'] = np.insert(waypoint_dict['v_ref'], len(waypoint_dict['v_ref']), waypoint_dict['v_ref'][-1]) # v_{N-1} = v_N
 
 		waypoint_dict['stop'] = False
-		if waypoint_dict['cdist'][-1] == self.trajectory[:, self.access_map['cdist']][-1]:
+		if waypoint_dict['cdist_ref'][-1] == self.trajectory[:, self.access_map['cdist']][-1]:
 			waypoint_dict['stop'] = True # reached the end of the trajectory, so give a stop command.
 
-		return waypoint_dict
+		return waypoint_dict # keys ['s', 'e_y, 'e_psi', 'x_ref', 'y_ref', 'psi_ref', 'cdist_ref', 'curv_ref', 'stop']

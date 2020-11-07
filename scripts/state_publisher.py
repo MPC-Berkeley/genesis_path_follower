@@ -110,15 +110,14 @@ def pub_loop():
 	rospy.Subscriber('/imu/data', Imu, parse_imu_data, queue_size=1)
 	rospy.Subscriber('/vehicle/steering', SteeringReport, parse_steering_angle, queue_size=1)
 
-	if not (rospy.has_param('lat0') and rospy.has_param('lon0') and rospy.has_param('yaw0')):
+	if not (rospy.has_param('lat0') and rospy.has_param('lon0')):
 		raise ValueError('Invalid rosparam global origin provided!')
 
 	if not rospy.has_param('time_check_on'):
 		raise ValueError('Did not specify if time validity should be checked!')
 
 	LAT0 = rospy.get_param('lat0')
-	LON0 = rospy.get_param('lon0')
-	YAW0 = rospy.get_param('yaw0')
+	LON0 = rospy.get_param('lon0')	
 	time_check_on = rospy.get_param('time_check_on')
 	
 	state_pub = rospy.Publisher('state_est', state_est, queue_size=1)
