@@ -46,12 +46,19 @@ class VehicleSimulator():
 			
 			curr_state = state_est()
 			curr_state.header.stamp = rospy.Time.now()
-			curr_state.x   = self.X
-			curr_state.y   = self.Y
-			curr_state.psi = self.psi
-			curr_state.v   = self.vx
-			curr_state.a   = self.acc
-			curr_state.df  = self.df
+			
+			curr_state.x        = self.X
+			curr_state.y        = self.Y
+			curr_state.psi      = self.psi
+			curr_state.v        = (self.vx**2 + self.vy**2)**0.5
+
+			curr_state.v_long   = self.vx
+			curr_state.v_lat    = self.vy
+			curr_state.yaw_rate = self.wz
+
+			curr_state.a_long   = self.acc
+			curr_state.a_lat    = self.a_y
+			curr_state.df       = self.df
 
 			self.state_pub.publish(curr_state)
 			self.r.sleep()
@@ -97,9 +104,11 @@ class VehicleSimulator():
 			if vx_n > 1e-6:
 				vy_n  = self.vy  + deltaT * ( 1.0/m*(Fyf*np.cos(self.df) + Fyr) - self.wz*self.vx )
 				wz_n  = self.wz  + deltaT * ( 1.0/Iz*(lf*Fyf*np.cos(self.df) - lr*Fyr) )
+				a_y = 1.0/m*(Fyf*np.cos(self.df) + Fyr)
 			else:
 				vy_n = 0.0
 				wz_n = 0.0
+				a_y = 0.
 
 			psi_n = self.psi + deltaT * ( self.wz )
 			X_n   = self.X   + deltaT * ( self.vx*np.cos(self.psi) - self.vy*np.sin(self.psi) )
@@ -112,6 +121,7 @@ class VehicleSimulator():
 			self.vx  = vx_n
 			self.vy  = vy_n
 			self.wz  = wz_n
+			self.a_y = a_y
 
 	def _update_low_level_control(self, dt_control):
 		# e_<n> = self.<n> - self.<n>_des
