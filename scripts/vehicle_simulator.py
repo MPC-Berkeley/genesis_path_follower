@@ -84,13 +84,16 @@ class VehicleSimulator():
 		deltaT = self.dt_model/disc_steps
 		self._update_low_level_control(self.dt_model)
 		for i in range(disc_steps):			
-
 			# Compute tire slip angle
 			alpha_f = 0.0
 			alpha_r = 0.0
 			if math.fabs(self.vx) > 1.0:
 				alpha_f = self.df - np.arctan2( self.vy+lf*self.wz, self.vx )
-				alpha_r = - np.arctan2( self.vy-lr*self.wz , self.vx)        		
+				alpha_r = - np.arctan2( self.vy-lr*self.wz , self.vx)        	
+
+			# Approximate tire force saturation.
+			alpha_f = np.clip(alpha_f, -0.1, 0.1) 
+			alpha_r = np.clip(alpha_r, -0.1, 0.1)
 			
 			# Compute lateral force at front and rear tire (linear model)
 			Fyf = C_alpha_f * alpha_f
