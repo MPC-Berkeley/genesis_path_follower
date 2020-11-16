@@ -128,9 +128,9 @@ class GPSRefTrajectory():
 		error_xy = xy_query - xy_waypoint # xy deviation (global frame)
 		error_frenet = np.dot(rot_global_to_frenet, error_xy[0,:]) # e_s, e_y deviation (Frenet frame)
 
-		waypoint_dict['s']     = self.trajectory[ closest_index, self.access_map['cdist'] ] # we assume e_s is approx. 0.
-		waypoint_dict['e_y']   = error_frenet[1]
-		waypoint_dict['e_psi'] = bound_angle_within_pi(psi_init - psi_waypoint)
+		waypoint_dict['s0']     = self.trajectory[ closest_index, self.access_map['cdist'] ] # we assume e_s is approx. 0.
+		waypoint_dict['e_y0']   = error_frenet[1]
+		waypoint_dict['e_psi0'] = bound_angle_within_pi(psi_init - psi_waypoint)
 
 		# (3) Find the reference trajectory using distance or time interpolation.
 		#     WARNING: this function does not handle well the case where the car is far from the recorded path!
@@ -148,7 +148,6 @@ class GPSRefTrajectory():
 			interp_by_key = 't'
 			interp_to_fit = [h*self.traj_dt + start_tm for h in range(1, self.traj_horizon+1)]
 
-		waypoint_dict = {}
 		for waypoint_key in ['x', 'y', 'psi', 'cdist', 'curv']:
 			waypoint_dict[waypoint_key + '_ref'] = np.interp(interp_to_fit, \
 				                                    self.trajectory[:, self.access_map[interp_by_key]], \
@@ -164,4 +163,4 @@ class GPSRefTrajectory():
 		if waypoint_dict['cdist_ref'][-1] == self.trajectory[:, self.access_map['cdist']][-1]:
 			waypoint_dict['stop'] = True # reached the end of the trajectory, so give a stop command.
 
-		return waypoint_dict # keys ['s', 'e_y, 'e_psi', 'x_ref', 'y_ref', 'psi_ref', 'cdist_ref', 'curv_ref', 'stop']
+		return waypoint_dict # keys ['s0', 'e_y0, 'e_psi0', 'x_ref', 'y_ref', 'psi_ref', 'cdist_ref', 'curv_ref', 'stop']

@@ -56,7 +56,8 @@ if controller_choice == 'kinematic_mpc':
 	from controllers.kinematic_mpc import KinMPCPathFollower as MPC
 	MPC_PARAMS = {'N' : 10, 'DT' : 0.2, 'Q' : [1., 1., 10., 0.0], 'R' : [10., 100.]}
 elif controller_choice == 'kinematic_frenet_mpc':
-	pass
+	from controllers.kinematic_frenet_mpc import KinFrenetMPCPathFollower as MPC
+	MPC_PARAMS = {'N' : 10, 'DT' : 0.2, 'Q' : [0., 100., 500., 1.], 'R' : [.01, .001]}
 else:
 	raise ValueError("Invalid controller selection: %s" % controller_choice)
 

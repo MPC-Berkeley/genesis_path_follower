@@ -1,3 +1,5 @@
+# XY Nonlinear Kinematic MPC Module.
+
 import time
 import casadi
 from controller import Controller
@@ -126,21 +128,21 @@ class KinMPCPathFollower(Controller):
 		self.opti.subject_to( self.opti.bounded(self.DF_MIN, self.df_dv,  self.DF_MAX) )
 
 		# Input Rate Bound Constraints
-		self.opti.subject_to( self.opti.bounded( self.A_DOT_MIN   -  self.sl_acc_dv[0], 
+		self.opti.subject_to( self.opti.bounded( self.A_DOT_MIN*self.DT -  self.sl_acc_dv[0], 
 			                                     self.acc_dv[0] - self.u_prev[0],
-			                                     self.A_DOT_MAX   + self.sl_acc_dv[0]) )
+			                                     self.A_DOT_MAX*self.DT   + self.sl_acc_dv[0]) )
 
-		self.opti.subject_to( self.opti.bounded( self.DF_DOT_MIN  -  self.sl_df_dv[0], 
+		self.opti.subject_to( self.opti.bounded( self.DF_DOT_MIN*self.DT  -  self.sl_df_dv[0], 
 			                                     self.df_dv[0] - self.u_prev[1],
-			                                     self.DF_DOT_MAX  + self.sl_df_dv[0]) )
+			                                     self.DF_DOT_MAX*self.DT  + self.sl_df_dv[0]) )
 
 		for i in range(self.N - 1):
-			self.opti.subject_to( self.opti.bounded( self.A_DOT_MIN   -  self.sl_acc_dv[i+1], 
+			self.opti.subject_to( self.opti.bounded( self.A_DOT_MIN*self.DT   -  self.sl_acc_dv[i+1], 
 				                                     self.acc_dv[i+1] - self.acc_dv[i],
-				                                     self.A_DOT_MAX   + self.sl_acc_dv[i+1]) )
-			self.opti.subject_to( self.opti.bounded( self.DF_DOT_MIN  -  self.sl_df_dv[i+1], 
+				                                     self.A_DOT_MAX*self.DT   + self.sl_acc_dv[i+1]) )
+			self.opti.subject_to( self.opti.bounded( self.DF_DOT_MIN*self.DT  -  self.sl_df_dv[i+1], 
 				                                     self.df_dv[i+1]  - self.df_dv[i],
-				                                     self.DF_DOT_MAX  + self.sl_df_dv[i+1]) )
+				                                     self.DF_DOT_MAX*self.DT  + self.sl_df_dv[i+1]) )
 		# Other Constraints
 		self.opti.subject_to( 0 <= self.sl_df_dv )
 		self.opti.subject_to( 0 <= self.sl_acc_dv )
