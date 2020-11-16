@@ -18,9 +18,9 @@ class VehicleSimulator():
 
 		self.tcmd_a = None	# rostime (s) of received acc command
 		self.tcmd_d = None	# rostime (s) of received df command
-		self.acc = 0.0		# actual acceleration (m/s^2)
+		self.acc = 0.0		# actual longitudinal acceleration (m/s^2)
 		self.df = 0.0		# actual steering angle (rad)
-		self.acc_des = 0.0	# desired acceleration	(m/s^2)
+		self.acc_des = 0.0	# desired longitudinal acceleration	(m/s^2)
 		self.df_des = 0.0	# desired steering_angle (rad)
 
 		self.dt_model = 0.01				# vehicle model update period (s) and frequency (Hz)
@@ -34,6 +34,7 @@ class VehicleSimulator():
 		self.vx  = rospy.get_param('V0', 0.0)		# longitudinal velocity (m/s)
 		self.vy  = 0.0								# lateral velocity (m/s)
 		self.wz  = 0.0								# yaw rate (rad/s)
+		self.a_y = 0.0								# lateral acceleration (m/s^2)
 		
 		self.acc_time_constant = 0.4 # s
 		self.df_time_constant  = 0.1 # s
