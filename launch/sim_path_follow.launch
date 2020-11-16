@@ -16,9 +16,7 @@
   <param name="vehicle/target_vel" type="double" value="1.0" />
 
   <!-- Waypoints CSV to specify path. -->
-  <!-- Set is_heading_info to true if Heading (N = 0) is used instead of Yaw (E = 0). -->
-  <param name="vehicle/mat_waypoints" type="str" value="$(find genesis_path_follower)/paths/fast_lap_8_20.mat" />
-  <param name="vehicle/time_check_on" type="bool" value="False"/>
+  <param name="vehicle/mat_waypoints" type="str" value="$(find genesis_path_follower)/paths/cpg_fast_lap.mat" />
 
   <!-- Controller Selection -->
   <param name="vehicle/controller" type="str" value="kinematic_mpc"/>

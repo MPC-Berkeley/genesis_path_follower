@@ -9,22 +9,14 @@
 
   <param name="vehicle/scripts_dir" type="str" value="$(find genesis_path_follower)/scripts/" />
 
-  <!-- The trajectory can be generated using recorded time or a target velocity. -->
-  <!-- Set track_using_time to True to allow for time-varying velocity. -->
-  <!-- Set track_using_time to False to use target_vel (m/s) instead. -->
-  <param name="vehicle/track_using_time" type="bool" value="True" />
-  <param name="vehicle/target_vel" type="double" value="1.0" />
-
   <!-- Waypoints CSV to specify path. -->
-  <!-- Set is_heading_info to true if Heading (N = 0) is used instead of Yaw (E = 0). -->
-  <param name="vehicle/mat_waypoints" type="str" value="$(find genesis_path_follower)/paths/slow_lap_8_20.mat" />
-  <param name="vehicle/time_check_on" type="bool" value="False"/>
+  <param name="vehicle/mat_waypoints" type="str" value="$(find genesis_path_follower)/paths/cpg_fast_lap.mat" />
 
   <!--...................................................................-->
 
   <!-- State Publishing and Plotting Nodes -->
   <node ns="vehicle" pkg="genesis_path_follower" type="state_publisher.py" name="state_pub_node" output="log"/>
-  <node ns="vehicle" pkg="genesis_path_follower" type="gps_plotter.py" name="plot_node" output="log"/>
+  <node ns="vehicle" pkg="genesis_path_follower" type="gps_vehicle_plotter.py" name="plot_node" output="log"/>
 
   <!-- Recording Node -->
   <arg name="exclude_topics" default="/image_raw"/>
