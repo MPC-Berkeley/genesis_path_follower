@@ -15,12 +15,12 @@ class KinFrenetMPCPathFollower(Controller):
 		         L_R        = 1.4987,        # distance from CoG to rear axle (m)
 				 AX_MAX     =  5.0,		
 		         AX_MIN     = -10.0,         # min/max longitudinal acceleration constraint (m/s^2) 
-				 AY_MAX     =  4.0,		
-				 AY_MIN     = -4.0,          # min/max lateral acceleration constraint (m/s^2) 	
+				 AY_MAX     =  3.0,		
+				 AY_MIN     = -3.0,          # min/max lateral acceleration constraint (m/s^2) 	
 		         DF_MAX     =  30*np.pi/180,
 		         DF_MIN     = -30*np.pi/180, # min/max front steer angle constraint (rad)
-		         AX_DOT_MAX  =  3.,
-		         AX_DOT_MIN  = -3.,          # min/max longitudinal jerk constraint (m/s^3)
+		         AX_DOT_MAX  =  1.5.,
+		         AX_DOT_MIN  = -1.5.,          # min/max longitudinal jerk constraint (m/s^3)
 				 AY_DOT_MAX  =  5.,
 		         AY_DOT_MIN  = -5.,          # min/max lateral jerk constraint (m/s^3)
 		         DF_DOT_MAX =  30*np.pi/180,

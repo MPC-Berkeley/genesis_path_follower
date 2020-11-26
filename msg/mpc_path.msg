@@ -11,3 +11,10 @@ float64[] vr        # MPC reference for ""
 float64[] psir      # MPC reference for ""
 float64[] df        # MPC solution for front steering angle (rad)
 float64[] acc       # MPC solution for acceleration (m/s^2)
+
+float64[] ss        # MPC solution for Frenet s (m)
+float64[] eys       # MPC solution for Frenet ey (m)
+float64[] epsis     # MPC solution for Frenet epsi (m)
+
+float64[] crf       # curvature profile
+float64 vrf         # curvature-aware velocity limit

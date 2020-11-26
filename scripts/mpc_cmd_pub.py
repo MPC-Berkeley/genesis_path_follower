@@ -57,7 +57,7 @@ if controller_choice == 'kinematic_mpc':
 	MPC_PARAMS = {'N' : 10, 'DT' : 0.2, 'Q' : [1., 1., 10., 0.0], 'R' : [10., 100.]}
 elif controller_choice == 'kinematic_frenet_mpc':
 	from controllers.kinematic_frenet_mpc import KinFrenetMPCPathFollower as MPC
-	MPC_PARAMS = {'N' : 10, 'DT' : 0.2, 'Q' : [0., 100., 500., 1.], 'R' : [.01, .001]}
+	MPC_PARAMS = {'N' : 10, 'DT' : 0.2, 'Q' : [0., 100., 500., 0.5], 'R' : [10., 100.]}
 else:
 	raise ValueError("Invalid controller selection: %s" % controller_choice)
 
@@ -166,6 +166,14 @@ class MPCCommandPublisher():
 		mpc_path_msg.psis = sol_dict['z_mpc'][:,2] # psi_mpc
 		mpc_path_msg.vs   = sol_dict['z_mpc'][:,3] # v_mpc
 
+		if 'z_mpc_frenet' in sol_dict:
+			mpc_path_msg.ss    = sol_dict['z_mpc_frenet'][:,0]
+			mpc_path_msg.eys   = sol_dict['z_mpc_frenet'][:,1]
+			mpc_path_msg.epsis = sol_dict['z_mpc_frenet'][:,2]
+
+			mpc_path_msg.vrf   = sol_dict['v_ref_frenet']
+			mpc_path_msg.crf   = sol_dict['curv_ref_frenet']
+
 		mpc_path_msg.xr   = sol_dict['z_ref'][:,0] # x_ref
 		mpc_path_msg.yr   = sol_dict['z_ref'][:,1] # y_ref
 		mpc_path_msg.psir = sol_dict['z_ref'][:,2] # psi_ref
@@ -173,6 +181,8 @@ class MPCCommandPublisher():
 
 		mpc_path_msg.acc  = sol_dict['u_mpc'][:,0] # acc_mpc
 		mpc_path_msg.df   = sol_dict['u_mpc'][:,1] # df_mpc
+
+
 
 		self.mpc_path_pub.publish(mpc_path_msg)
 				
