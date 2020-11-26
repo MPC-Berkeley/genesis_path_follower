@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import rospy
 import math as m
+import numpy as np
 from tf.transformations import euler_from_quaternion
 from sensor_msgs.msg import NavSatFix
 from geometry_msgs.msg import TwistWithCovarianceStamped
@@ -56,11 +57,10 @@ class StatePublisher(object):
 		         'tm_df', 'df']
 		for attr in attrs:
 			setattr(self, attr, None)
-
-		rospy.Subscriber('/gps/fix', NavSatFix, self._parse_gps_fix, queue_size=1)
-		rospy.Subscriber('/gps/vel', TwistWithCovarianceStamped, self._parse_gps_vel, queue_size=1)
-		rospy.Subscriber('/imu/data', Imu, self._parse_imu_data, queue_size=1)
-		rospy.Subscriber('/vehicle/steering', SteeringReport, self._parse_steering_angle, queue_size=1)
+		self.tm_df  = None
+		self.tm_gps = None
+		self.tm_vel = None
+		self.tm_imu = None
 
 		if not (rospy.has_param('lat0') and rospy.has_param('lon0')):
 			raise ValueError('Invalid rosparam global origin provided!')
@@ -73,6 +73,11 @@ class StatePublisher(object):
 		time_check_on = rospy.get_param('time_check_on')
 		
 		state_pub = rospy.Publisher('state_est', state_est, queue_size=1)
+
+		rospy.Subscriber('/gps/fix', NavSatFix, self._parse_gps_fix, queue_size=1)
+		rospy.Subscriber('/gps/vel', TwistWithCovarianceStamped, self._parse_gps_vel, queue_size=1)
+		rospy.Subscriber('/imu/data', Imu, self._parse_imu_data, queue_size=1)
+		rospy.Subscriber('/vehicle/steering', SteeringReport, self._parse_steering_angle, queue_size=1)
 
 		r = rospy.Rate(100)
 		while not rospy.is_shutdown():		

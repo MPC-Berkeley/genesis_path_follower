@@ -19,8 +19,8 @@ class KinFrenetMPCPathFollower(Controller):
 				 AY_MIN     = -3.0,          # min/max lateral acceleration constraint (m/s^2) 	
 		         DF_MAX     =  30*np.pi/180,
 		         DF_MIN     = -30*np.pi/180, # min/max front steer angle constraint (rad)
-		         AX_DOT_MAX  =  1.5.,
-		         AX_DOT_MIN  = -1.5.,          # min/max longitudinal jerk constraint (m/s^3)
+		         AX_DOT_MAX  =  1.5,
+		         AX_DOT_MIN  = -1.5,          # min/max longitudinal jerk constraint (m/s^3)
 				 AY_DOT_MAX  =  5.,
 		         AY_DOT_MIN  = -5.,          # min/max lateral jerk constraint (m/s^3)
 		         DF_DOT_MAX =  30*np.pi/180,
@@ -202,8 +202,8 @@ class KinFrenetMPCPathFollower(Controller):
 			u_mpc    = self.opti.debug.value(self.u_dv)
 			z_mpc    = self.opti.debug.value(self.z_dv)
 			sl_mpc   = self.opti.debug.value(self.sl_ay_dv)
-			curv_ref = sol.value(self.curv_ref)
-			v_ref    = sol.value(self.v_ref)
+			curv_ref = self.opti.debug.value(self.curv_ref)
+			v_ref    = self.opti.debug.value(self.v_ref)
 			is_opt   = False
 
 		solve_time = time.time() - st
