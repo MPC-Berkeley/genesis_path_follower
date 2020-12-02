@@ -16,5 +16,5 @@ float64[] ss        # MPC solution for Frenet s (m)
 float64[] eys       # MPC solution for Frenet ey (m)
 float64[] epsis     # MPC solution for Frenet epsi (m)
 
-float64[] crf       # curvature profile
-float64 vrf         # curvature-aware velocity limit
+float64[] crf       # curvature reference profile for Frenet (rad/m)
+float64 vrf         # curvature-aware velocity reference for Frenet (m/s)

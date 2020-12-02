@@ -159,7 +159,7 @@ class KinFrenetMPCPathFollower(Controller):
 		
 		cost = 0
 		for i in range(self.N):
-			cost += _quad_form(self.z_dv[i, :]-self.z_ref, self.Q)
+			cost += _quad_form(self.z_dv[i+1, :]-self.z_ref, self.Q)
 
 		for i in range(self.N - 1):
 			cost += _quad_form(self.u_dv[i+1, :] - self.u_dv[i,:], self.R)
