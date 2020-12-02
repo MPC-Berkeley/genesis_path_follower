@@ -1,20 +1,22 @@
 # Frenet PID Module.
 
 import time
-import casadi
 import numpy as np
 from controller import Controller
 
-class FrenetPathFollower(Controller):
+class KinFrenetPIDPathFollower(Controller):
 	##
 	def __init__(self, 
 		         N          = 10,            # timesteps in MPC Horizon
 		         DT       	= 0.2,           # discretization time between timesteps (s)
+		         L_F        = 1.5213,        # distance from CoG to front axle (m)
+		         L_R        = 1.4987,        # distance from CoG to rear axle (m)
 		         kLA        = 10,            # Lookahead distance (m)
 		         k_delta    = 1.,            # Gain for lookahead error
 		         kp_acc     = 1.,            # Proportional Gain for velocity error
 		         ki_acc     = 0.1,           # Integrator Gain for velocity error
 		         INT_MAX    = 5.,            # Integrator error max value to avoid windup
+				 AY_MAX     = 3.,
 				 AX_MAX     =  5.0,		
 		         AX_MIN     = -10.0,         # min/max longitudinal acceleration constraint (m/s^2) 
 		         DF_MAX     =  30*np.pi/180,
@@ -37,12 +39,33 @@ class FrenetPathFollower(Controller):
 		self.z_curr   = np.array([0., 0., 0., 0.]) # s0, ey0, epsi0, v0
 		self.curv_ref = np.zeros(self.N)
 		self.v_ref    = 1.
-		self.u_prev   = np.zeros([0., 0.]) 
+		self.u_prev   = np.array([0., 0.]) 
 
 		self.int_error = 0.
 
+	def _get_frenet_trajectory(self, u_mpc):
+		z_mpc_frenet = np.ones((1 + u_mpc.shape[0], 4)) * np.nan
+		z_mpc_frenet[0, :] = self.z_curr
+
+		for ind, u in enumerate(u_mpc):
+			s, ey, ep, v = z_mpc_frenet[ind, :]
+			u_acc, u_df = u
+
+			beta = np.arctan( self.L_R / (self.L_F + self.L_R) * np.tan(u_df) )
+			dyawdt = v / self.L_R * np.sin(beta)
+			dsdt = v * np.cos(ep+beta) / (1 - ey * self.curv_ref[ind] )
+			
+			sn  = s  + self.DT * (dsdt)  
+			eyn = ey + self.DT * (v * np.sin(ep + beta)) 
+			epn = ep + self.DT * (dyawdt - dsdt * self.curv_ref[ind])
+			vn  = v  + self.DT * (u_acc)
+
+			z_mpc_frenet[ind+1, :] = [sn, eyn, epn, vn]
+
+		return z_mpc_frenet
+
 	def _get_global_trajectory(self, u_mpc):
-		z_mpc = np.ones((self.N+1, 4)) * np.nan
+		z_mpc = np.ones((1 + u_mpc.shape[0], 4)) * np.nan
 		z_mpc[0, :] = self.global_state
 
 		for ind, u in enumerate(u_mpc):
@@ -63,44 +86,51 @@ class FrenetPathFollower(Controller):
 	def solve(self):
 		st = time.time()
 		
+		_, ey, ep, v = self.z_curr
+
 		# Acceleration Control.
-		vel_error = self.z_curr[-1] - self.v_ref
+		vel_error = self.v_ref - v
 		self.int_error += vel_error * self.DT
 
 		if np.abs(self.int_error) > self.INT_MAX:
 			self.int_error = 0.
 
-		ax = - (self.kp_acc * vel_error  + self.ki_acc * self.int_error)
+		ax = (self.kp_acc * vel_error  + self.ki_acc * self.int_error)
 
 		# Steering Control.
-		ey, ep = self.z_curr[1:3]
-		df = self.k_delta * (ey + self.kLA * ep)
+		
+		df = -self.k_delta * (ey + self.kLA * ep)
 
 		# Actuation Limits
 		ax_prev, df_prev = self.u_prev
 
+
+		# ax = np.clip(ax, ax_prev - self.AX_DOT_MIN * self.DT, ax_prev + self.AX_DOT_MAX * self.DT)
 		ax = np.clip(ax, self.AX_MIN, self.AX_MAX)
-		ax = np.clip(ax, ax_prev - self.AX_DOT_MIN * self.DT, ax_prev + self.AX_DOT_MAX * self.DT)
+
 		
+		# df = np.clip(df, df_prev - self.DF_DOT_MIN * self.DT, df_prev + self.DF_DOT_MAX * self.DT)
 		df = np.clip(df, self.DF_MIN, self.DF_MAX)
-		df = np.clip(df, df_prev - self.DF_DOT_MIN * self.DT, df_prev + self.DF_DOT_MAX * self.DT)
+		
 
 		solve_time = time.time() - st
+
+		u_mpc = np.array([ax, df]).reshape(1, 2)
 		
 		sol_dict = {}
-		sol_dict['u_control']    = u_mpc[0,:]      # control input to apply based on solution
-		sol_dict['optimal']      = is_opt          # whether the solution is optimal or not
-		sol_dict['solve_time']   = solve_time      # how long the solver took in seconds
-		sol_dict['u_mpc']        = u_mpc           # solution inputs (N by 2, see self.u_dv above) 
-		sol_dict['z_mpc_frenet'] = z_mpc           # solution states (N+1 by 4, see self.z_dv above)
-		sol_dict['sl_mpc']       = sl_mpc          # solution slack vars (N by 1, see self.sl_ay_dv above)
+		sol_dict['u_control']    = u_mpc[0,:]                         # control input to apply based on solution
+		sol_dict['optimal']      = True                               # whether the solution is optimal or not (not really relevant for PID but used to signal this should be applied)
+		sol_dict['solve_time']   = solve_time                         # how long the solver took in seconds
+		sol_dict['u_mpc']        = u_mpc                              # solution inputs (here is just a 1 by 2) 
+		sol_dict['z_mpc_frenet'] = self._get_frenet_trajectory(u_mpc) # solution states (N+1 by 4, see self.z_dv above)
 		
-		sol_dict['v_ref_frenet']    = v_ref        # velocity reference (scalar)
-		sol_dict['curv_ref_frenet'] = curv_ref     # curvature reference (N by 1)
+		sol_dict['v_ref_frenet']    = self.v_ref        # velocity reference (scalar)
+		sol_dict['curv_ref_frenet'] = self.curv_ref     # curvature reference (N by 1)
 
 		sol_dict['z_mpc'] = self._get_global_trajectory(u_mpc) # get MPC solution trajectory in global frame (N+1, 4)
 		sol_dict['z_ref'] = self.global_ref                    # state reference (N by 4)
-		
+
+		sol_dict['sl_mpc'] = np.zeros((u_mpc.shape))
 
 		return sol_dict
 
@@ -121,7 +151,7 @@ class FrenetPathFollower(Controller):
 
 		self.curv_ref = update_dict['curv_ref']
 		self.v_ref    = np.clip(v_desired, -v_limit, v_limit )
-		self.u_prev   = np.zeros([update_dict[key] for key in ['acc_prev', 'df_prev']]) 
+		self.u_prev   = np.array([update_dict[key] for key in ['acc_prev', 'df_prev']]) 
 
 if __name__ == '__main__':
 	kmpc = KinFrenetMPCPathFollower()

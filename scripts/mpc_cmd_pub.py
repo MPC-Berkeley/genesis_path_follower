@@ -58,6 +58,10 @@ if controller_choice == 'kinematic_mpc':
 elif controller_choice == 'kinematic_frenet_mpc':
 	from controllers.kinematic_frenet_mpc import KinFrenetMPCPathFollower as MPC
 	MPC_PARAMS = {'N' : 10, 'DT' : 0.2, 'Q' : [0., 100., 500., 0.5], 'R' : [10., 100.]}
+elif controller_choice == 'kinematic_frenet_pid':
+	# TODO: fix MPC vs. PID discrepancy
+	from controllers.kinematic_frenet_pid import KinFrenetPIDPathFollower as MPC
+	MPC_PARAMS = {'N' : 10, 'DT' : 0.2, 'kLA' : 10, 'k_delta': 0.035, 'kp_acc': 0.1, 'ki_acc': 0.01}
 else:
 	raise ValueError("Invalid controller selection: %s" % controller_choice)
 
