@@ -105,11 +105,11 @@ class KinFrenetPIDPathFollower(Controller):
 		ax_prev, df_prev = self.u_prev
 
 
-		# ax = np.clip(ax, ax_prev - self.AX_DOT_MIN * self.DT, ax_prev + self.AX_DOT_MAX * self.DT)
+		ax = np.clip(ax, ax_prev + self.AX_DOT_MIN * self.DT, ax_prev + self.AX_DOT_MAX * self.DT)
 		ax = np.clip(ax, self.AX_MIN, self.AX_MAX)
 
 		
-		# df = np.clip(df, df_prev - self.DF_DOT_MIN * self.DT, df_prev + self.DF_DOT_MAX * self.DT)
+		df = np.clip(df, df_prev + self.DF_DOT_MIN * self.DT, df_prev + self.DF_DOT_MAX * self.DT)
 		df = np.clip(df, self.DF_MIN, self.DF_MAX)
 		
 
